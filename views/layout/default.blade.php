@@ -113,7 +113,7 @@
 			"labelprinter" : {
 				"hook": "{{ GROCY_LABEL_PRINTER_WEBHOOK }}",
 				"extra_data": {!! json_encode(GROCY_LABEL_PRINTER_PARAMS) !!},
-				"json": {{ BoolToString(GROCY_LABEL_PRINTER_RUN_SERVER) }}
+				"json": {{ BoolToString(GROCY_LABEL_PRINTER_HOOK_JSON) }}
 			}
 		@endif
 		};
