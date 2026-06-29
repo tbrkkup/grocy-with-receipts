@@ -113,7 +113,7 @@
 			"labelprinter" : {
 				"hook": "{{ GROCY_LABEL_PRINTER_WEBHOOK }}",
 				"extra_data": {!! json_encode(GROCY_LABEL_PRINTER_PARAMS) !!},
-				"json": {{ BoolToString(GROCY_LABEL_PRINTER_HOOK_JSON) }}
+				"json": {{ BoolToString(GROCY_LABEL_PRINTER_RUN_SERVER) }}
 			}
 		@endif
 		};
@@ -283,6 +283,16 @@
 						href="{{ $U('/purchase') }}">
 						<i class="fa-solid fa-fw fa-cart-plus"></i>
 						<span class="nav-link-text">{{ $__t('Purchase') }}</span>
+					</a>
+				</li>
+				<li class="nav-item nav-item-sidebar @if($viewName == 'receipts') active-page @endif"
+					data-toggle="tooltip"
+					data-placement="right"
+					title="{{ $__t('Receipts') }}">
+					<a class="nav-link discrete-link"
+						href="{{ $U('/receipts') }}">
+						<i class="fa-solid fa-fw fa-receipt"></i>
+						<span class="nav-link-text">{{ $__t('Receipts') }}</span>
 					</a>
 				</li>
 				<li class="nav-item nav-item-sidebar permission-STOCK_CONSUME @if($viewName == 'consume') active-page @endif"
