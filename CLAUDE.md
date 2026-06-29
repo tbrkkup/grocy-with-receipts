@@ -1,28 +1,47 @@
-# CLAUDE.md – Projektkontext für grocy-with-bills
+# CLAUDE.md – Projektkontext für grocy-with-receipts
 
-Diese Datei dokumentiert alle Designentscheidungen, den aktuellen Implementierungsstand und offene Aufgaben für das `grocy-with-bills`-Projekt. Sie ist dafür gedacht, in einer neuen Claude-Session den vollständigen Kontext wiederherzustellen.
+Diese Datei dokumentiert alle Designentscheidungen, den aktuellen Implementierungsstand und offene Aufgaben für das `grocy-with-receipts`-Projekt. Sie ist dafür gedacht, in einer neuen Claude-Session den vollständigen Kontext wiederherzustellen.
 
 ---
 
 ## Projektübersicht
 
-`grocy-with-bills` ist ein Fork der [grocy](https://grocy.info)-Hauptcodebase (1:1-Fork, kein eigener Code beim Start). Das Ziel ist, grocy um eine **Rechnungs-Funktion** zu erweitern: Einkäufe sollen mit einem Rechnungsobjekt (PDF, JPG etc.) verknüpft werden können – sowohl über die Grocy-REST-API als auch über das Web-UI.
+`grocy-with-receipts` ist ein Fork der [grocy](https://grocy.info)-Hauptcodebase (1:1-Fork, kein eigener Code beim Start). Das Ziel ist, grocy um eine **Rechnungs-Funktion** zu erweitern: Einkäufe sollen mit einem Rechnungsobjekt (PDF, JPG etc.) verknüpft werden können – sowohl über die Grocy-REST-API als auch über das Web-UI.
 
 **Entwicklungsbranch:** `claude/friendly-planck-kj8nev`
-**Remote:** `tbrkkup/grocy-with-bills`
+**Remote:** `tbrkkup/grocy-with-receipts`
 
 ---
 
-## Verwandte Projekte (nicht in dieser Session bearbeitet)
+## Alle Repositories im Ökosystem
 
-### Android-App
-- Fork: `tbrkkup/grocy-with-receipts-android` (noch keine eigenen Änderungen)
-- Upstream: Original grocy-android App (Java, MVVM-Architektur)
-- Die App ist eine **vollständig native Android-App** (kein WebView), spricht direkt mit der Grocy-REST-API
-- Sie hat eigene ViewModels, Repositories, lokalen Room-Cache, Barcode-Scanner
+Es gibt vier Forks, die alle die receipts-Funktion erhalten sollen. Jeder Client hat sein eigenes natives UI – Web-UI-Änderungen übertragen sich **nicht automatisch**, sondern müssen pro Repo separat implementiert werden. API-Änderungen (serverseitig) gelten für alle Clients gleichzeitig.
+
+| Repo | Technologie | Priorität |
+|------|-------------|-----------|
+| `tbrkkup/grocy-with-receipts` | PHP, Blade, SQLite (Web-App + REST-API) | **Fokus aktuell** |
+| `tbrkkup/grocy-with-receipts-android` | Java, MVVM, native Android-UI | **Fokus aktuell** |
+| `tbrkkup/Grocy-with-receipts-SwiftUI-iOS` | Swift, SwiftUI, native iOS-UI | später |
+| `tbrkkup/grocy-with-receipts-win-desktop` | Electron (vermutlich) | später |
+
+### Web-App (`grocy-with-receipts`)
+- Enthält sowohl die REST-API als auch das Web-UI
+- Alle API-Änderungen hier betreffen alle Clients
+
+### Android-App (`grocy-with-receipts-android`)
+- Vollständig native Android-App (kein WebView), spricht direkt mit der Grocy-REST-API
+- Java, MVVM-Architektur: Fragments → ViewModels → Repositories → Room-Cache
 - `GrocyApi.java` konstruiert alle API-URLs; `PurchaseViewModel.purchaseProduct()` baut den JSON-Body
 - **Was fehlt:** `receipt_id` ist dem Android-Einkauf-Flow noch nicht bekannt
-- Um dort Commits zu machen, muss das Android-Repo in der neuen Session als zweites Repo freigeschaltet werden
+- Noch keine eigenen Änderungen gegenüber dem Upstream-Fork
+
+### iOS-App (`Grocy-with-receipts-SwiftUI-iOS`)
+- SwiftUI-basiert, native iOS-UI
+- Noch keine eigenen Änderungen, Implementierung für später geplant
+
+### Desktop (`grocy-with-receipts-win-desktop`)
+- Wahrscheinlich Electron-basiert
+- Noch keine eigenen Änderungen, Implementierung für später geplant
 
 ### Externes Import-Tool
 - Datei: `grocyimportv15.html` (standalone HTML-Seite, kein Teil des Repos)
@@ -165,11 +184,16 @@ Neue Tabellen `receipts` und `receipt_files`.
 - `/public/viewjs/purchase.js` schickt `receipt_id` mit dem POST-Body
 - Soll abwärtskompatibel bleiben (kein Pflichtfeld)
 
-### Iteration 5: Android-App
+### Iteration 5: Android-App (`grocy-with-receipts-android`)
 - `GrocyApi.java`: Endpunkte für `receipts` und `receipt_files` hinzufügen
 - `PurchaseViewModel.java`: `receipt_id` in JSON-Body aufnehmen
-- Ggf. neuer Screen für Rechnungsverwaltung
+- Ggf. neuer Screen für Rechnungsverwaltung (Fragment + ViewModel)
 - **Voraussetzung:** Session muss auf `tbrkkup/grocy-with-receipts-android` Zugriff haben
+
+### Iteration 6+: iOS und Desktop (niedrige Priorität)
+- `Grocy-with-receipts-SwiftUI-iOS`: SwiftUI-Views für Rechnungsverwaltung, API-Calls ergänzen
+- `grocy-with-receipts-win-desktop`: je nach Technologie (Electron = Web-ähnlich, evtl. einfacher)
+- Beide erst angehen wenn Web-App und Android fertig sind
 
 ---
 
