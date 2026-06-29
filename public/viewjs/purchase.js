@@ -29,6 +29,7 @@ $('#save-purchase-button').on('click', function (e)
 			var jsonData = {};
 			jsonData.amount = jsonForm.amount;
 			jsonData.note = jsonForm.note;
+			jsonData.receipt_id = jsonForm.receipt_id || null;
 			jsonData.stock_label_type = jsonForm.stock_label_type;
 
 			if (!Grocy.FeatureFlags.GROCY_FEATURE_FLAG_STOCK_PRICE_TRACKING)
@@ -230,6 +231,7 @@ $('#save-purchase-button').on('click', function (e)
 
 							$('#price-hint').text("");
 							$('#note').val("");
+							$('#receipt_id').val('');
 							var priceTypeUnitPrice = $("#price-type-unit-price");
 							var priceTypeUnitPriceLabel = $("[for=" + priceTypeUnitPrice.attr("id") + "]");
 							priceTypeUnitPriceLabel.text(__t("Unit price"));
