@@ -148,7 +148,13 @@ class StockApiController extends BaseApiController
 				$note = $requestBody['note'];
 			}
 
-			$transactionId = StockService::GetInstance()->AddProduct($args['productId'], $requestBody['amount'], $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId, $shoppingLocationId, $unusedTransactionId, $stockLabelType, false, $note);
+			$receiptId = null;
+			if (array_key_exists('receipt_id', $requestBody) && is_numeric($requestBody['receipt_id']))
+			{
+				$receiptId = intval($requestBody['receipt_id']);
+			}
+
+			$transactionId = StockService::GetInstance()->AddProduct($args['productId'], $requestBody['amount'], $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId, $shoppingLocationId, $unusedTransactionId, $stockLabelType, false, $note, $receiptId);
 
 			$args['transactionId'] = $transactionId;
 			return $this->StockTransactions($request, $response, $args);
