@@ -237,6 +237,11 @@
 				@foreach($listItems as $listItem)
 				<tr id="shoppinglistitem-{{ $listItem->id }}-row"
 					class="@if(FindObjectInArrayByPropertyValue($missingProducts, 'id', $listItem->product_id) !== null) table-info @endif @if($listItem->done == 1) text-muted text-strike-through @endif">
+					<td class="fit-content">
+						<input type="checkbox"
+							class="bulk-row-checkbox"
+							data-object-id="{{ $listItem->id }}">
+					</td>
 					<td class="fit-content border-right">
 						<a class="btn btn-success btn-sm order-listitem-button"
 							href="#"
