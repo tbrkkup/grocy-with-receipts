@@ -1,12 +1,14 @@
 ﻿var equipmentTable = $('#equipment-table').DataTable({
-	'order': [[1, 'asc']],
+	'order': [[2, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
-		{ 'searchable': false, "targets": 0 }
+		{ 'orderable': false, 'targets': 1 },
+		{ 'searchable': false, "targets": 0 },
+		{ 'searchable': false, "targets": 1 }
 	].concat($.fn.dataTable.defaults.columnDefs),
 	select: {
 		style: 'single',
-		selector: 'tr td:not(:first-child)'
+		selector: 'tr td:not(:first-child):not(:nth-child(2))'
 	},
 	'initComplete': function ()
 	{

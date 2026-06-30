@@ -5,6 +5,17 @@
 @section('title', $__t('Userentities'))
 
 @section('content')
+<div class="row d-none"
+	id="bulk-edit-toolbar">
+	<div class="col">
+		<div class="alert alert-secondary d-flex align-items-center flex-wrap">
+			<span class="mr-3"><strong id="bulk-edit-selected-count">0</strong> {{ $__t('selected') }}</span>
+			<button class="btn btn-sm btn-outline-danger mt-1 mb-1"
+				id="bulk-edit-delete-button">{{ $__t('Delete') }}</button>
+		</div>
+	</div>
+</div>
+
 <div class="row">
 	<div class="col">
 		<div class="title-related-links">
@@ -67,6 +78,10 @@
 			class="table table-sm table-striped nowrap w-100">
 			<thead>
 				<tr>
+					<th class="fit-content">
+						<input type="checkbox"
+							class="bulk-select-all">
+					</th>
 					<th class="border-right"><a class="text-muted change-table-columns-visibility-button"
 							data-toggle="tooltip"
 							title="{{ $__t('Table options') }}"
@@ -80,6 +95,11 @@
 			<tbody class="d-none">
 				@foreach($userentities as $userentity)
 				<tr>
+					<td class="fit-content">
+						<input type="checkbox"
+							class="bulk-row-checkbox"
+							data-object-id="{{ $userentity->id }}">
+					</td>
 					<td class="fit-content border-right">
 						<a class="btn btn-info btn-sm show-as-dialog-link"
 							href="{{ $U('/userentity/') }}{{ $userentity->id }}?embedded"
@@ -112,4 +132,5 @@
 		</table>
 	</div>
 </div>
+@include('components.bulkselect')
 @stop

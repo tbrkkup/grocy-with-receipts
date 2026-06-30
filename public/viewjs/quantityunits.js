@@ -80,3 +80,33 @@ if (GetUriParam('include_disabled'))
 {
 	$("#show-disabled").prop('checked', true);
 }
+
+var quantityUnitsBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#quantityunits-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-edit-delete-button").on("click", function (e)
+{
+	var objectIds = quantityUnitsBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s item(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function (result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/quantity_units/bulk", { object_ids: objectIds },
+					function (result) { window.location.reload(); },
+					function (xhr) { Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response); }
+				);
+			}
+		}
+	});
+});
