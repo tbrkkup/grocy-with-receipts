@@ -163,6 +163,8 @@ $app->group('/api', function (RouteCollectorProxy $group)
 
 	// Generic entity interaction
 	$group->get('/objects/{entity}', [GenericEntityApiController::class, 'GetObjects']);
+	$group->put('/objects/{entity}/bulk', [GenericEntityApiController::class, 'BulkEditObjects']);
+	$group->delete('/objects/{entity}/bulk', [GenericEntityApiController::class, 'BulkDeleteObjects']);
 	$group->get('/objects/{entity}/{objectId}', [GenericEntityApiController::class, 'GetObject']);
 	$group->post('/objects/{entity}', [GenericEntityApiController::class, 'AddObject']);
 	$group->put('/objects/{entity}/{objectId}', [GenericEntityApiController::class, 'EditObject']);
@@ -196,6 +198,9 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->get('/stock/entry/{entryId}', [StockApiController::class, 'StockEntry']);
 	$group->put('/stock/entry/{entryId}', [StockApiController::class, 'EditStockEntry']);
 	$group->get('/stock/volatile', [StockApiController::class, 'CurrentVolatileStock']);
+	$group->post('/stock/products/bulk/consume', [StockApiController::class, 'BulkConsumeProducts']);
+	$group->post('/stock/products/bulk/transfer', [StockApiController::class, 'BulkTransferProducts']);
+	$group->post('/stock/products/bulk/printlabel', [StockApiController::class, 'BulkProductPrintLabel']);
 	$group->get('/stock/products/{productId}', [StockApiController::class, 'ProductDetails']);
 	$group->get('/stock/products/{productId}/entries', [StockApiController::class, 'ProductStockEntries']);
 	$group->get('/stock/products/{productId}/locations', [StockApiController::class, 'ProductStockLocations']);
@@ -213,6 +218,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->post('/stock/products/by-barcode/{barcode}/inventory', [StockApiController::class, 'InventoryProductByBarcode']);
 	$group->post('/stock/products/by-barcode/{barcode}/open', [StockApiController::class, 'OpenProductByBarcode']);
 	$group->get('/stock/locations/{locationId}/entries', [StockApiController::class, 'LocationStockEntries']);
+	$group->post('/stock/bookings/bulk/undo', [StockApiController::class, 'BulkUndoBooking']);
 	$group->get('/stock/bookings/{bookingId}', [StockApiController::class, 'StockBooking']);
 	$group->post('/stock/bookings/{bookingId}/undo', [StockApiController::class, 'UndoBooking']);
 	$group->get('/stock/transactions/{transactionId}', [StockApiController::class, 'StockTransactions']);
@@ -221,6 +227,12 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->get('/stock/products/{productId}/printlabel', [StockApiController::class, 'ProductPrintLabel']);
 	$group->get('/stock/entry/{entryId}/printlabel', [StockApiController::class, 'StockEntryPrintLabel']);
 
+	// Stock bulk actions
+	$group->post('/stock/entries/bulk/change-location', [StockApiController::class, 'BulkChangeStockEntryLocation']);
+	$group->post('/stock/entries/bulk/open', [StockApiController::class, 'BulkOpenStockEntries']);
+	$group->post('/stock/entries/bulk/consume', [StockApiController::class, 'BulkConsumeStockEntries']);
+	$group->post('/stock/entries/bulk/printlabel', [StockApiController::class, 'BulkStockEntryPrintLabel']);
+
 	// Shopping list
 	$group->post('/stock/shoppinglist/add-missing-products', [StockApiController::class, 'AddMissingProductsToShoppingList']);
 	$group->post('/stock/shoppinglist/add-overdue-products', [StockApiController::class, 'AddOverdueProductsToShoppingList']);
@@ -228,6 +240,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->post('/stock/shoppinglist/clear', [StockApiController::class, 'ClearShoppingList']);
 	$group->post('/stock/shoppinglist/add-product', [StockApiController::class, 'AddProductToShoppingList']);
 	$group->post('/stock/shoppinglist/remove-product', [StockApiController::class, 'RemoveProductFromShoppingList']);
+	$group->post('/stock/shoppinglist/bulk/add-products', [StockApiController::class, 'BulkAddProductsToShoppingList']);
 
 	// Recipes
 	$group->post('/recipes/{recipeId}/add-not-fulfilled-products-to-shoppinglist', [RecipesApiController::class, 'AddNotFulfilledProductsToShoppingList']);
@@ -242,6 +255,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->get('/chores', [ChoresApiController::class, 'Current']);
 	$group->get('/chores/{choreId}', [ChoresApiController::class, 'ChoreDetails']);
 	$group->post('/chores/{choreId}/execute', [ChoresApiController::class, 'TrackChoreExecution']);
+	$group->post('/chores/executions/bulk/undo', [ChoresApiController::class, 'BulkUndoChoreExecution']);
 	$group->post('/chores/executions/{executionId}/undo', [ChoresApiController::class, 'UndoChoreExecution']);
 	$group->post('/chores/executions/calculate-next-assignments', [ChoresApiController::class, 'CalculateNextExecutionAssignments']);
 	$group->get('/chores/{choreId}/printlabel', [ChoresApiController::class, 'ChorePrintLabel']);
@@ -254,11 +268,13 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->get('/batteries', [BatteriesApiController::class, 'Current']);
 	$group->get('/batteries/{batteryId}', [BatteriesApiController::class, 'BatteryDetails']);
 	$group->post('/batteries/{batteryId}/charge', [BatteriesApiController::class, 'TrackChargeCycle']);
+	$group->post('/batteries/charge-cycles/bulk/undo', [BatteriesApiController::class, 'BulkUndoChargeCycle']);
 	$group->post('/batteries/charge-cycles/{chargeCycleId}/undo', [BatteriesApiController::class, 'UndoChargeCycle']);
 	$group->get('/batteries/{batteryId}/printlabel', [BatteriesApiController::class, 'BatteryPrintLabel']);
 
 	// Tasks
 	$group->get('/tasks', [TasksApiController::class, 'Current']);
+	$group->post('/tasks/bulk/complete', [TasksApiController::class, 'BulkMarkTasksAsCompleted']);
 	$group->post('/tasks/{taskId}/complete', [TasksApiController::class, 'MarkTaskAsCompleted']);
 	$group->post('/tasks/{taskId}/undo', [TasksApiController::class, 'UndoTask']);
 
