@@ -1,9 +1,11 @@
 ﻿var tasksTable = $('#tasks-table').DataTable({
-	'order': [[2, 'asc']],
+	'order': [[3, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
+		{ 'orderable': false, 'targets': 1 },
 		{ 'searchable': false, "targets": 0 },
-		{ "type": "html", "targets": 2 }
+		{ 'searchable': false, "targets": 1 },
+		{ "type": "html", "targets": 3 }
 	].concat($.fn.dataTable.defaults.columnDefs)
 });
 $('#tasks-table tbody').removeClass("d-none");
@@ -31,7 +33,7 @@ $("#status-filter").on("change", function ()
 	// Transfer CSS classes of selected element to dropdown element (for background)
 	$(this).attr("class", $("#" + $(this).attr("id") + " option[value='" + value + "']").attr("class") + " form-control");
 
-	tasksTable.column(tasksTable.colReorder.transpose(5)).search(value).draw();
+	tasksTable.column(tasksTable.colReorder.transpose(6)).search(value).draw();
 });
 
 $("#user-filter").on("change", function ()
@@ -46,7 +48,7 @@ $("#user-filter").on("change", function ()
 		"^" + $.fn.dataTable.util.escapeRegex(value) + "$"
 	}
 
-	tasksTable.column(tasksTable.colReorder.transpose(4)).search(value, true, false).draw();
+	tasksTable.column(tasksTable.colReorder.transpose(5)).search(value, true, false).draw();
 });
 
 $("#category-filter").on("change", function ()
@@ -57,7 +59,7 @@ $("#category-filter").on("change", function ()
 		value = "";
 	}
 
-	tasksTable.column(tasksTable.colReorder.transpose(3)).search(value).draw();
+	tasksTable.column(tasksTable.colReorder.transpose(4)).search(value).draw();
 });
 
 $("#clear-filter-button").on("click", function ()
@@ -252,3 +254,115 @@ RefreshStatistics();
 $("#search").trigger("keyup");
 $("#status-filter").trigger("change");
 $("#category-filter").trigger("change");
+
+var tasksBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#tasks-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+function BulkEditTasks(data)
+{
+	Grocy.Api.Put("objects/tasks/bulk", {
+		object_ids: tasksBulkSelect.GetSelectedIds(),
+		data: data
+	},
+		function (result)
+		{
+			window.location.href = U("/tasks");
+		},
+		function (xhr)
+		{
+			Grocy.FrontendHelpers.ShowGenericError("Error while bulk editing", xhr.response);
+		}
+	);
+}
+
+$("#bulk-edit-category-button").on("click", function (e)
+{
+	var options = $.map(Grocy.TaskCategories, function (taskCategory)
+	{
+		return { text: taskCategory.name, value: taskCategory.id };
+	});
+
+	bootbox.prompt({
+		title: __t("Category"),
+		inputType: "select",
+		inputOptions: options,
+		callback: function (result)
+		{
+			if (result !== null)
+			{
+				BulkEditTasks({ category_id: result });
+			}
+		}
+	});
+});
+
+$("#bulk-edit-assigned-to-button").on("click", function (e)
+{
+	var options = $.map(Grocy.Users, function (user)
+	{
+		return { text: user.display_name || user.username, value: user.id };
+	});
+
+	bootbox.prompt({
+		title: __t("Assigned to"),
+		inputType: "select",
+		inputOptions: options,
+		callback: function (result)
+		{
+			if (result !== null)
+			{
+				BulkEditTasks({ assigned_to_user_id: result });
+			}
+		}
+	});
+});
+
+$("#bulk-mark-as-done-button").on("click", function (e)
+{
+	var taskIds = tasksBulkSelect.GetSelectedIds();
+	var doneTime = moment().format("YYYY-MM-DD HH:mm:ss");
+
+	Grocy.Api.Post("tasks/bulk/complete", { task_ids: taskIds, done_time: doneTime },
+		function (result)
+		{
+			window.location.reload();
+		},
+		function (xhr)
+		{
+			Grocy.FrontendHelpers.ShowGenericError("Error while bulk completing", xhr.response);
+		}
+	);
+});
+
+$("#bulk-edit-delete-button").on("click", function (e)
+{
+	var objectIds = tasksBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s task(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function (result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/tasks/bulk", { object_ids: objectIds },
+					function (result)
+					{
+						window.location.href = U("/tasks");
+					},
+					function (xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});

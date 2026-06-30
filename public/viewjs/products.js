@@ -1,12 +1,14 @@
 ﻿var productsTable = $('#products-table').DataTable({
-	'order': [[1, 'asc']],
+	'order': [[2, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
+		{ 'orderable': false, 'targets': 1 },
 		{ 'searchable': false, "targets": 0 },
-		{ 'visible': false, 'targets': 7 },
+		{ 'searchable': false, "targets": 1 },
 		{ 'visible': false, 'targets': 8 },
 		{ 'visible': false, 'targets': 9 },
-		{ "type": "html-num-fmt", "targets": 3 }
+		{ 'visible': false, 'targets': 10 },
+		{ "type": "html-num-fmt", "targets": 4 }
 	].concat($.fn.dataTable.defaults.columnDefs)
 });
 $('#products-table tbody').removeClass("d-none");
@@ -28,11 +30,11 @@ $("#product-group-filter").on("change", function ()
 	var value = $("#product-group-filter option:selected").text();
 	if (value === __t("All"))
 	{
-		productsTable.column(productsTable.colReorder.transpose(6)).search("").draw();
+		productsTable.column(productsTable.colReorder.transpose(7)).search("").draw();
 	}
 	else
 	{
-		productsTable.column(productsTable.colReorder.transpose(6)).search("^" + $.fn.dataTable.util.escapeRegex(value) + "$", true, false).draw();
+		productsTable.column(productsTable.colReorder.transpose(7)).search("^" + $.fn.dataTable.util.escapeRegex(value) + "$", true, false).draw();
 	}
 
 });
@@ -41,7 +43,7 @@ $("#clear-filter-button").on("click", function ()
 {
 	$("#search").val("");
 	$("#product-group-filter").val("all");
-	productsTable.column(productsTable.colReorder.transpose(6)).search("").draw();
+	productsTable.column(productsTable.colReorder.transpose(7)).search("").draw();
 	productsTable.search("").draw();
 
 	if ($("#show-disabled").is(":checked"))
@@ -143,6 +145,159 @@ if (GetUriParam("filter"))
 {
 	$("#status-filter").val(GetUriParam("filter"));
 }
+
+var productsBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#products-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+function BulkEditProducts(data, successMessage)
+{
+	Grocy.Api.Put("objects/products/bulk", {
+		object_ids: productsBulkSelect.GetSelectedIds(),
+		data: data
+	},
+		function (result)
+		{
+			window.location.href = U("/products");
+		},
+		function (xhr)
+		{
+			Grocy.FrontendHelpers.ShowGenericError("Error while bulk editing", xhr.response);
+		}
+	);
+}
+
+$("#bulk-edit-location-button").on("click", function (e)
+{
+	var options = $.map(Grocy.Locations, function (location)
+	{
+		return { text: location.name, value: location.id };
+	});
+
+	bootbox.prompt({
+		title: __t("Location"),
+		inputType: "select",
+		inputOptions: options,
+		callback: function (result)
+		{
+			if (result !== null)
+			{
+				BulkEditProducts({ location_id: result });
+			}
+		}
+	});
+});
+
+$("#bulk-edit-shopping-location-button").on("click", function (e)
+{
+	var options = $.map(Grocy.ShoppingLocations, function (shoppingLocation)
+	{
+		return { text: shoppingLocation.name, value: shoppingLocation.id };
+	});
+
+	bootbox.prompt({
+		title: __t("Default store"),
+		inputType: "select",
+		inputOptions: options,
+		callback: function (result)
+		{
+			if (result !== null)
+			{
+				BulkEditProducts({ shopping_location_id: result });
+			}
+		}
+	});
+});
+
+$("#bulk-edit-product-group-button").on("click", function (e)
+{
+	var options = $.map(Grocy.ProductGroups, function (productGroup)
+	{
+		return { text: productGroup.name, value: productGroup.id };
+	});
+
+	bootbox.prompt({
+		title: __t("Product group"),
+		inputType: "select",
+		inputOptions: options,
+		callback: function (result)
+		{
+			if (result !== null)
+			{
+				BulkEditProducts({ product_group_id: result });
+			}
+		}
+	});
+});
+
+$("#bulk-edit-min-stock-amount-button").on("click", function (e)
+{
+	bootbox.prompt({
+		title: __t("Min. stock amount"),
+		inputType: "number",
+		min: 0,
+		callback: function (result)
+		{
+			if (result !== null)
+			{
+				BulkEditProducts({ min_stock_amount: result });
+			}
+		}
+	});
+});
+
+$("#bulk-edit-default-best-before-days-button").on("click", function (e)
+{
+	bootbox.prompt({
+		title: __t("Default best before days"),
+		inputType: "number",
+		callback: function (result)
+		{
+			if (result !== null)
+			{
+				BulkEditProducts({ default_best_before_days: result });
+			}
+		}
+	});
+});
+
+$("#bulk-edit-delete-button").on("click", function (e)
+{
+	var objectIds = productsBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s product(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: {
+				label: __t("Yes"),
+				className: "btn-success"
+			},
+			cancel: {
+				label: __t("No"),
+				className: "btn-danger"
+			}
+		},
+		callback: function (result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/products/bulk", { object_ids: objectIds },
+					function (result)
+					{
+						window.location.href = U("/products");
+					},
+					function (xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});
 
 $(".merge-products-button").on("click", function (e)
 {
