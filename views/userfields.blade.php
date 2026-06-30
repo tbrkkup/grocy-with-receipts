@@ -5,6 +5,17 @@
 @section('title', $__t('Userfields'))
 
 @section('content')
+<div class="row d-none"
+	id="bulk-edit-toolbar">
+	<div class="col">
+		<div class="alert alert-secondary d-flex align-items-center flex-wrap">
+			<span class="mr-3"><strong id="bulk-edit-selected-count">0</strong> {{ $__t('selected') }}</span>
+			<button class="btn btn-sm btn-outline-danger mt-1 mb-1"
+				id="bulk-edit-delete-button">{{ $__t('Delete') }}</button>
+		</div>
+	</div>
+</div>
+
 <div class="row">
 	<div class="col">
 		<div class="title-related-links">

@@ -172,3 +172,39 @@ $("#selectedEquipmentDescriptionToggleFullscreenButton").on('click', function (e
 	$("#selectedEquipmentDescriptionCard .card-body").toggleClass("mt-5");
 	$("body").toggleClass("fullscreen-card");
 });
+
+var equipmentBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#equipment-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-edit-delete-button").on("click", function (e)
+{
+	var objectIds = equipmentBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s equipment item(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function (result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/equipment/bulk", { object_ids: objectIds },
+					function (result)
+					{
+						window.location.href = U("/equipment");
+					},
+					function (xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});
