@@ -138,6 +138,10 @@
 					class="table table-sm table-striped nowrap w-100">
 					<thead>
 						<tr>
+							<th class="fit-content">
+								<input type="checkbox"
+									class="bulk-select-all">
+							</th>
 							<th class="border-right"><a class="text-muted change-table-columns-visibility-button"
 									data-toggle="tooltip"
 									title="{{ $__t('Table options') }}"
@@ -170,6 +174,11 @@
 						@foreach($recipes as $recipe)
 						<tr id="recipe-row-{{ $recipe->id }}"
 							data-recipe-id="{{ $recipe->id }}">
+							<td class="fit-content">
+								<input type="checkbox"
+									class="bulk-row-checkbox"
+									data-object-id="{{ $recipe->id }}">
+							</td>
 							<td class="fit-content border-right">
 								<a class="btn btn-info btn-sm hide-when-embedded hide-on-fullscreen-card recipe-edit-button"
 									href="{{ $U('/recipe/') }}{{ $recipe->id }}"
@@ -686,4 +695,5 @@
 @include('components.productcard', [
 'asModal' => true
 ])
+@include('components.bulkselect')
 @stop

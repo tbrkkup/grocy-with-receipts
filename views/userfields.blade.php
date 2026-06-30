@@ -93,6 +93,10 @@
 			class="table table-sm table-striped nowrap w-100">
 			<thead>
 				<tr>
+					<th class="fit-content">
+						<input type="checkbox"
+							class="bulk-select-all">
+					</th>
 					<th class="border-right"><a class="text-muted change-table-columns-visibility-button"
 							data-toggle="tooltip"
 							title="{{ $__t('Table options') }}"
@@ -109,6 +113,11 @@
 			<tbody class="d-none">
 				@foreach($userfields as $userfield)
 				<tr>
+					<td class="fit-content">
+						<input type="checkbox"
+							class="bulk-row-checkbox"
+							data-object-id="{{ $userfield->id }}">
+					</td>
 					<td class="fit-content border-right">
 						<a class="btn btn-info btn-sm show-as-dialog-link"
 							href="{{ $U('/userfield/') }}{{ $userfield->id }}?embedded"
@@ -146,4 +155,5 @@
 		</table>
 	</div>
 </div>
+@include('components.bulkselect')
 @stop

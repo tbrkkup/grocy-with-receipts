@@ -141,4 +141,5 @@
 		</table>
 	</div>
 </div>
+@include('components.bulkselect')
 @stop
