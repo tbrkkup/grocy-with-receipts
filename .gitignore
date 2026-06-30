@@ -2,3 +2,6 @@ embedded.txt
 /.release
 /packages
 /public/packages
+/node_modules
+/package-lock.json
+/router.php
