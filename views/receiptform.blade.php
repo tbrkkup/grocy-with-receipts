@@ -94,4 +94,42 @@
 		</form>
 	</div>
 </div>
+
+@if($mode == 'edit')
+<hr class="my-2">
+
+<div class="row">
+	<div class="col-lg-6 col-12">
+		<h3>{{ $__t('Files') }}</h3>
+
+		<ul class="list-group mb-3" id="receipt-files-list">
+			@foreach($receiptFiles as $receiptFile)
+			<li class="list-group-item d-flex justify-content-between align-items-center">
+				<a href="{{ $U('/api/files/receipts/' . base64_encode($receiptFile->file_name)) }}" target="_blank">{{ $receiptFile->file_name }}</a>
+				<button class="btn btn-sm btn-danger delete-receipt-file-button"
+					data-receipt-file-id="{{ $receiptFile->id }}"
+					data-file-name="{{ $receiptFile->file_name }}">
+					<i class="fa-solid fa-fw fa-trash"></i>
+				</button>
+			</li>
+			@endforeach
+		</ul>
+
+		<div class="form-group">
+			<label for="receipt-file">{{ $__t('Add file') }}</label>
+			<div class="custom-file">
+				<input type="file"
+					class="custom-file-input"
+					id="receipt-file">
+				<label id="receipt-file-label"
+					class="custom-file-label"
+					for="receipt-file">
+					{{ $__t('No file selected') }}
+				</label>
+			</div>
+		</div>
+		<button class="btn btn-primary" id="add-receipt-file-button">{{ $__t('Upload') }}</button>
+	</div>
+</div>
+@endif
 @stop

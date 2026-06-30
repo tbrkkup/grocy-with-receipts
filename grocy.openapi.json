@@ -5971,7 +5971,8 @@
 					"recipepictures",
 					"productpictures",
 					"userfiles",
-					"userpictures"
+					"userpictures",
+					"receipts"
 				]
 			},
 			"StringEnumTemplate": {

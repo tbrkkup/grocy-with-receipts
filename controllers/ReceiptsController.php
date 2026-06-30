@@ -9,9 +9,16 @@ class ReceiptsController extends BaseController
 {
 	public function Overview(Request $request, Response $response, array $args)
 	{
+		$receiptFilesByReceiptId = [];
+		foreach ($this->DB->receipt_files()->orderBy('id') as $receiptFile)
+		{
+			$receiptFilesByReceiptId[$receiptFile->receipt_id][] = $receiptFile;
+		}
+
 		return $this->RenderPage($response, 'receipts', [
 			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 			'shoppingLocations' => $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE'),
+			'receiptFilesByReceiptId' => $receiptFilesByReceiptId,
 		]);
 	}
 
