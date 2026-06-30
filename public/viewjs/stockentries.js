@@ -1,15 +1,17 @@
 ﻿var stockEntriesTable = $('#stockentries-table').DataTable({
-	'order': [[2, 'asc']],
+	'order': [[3, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
+		{ 'orderable': false, 'targets': 1 },
 		{ 'searchable': false, "targets": 0 },
-		{ 'visible': false, 'targets': 10 },
-		{ "type": "num", "targets": 1 },
-		{ "type": "custom-sort", "targets": 3 },
-		{ "type": "html", "targets": 4 },
-		{ "type": "custom-sort", "targets": 7 },
-		{ "type": "html", "targets": 8 },
-		{ "type": "html", "targets": 9 }
+		{ 'searchable': false, "targets": 1 },
+		{ 'visible': false, 'targets': 11 },
+		{ "type": "num", "targets": 2 },
+		{ "type": "custom-sort", "targets": 4 },
+		{ "type": "html", "targets": 5 },
+		{ "type": "custom-sort", "targets": 8 },
+		{ "type": "html", "targets": 9 },
+		{ "type": "html", "targets": 10 }
 	].concat($.fn.dataTable.defaults.columnDefs)
 });
 $('#stockentries-table tbody').removeClass("d-none");
@@ -19,7 +21,7 @@ $.fn.dataTable.ext.search.push(function(settings, data, dataIndex)
 {
 	var productId = Grocy.Components.ProductPicker.GetValue();
 
-	if (!productId || Number.isNaN(productId) || productId == data[stockEntriesTable.colReorder.transpose(1)])
+	if (!productId || Number.isNaN(productId) || productId == data[stockEntriesTable.colReorder.transpose(2)])
 	{
 		return true;
 	}
@@ -49,7 +51,7 @@ $("#location-filter").on("change", function()
 		text = "";
 	}
 
-	stockEntriesTable.column(stockEntriesTable.colReorder.transpose(5)).search(text).draw();
+	stockEntriesTable.column(stockEntriesTable.colReorder.transpose(6)).search(text).draw();
 });
 
 Grocy.Components.ProductPicker.GetPicker().on('change', function(e)
@@ -326,6 +328,109 @@ $(window).on("message", function(e)
 });
 
 Grocy.Components.ProductPicker.GetPicker().trigger('change');
+
+var stockEntriesBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#stockentries-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-change-location-button").on("click", function(e)
+{
+	var stockEntryIds = stockEntriesBulkSelect.GetSelectedIds();
+
+	var options = $.map(Grocy.Locations, function(location)
+	{
+		return { text: location.name, value: location.id };
+	});
+
+	bootbox.prompt({
+		title: __t("Location"),
+		inputType: "select",
+		inputOptions: options,
+		callback: function(locationId)
+		{
+			if (locationId !== null)
+			{
+				Grocy.Api.Put("stock/entries/bulk/change-location", { stock_entry_ids: stockEntryIds, location_id: locationId },
+					function(result)
+					{
+						window.location.reload();
+					},
+					function(xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk changing location", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});
+
+$("#bulk-open-button").on("click", function(e)
+{
+	var stockEntryIds = stockEntriesBulkSelect.GetSelectedIds();
+
+	Grocy.Api.Post("stock/entries/bulk/open", { stock_entry_ids: stockEntryIds },
+		function(result)
+		{
+			window.location.reload();
+		},
+		function(xhr)
+		{
+			Grocy.FrontendHelpers.ShowGenericError("Error while bulk opening", xhr.response);
+		}
+	);
+});
+
+$("#bulk-consume-spoiled-button").on("click", function(e)
+{
+	var stockEntryIds = stockEntriesBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to consume %s stock entry/entries as spoiled?", stockEntryIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function(result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Post("stock/entries/bulk/consume", { stock_entry_ids: stockEntryIds, spoiled: true },
+					function(result)
+					{
+						window.location.reload();
+					},
+					function(xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk consuming", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});
+
+$("#bulk-print-label-button").on("click", function(e)
+{
+	var stockEntryIds = stockEntriesBulkSelect.GetSelectedIds();
+
+	Grocy.Api.Post("stock/entries/bulk/printlabel", { stock_entry_ids: stockEntryIds },
+		function(result)
+		{
+			if (Grocy.Webhooks.labelprinter !== undefined)
+			{
+				Grocy.FrontendHelpers.RunWebhook(Grocy.Webhooks.labelprinter, result);
+			}
+		},
+		function(xhr)
+		{
+			Grocy.FrontendHelpers.ShowGenericError("Error while bulk printing labels", xhr.response);
+		}
+	);
+});
 
 function UndoStockBookingEntry(bookingId, stockRowId, productId)
 {

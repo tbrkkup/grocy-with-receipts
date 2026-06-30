@@ -1,8 +1,10 @@
 ﻿var usersTable = $('#users-table').DataTable({
-	'order': [[1, 'asc']],
+	'order': [[2, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
-		{ 'searchable': false, "targets": 0 }
+		{ 'orderable': false, 'targets': 1 },
+		{ 'searchable': false, "targets": 0 },
+		{ 'searchable': false, "targets": 1 }
 	].concat($.fn.dataTable.defaults.columnDefs)
 });
 $('#users-table tbody').removeClass("d-none");
@@ -57,6 +59,58 @@ $(document).on('click', '.user-delete-button', function(e)
 						console.error(xhr);
 					}
 				);
+			}
+		}
+	});
+});
+
+var usersBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#users-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+// There is no generic bulk delete route for users (only DELETE /users/{userId} exists),
+// so this loops over the selected ids and issues one delete call per user.
+$("#bulk-edit-delete-button").on("click", function(e)
+{
+	var objectIds = usersBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s user(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function(result)
+		{
+			if (result === true)
+			{
+				var remaining = objectIds.length;
+
+				objectIds.forEach(function(objectId)
+				{
+					Grocy.Api.Delete('users/' + objectId, {},
+						function(result)
+						{
+							remaining--;
+							if (remaining === 0)
+							{
+								window.location.href = U('/users');
+							}
+						},
+						function(xhr)
+						{
+							remaining--;
+							Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response);
+							if (remaining === 0)
+							{
+								window.location.href = U('/users');
+							}
+						}
+					);
+				});
 			}
 		}
 	});

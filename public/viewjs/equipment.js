@@ -1,12 +1,14 @@
 ﻿var equipmentTable = $('#equipment-table').DataTable({
-	'order': [[1, 'asc']],
+	'order': [[2, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
-		{ 'searchable': false, "targets": 0 }
+		{ 'orderable': false, 'targets': 1 },
+		{ 'searchable': false, "targets": 0 },
+		{ 'searchable': false, "targets": 1 }
 	].concat($.fn.dataTable.defaults.columnDefs),
 	select: {
 		style: 'single',
-		selector: 'tr td:not(:first-child)'
+		selector: 'tr td:not(:first-child):not(:nth-child(2))'
 	},
 	'initComplete': function ()
 	{
@@ -169,4 +171,40 @@ $("#selectedEquipmentDescriptionToggleFullscreenButton").on('click', function (e
 	$("#selectedEquipmentDescriptionCard .card-header").toggleClass("fixed-top");
 	$("#selectedEquipmentDescriptionCard .card-body").toggleClass("mt-5");
 	$("body").toggleClass("fullscreen-card");
+});
+
+var equipmentBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#equipment-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-edit-delete-button").on("click", function (e)
+{
+	var objectIds = equipmentBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s equipment item(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function (result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/equipment/bulk", { object_ids: objectIds },
+					function (result)
+					{
+						window.location.href = U("/equipment");
+					},
+					function (xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response);
+					}
+				);
+			}
+		}
+	});
 });

@@ -54,8 +54,13 @@ class ChoresController extends BaseController
 			$chores = $this->DB->chores()->where('active = 1')->orderBy('name', 'COLLATE NOCASE');
 		}
 
+		$usersService = UsersService::GetInstance();
+
 		return $this->RenderPage($response, 'chores', [
 			'chores' => $chores,
+			'periodTypes' => GetClassConstants('\Grocy\Services\ChoresService', 'CHORE_PERIOD_TYPE_'),
+			'assignmentTypes' => GetClassConstants('\Grocy\Services\ChoresService', 'CHORE_ASSIGNMENT_TYPE_'),
+			'users' => $usersService->GetUsersAsDto(),
 			'userfields' => UserfieldsService::GetInstance()->GetFields('chores'),
 			'userfieldValues' => UserfieldsService::GetInstance()->GetAllValues('chores')
 		]);

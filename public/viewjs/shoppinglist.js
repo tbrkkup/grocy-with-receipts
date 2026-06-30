@@ -1,21 +1,23 @@
 var shoppingListTable = $('#shoppinglist-table').DataTable({
-	'order': [[1, 'asc']],
-	"orderFixed": [[3, 'asc']],
+	'order': [[2, 'asc']],
+	"orderFixed": [[4, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
+		{ 'orderable': false, 'targets': 1 },
 		{ 'searchable': false, "targets": 0 },
-		{ 'visible': false, 'targets': 3 },
-		{ 'visible': false, 'targets': 5 },
+		{ 'searchable': false, "targets": 1 },
+		{ 'visible': false, 'targets': 4 },
 		{ 'visible': false, 'targets': 6 },
 		{ 'visible': false, 'targets': 7 },
 		{ 'visible': false, 'targets': 8 },
-		{ "type": "custom-sort", "targets": 2 },
-		{ "type": "html-num-fmt", "targets": 5 },
-		{ "type": "html-num-fmt", "targets": 6 }
+		{ 'visible': false, 'targets': 9 },
+		{ "type": "custom-sort", "targets": 3 },
+		{ "type": "html-num-fmt", "targets": 6 },
+		{ "type": "html-num-fmt", "targets": 7 }
 	].concat($.fn.dataTable.defaults.columnDefs),
 	'rowGroup': {
 		enable: true,
-		dataSrc: 3
+		dataSrc: 4
 	}
 });
 $('#shoppinglist-table tbody').removeClass("d-none");
@@ -65,7 +67,7 @@ $("#status-filter").on("change", function ()
 	// Transfer CSS classes of selected element to dropdown element (for background)
 	$(this).attr("class", $("#" + $(this).attr("id") + " option[value='" + value + "']").attr("class") + " form-control");
 
-	shoppingListTable.column(shoppingListTable.colReorder.transpose(4)).search(value).draw();
+	shoppingListTable.column(shoppingListTable.colReorder.transpose(5)).search(value).draw();
 });
 
 $("#selected-shopping-list").on("change", function ()
@@ -639,3 +641,56 @@ if ($(window).width() < 768 || !Grocy.FeatureFlags.GROCY_FEATURE_FLAG_STOCK)
 {
 	$("#filter-container").removeClass("border-bottom");
 }
+
+var shoppingListBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#shoppinglist-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-mark-as-done-button").on("click", function (e)
+{
+	Grocy.Api.Put("objects/shopping_list/bulk", {
+		object_ids: shoppingListBulkSelect.GetSelectedIds(),
+		data: { done: 1 }
+	},
+		function (result)
+		{
+			window.location.reload();
+		},
+		function (xhr)
+		{
+			Grocy.FrontendHelpers.ShowGenericError("Error while bulk editing", xhr.response);
+		}
+	);
+});
+
+$("#bulk-edit-delete-button").on("click", function (e)
+{
+	var objectIds = shoppingListBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s shopping list item(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function (result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/shopping_list/bulk", { object_ids: objectIds },
+					function (result)
+					{
+						window.location.reload();
+					},
+					function (xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});
