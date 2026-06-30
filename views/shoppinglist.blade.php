@@ -473,4 +473,5 @@
 @include('components.productcard', [
 'asModal' => true
 ])
+@include('components.bulkselect')
 @stop

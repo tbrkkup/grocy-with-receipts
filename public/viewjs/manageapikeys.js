@@ -1,8 +1,10 @@
 ﻿var apiKeysTable = $('#apikeys-table').DataTable({
-	'order': [[6, 'desc']],
+	'order': [[7, 'desc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
-		{ 'searchable': false, "targets": 0 }
+		{ 'orderable': false, 'targets': 1 },
+		{ 'searchable': false, "targets": 0 },
+		{ 'searchable': false, "targets": 1 }
 	].concat($.fn.dataTable.defaults.columnDefs)
 });
 $('#apikeys-table tbody').removeClass("d-none");
@@ -105,4 +107,40 @@ $("#add-api-key-modal").on("shown.bs.modal", function(e)
 $("#new-api-key-button").on("click", function(e)
 {
 	window.location.href = U("/manageapikeys/new?description=" + encodeURIComponent($("#description").val()));
+});
+
+var apiKeysBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#apikeys-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-edit-delete-button").on("click", function(e)
+{
+	var objectIds = apiKeysBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to revoke this %s API key(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function(result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/api_keys/bulk", { object_ids: objectIds },
+					function(result)
+					{
+						window.location.href = U("/manageapikeys");
+					},
+					function(xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response);
+					}
+				);
+			}
+		}
+	});
 });
