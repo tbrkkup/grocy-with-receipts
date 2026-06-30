@@ -11,6 +11,7 @@
 @section('content')
 <script>
 	Grocy.Locations = {!! json_encode($locations) !!};
+	Grocy.Receipts = {!! json_encode($receipts) !!};
 </script>
 
 <div class="row d-none"
@@ -18,6 +19,8 @@
 	<div class="col">
 		<div class="alert alert-secondary d-flex align-items-center flex-wrap">
 			<span class="mr-3"><strong id="bulk-edit-selected-count">0</strong> {{ $__t('selected') }}</span>
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-link-receipt-button">{{ $__t('Link receipt') }}</button>
 			@if(GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING)
 			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
 				id="bulk-change-location-button">{{ $__t('Location') }}</button>

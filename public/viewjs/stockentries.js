@@ -367,6 +367,44 @@ $("#bulk-change-location-button").on("click", function(e)
 	});
 });
 
+$("#bulk-link-receipt-button").on("click", function(e)
+{
+	var stockEntryIds = stockEntriesBulkSelect.GetSelectedIds();
+
+	var options = $.map(Grocy.Receipts, function(receipt)
+	{
+		var label = receipt.date || "";
+		if (receipt.description)
+		{
+			label += " – " + receipt.description;
+		}
+		return { text: label, value: receipt.id };
+	});
+	options.unshift({ text: __t("None"), value: "" });
+
+	bootbox.prompt({
+		title: __t("Link receipt"),
+		inputType: "select",
+		inputOptions: options,
+		callback: function(receiptId)
+		{
+			if (receiptId !== null)
+			{
+				Grocy.Api.Post("stock/entries/bulk/link-receipt", { entry_ids: stockEntryIds, receipt_id: receiptId === "" ? null : receiptId },
+					function(result)
+					{
+						window.location.reload();
+					},
+					function(xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk linking receipt", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});
+
 $("#bulk-open-button").on("click", function(e)
 {
 	var stockEntryIds = stockEntriesBulkSelect.GetSelectedIds();

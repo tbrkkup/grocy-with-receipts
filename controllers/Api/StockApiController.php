@@ -1100,6 +1100,57 @@ class StockApiController extends BaseApiController
 		}
 	}
 
+	public function BulkLinkReceiptToStockEntries(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_STOCK_EDIT);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('entry_ids', $requestBody) || !is_array($requestBody['entry_ids']) || count($requestBody['entry_ids']) === 0)
+			{
+				throw new \Exception('entry_ids is required and must be a non-empty array');
+			}
+
+			if (!array_key_exists('receipt_id', $requestBody) || (!is_numeric($requestBody['receipt_id']) && $requestBody['receipt_id'] !== null && $requestBody['receipt_id'] !== ''))
+			{
+				throw new \Exception('A receipt_id is required (or null/empty to unlink)');
+			}
+
+			$receiptId = is_numeric($requestBody['receipt_id']) ? intval($requestBody['receipt_id']) : null;
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['entry_ids'] as $entryId)
+				{
+					$stockEntry = $this->DB->stock()->where('id', $entryId)->fetch();
+					if ($stockEntry === null)
+					{
+						throw new \Exception('Stock entry ' . $entryId . ' does not exist');
+					}
+
+					$stockEntry->receipt_id = $receiptId;
+					$stockEntry->save();
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
 	public function BulkOpenStockEntries(Request $request, Response $response, array $args)
 	{
 		User::CheckPermission($request, User::PERMISSION_STOCK_OPEN);

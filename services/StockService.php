@@ -219,7 +219,8 @@ class StockService extends BaseService
 						'price' => $price,
 						'location_id' => $locationId,
 						'shopping_location_id' => $shoppingLocationId,
-						'note' => $note
+						'note' => $note,
+						'receipt_id' => $receiptId
 					]);
 					$stockRow->save();
 
@@ -273,7 +274,8 @@ class StockService extends BaseService
 					'price' => $price,
 					'location_id' => $locationId,
 					'shopping_location_id' => $shoppingLocationId,
-					'note' => $note
+					'note' => $note,
+					'receipt_id' => $receiptId
 				]);
 				$stockRow->save();
 

@@ -234,6 +234,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 
 	// Stock bulk actions
 	$group->post('/stock/entries/bulk/change-location', [StockApiController::class, 'BulkChangeStockEntryLocation']);
+	$group->post('/stock/entries/bulk/link-receipt', [StockApiController::class, 'BulkLinkReceiptToStockEntries']);
 	$group->post('/stock/entries/bulk/open', [StockApiController::class, 'BulkOpenStockEntries']);
 	$group->post('/stock/entries/bulk/consume', [StockApiController::class, 'BulkConsumeStockEntries']);
 	$group->post('/stock/entries/bulk/printlabel', [StockApiController::class, 'BulkStockEntryPrintLabel']);
