@@ -352,7 +352,7 @@ $("#bulk-change-location-button").on("click", function(e)
 		{
 			if (locationId !== null)
 			{
-				Grocy.Api.Put("stock/entries/bulk/change-location", { stock_entry_ids: stockEntryIds, location_id: locationId },
+				Grocy.Api.Post("stock/entries/bulk/change-location", { entry_ids: stockEntryIds, location_id: locationId },
 					function(result)
 					{
 						window.location.reload();
@@ -409,7 +409,7 @@ $("#bulk-open-button").on("click", function(e)
 {
 	var stockEntryIds = stockEntriesBulkSelect.GetSelectedIds();
 
-	Grocy.Api.Post("stock/entries/bulk/open", { stock_entry_ids: stockEntryIds },
+	Grocy.Api.Post("stock/entries/bulk/open", { entry_ids: stockEntryIds },
 		function(result)
 		{
 			window.location.reload();
@@ -436,7 +436,7 @@ $("#bulk-consume-spoiled-button").on("click", function(e)
 		{
 			if (result === true)
 			{
-				Grocy.Api.Post("stock/entries/bulk/consume", { stock_entry_ids: stockEntryIds, spoiled: true },
+				Grocy.Api.Post("stock/entries/bulk/consume", { entry_ids: stockEntryIds, spoiled: true },
 					function(result)
 					{
 						window.location.reload();
@@ -455,7 +455,7 @@ $("#bulk-print-label-button").on("click", function(e)
 {
 	var stockEntryIds = stockEntriesBulkSelect.GetSelectedIds();
 
-	Grocy.Api.Post("stock/entries/bulk/printlabel", { stock_entry_ids: stockEntryIds },
+	Grocy.Api.Post("stock/entries/bulk/printlabel", { entry_ids: stockEntryIds },
 		function(result)
 		{
 			if (Grocy.Webhooks.labelprinter !== undefined)

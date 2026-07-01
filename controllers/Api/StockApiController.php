@@ -430,7 +430,15 @@ class StockApiController extends BaseApiController
 				$note = $requestBody['note'];
 			}
 
-			$transactionId = StockService::GetInstance()->EditStockEntry($args['entryId'], $requestBody['amount'], $bestBeforeDate, $locationId, $shoppingLocationId, $price, $requestBody['open'], $requestBody['purchased_date'], $note);
+			// false = don't touch the existing receipt link; only change it when
+			// the caller actually sends a receipt_id (numeric = set, empty = unlink)
+			$receiptId = false;
+			if (array_key_exists('receipt_id', $requestBody))
+			{
+				$receiptId = is_numeric($requestBody['receipt_id']) ? intval($requestBody['receipt_id']) : null;
+			}
+
+			$transactionId = StockService::GetInstance()->EditStockEntry($args['entryId'], $requestBody['amount'], $bestBeforeDate, $locationId, $shoppingLocationId, $price, $requestBody['open'], $requestBody['purchased_date'], $note, $receiptId);
 			$args['transactionId'] = $transactionId;
 			return $this->StockTransactions($request, $response, $args);
 		}
@@ -1176,7 +1184,7 @@ class StockApiController extends BaseApiController
 					}
 
 					$transactionId = null;
-					StockService::GetInstance()->OpenProduct($stockEntry->product_id, $stockEntry->amount, $entryId, $transactionId);
+					StockService::GetInstance()->OpenProduct($stockEntry->product_id, $stockEntry->amount, $stockEntry->stock_id, $transactionId);
 				}
 
 				$this->DB->commit();
@@ -1226,7 +1234,7 @@ class StockApiController extends BaseApiController
 					}
 
 					$transactionId = null;
-					StockService::GetInstance()->ConsumeProduct($stockEntry->product_id, $stockEntry->amount, $spoiled, StockService::TRANSACTION_TYPE_CONSUME, $entryId, null, null, $transactionId);
+					StockService::GetInstance()->ConsumeProduct($stockEntry->product_id, $stockEntry->amount, $spoiled, StockService::TRANSACTION_TYPE_CONSUME, $stockEntry->stock_id, null, null, $transactionId);
 				}
 
 				$this->DB->commit();
