@@ -86,7 +86,42 @@
 			</div>
 
 			@if($mode == 'edit')
-			<button class="btn btn-success save-receipt-button">{{ $__t('Save') }}</button>
+			<div class="form-group">
+				<label>{{ $__t('Files') }}</label>
+				<ul class="list-group mb-2 @if(empty($receiptFiles)) d-none @endif" id="receipt-files-list">
+					@foreach($receiptFiles as $receiptFile)
+					<li class="list-group-item d-flex justify-content-between align-items-center">
+						<a href="{{ $U('/api/files/receipts/' . base64_encode($receiptFile->file_name)) }}" target="_blank">{{ $receiptFile->file_name }}</a>
+						<button class="btn btn-sm btn-danger delete-receipt-file-button"
+							data-receipt-file-id="{{ $receiptFile->id }}"
+							data-file-name="{{ $receiptFile->file_name }}">
+							<i class="fa-solid fa-fw fa-trash"></i>
+						</button>
+					</li>
+					@endforeach
+				</ul>
+			</div>
+			@endif
+
+			<div class="form-group">
+				<label for="receipt-file">{{ $__t('Add file') }}</label>
+				<div class="custom-file">
+					<input type="file"
+						class="custom-file-input"
+						id="receipt-file"
+						accept="application/pdf,image/*"
+						multiple>
+					<label id="receipt-file-label"
+						class="custom-file-label"
+						for="receipt-file">
+						{{ $__t('No file selected') }}
+					</label>
+				</div>
+				<small class="form-text text-muted">{{ $__t('You can attach one or more files (e.g. PDF or images). They will be uploaded when you save.') }}</small>
+			</div>
+
+			@if($mode == 'edit')
+			<button class="btn btn-success save-receipt-button">{{ $__t('Save & close') }}</button>
 			@else
 			<button class="btn btn-success save-receipt-button">{{ $__t('Save & close') }}</button>
 			<button class="btn btn-primary save-receipt-button add-another">{{ $__t('Save & add another') }}</button>
@@ -94,42 +129,4 @@
 		</form>
 	</div>
 </div>
-
-@if($mode == 'edit')
-<hr class="my-2">
-
-<div class="row">
-	<div class="col-lg-6 col-12">
-		<h3>{{ $__t('Files') }}</h3>
-
-		<ul class="list-group mb-3" id="receipt-files-list">
-			@foreach($receiptFiles as $receiptFile)
-			<li class="list-group-item d-flex justify-content-between align-items-center">
-				<a href="{{ $U('/api/files/receipts/' . base64_encode($receiptFile->file_name)) }}" target="_blank">{{ $receiptFile->file_name }}</a>
-				<button class="btn btn-sm btn-danger delete-receipt-file-button"
-					data-receipt-file-id="{{ $receiptFile->id }}"
-					data-file-name="{{ $receiptFile->file_name }}">
-					<i class="fa-solid fa-fw fa-trash"></i>
-				</button>
-			</li>
-			@endforeach
-		</ul>
-
-		<div class="form-group">
-			<label for="receipt-file">{{ $__t('Add file') }}</label>
-			<div class="custom-file">
-				<input type="file"
-					class="custom-file-input"
-					id="receipt-file">
-				<label id="receipt-file-label"
-					class="custom-file-label"
-					for="receipt-file">
-					{{ $__t('No file selected') }}
-				</label>
-			</div>
-		</div>
-		<button class="btn btn-primary" id="add-receipt-file-button">{{ $__t('Upload') }}</button>
-	</div>
-</div>
-@endif
 @stop
