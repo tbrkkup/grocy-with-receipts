@@ -1,3 +1,77 @@
+function ReceiptFormLeave(addAnother)
+{
+	Grocy.FrontendHelpers.EndUiBusy();
+
+	if (addAnother)
+	{
+		window.location.href = U('/receipt/new' + (GetUriParam("embedded") !== undefined ? '?embedded' : ''));
+	}
+	else if (GetUriParam("embedded") !== undefined)
+	{
+		window.parent.postMessage(WindowMessageBag("Reload"), Grocy.BaseUrl);
+	}
+	else
+	{
+		window.location.href = U('/receipts');
+	}
+}
+
+// Uploads all files currently selected in the file input and links them to the
+// given receipt, then calls the callback. Uploads run sequentially so a failure
+// stops the chain and surfaces the error.
+function UploadReceiptFiles(receiptId, callback)
+{
+	var fileInput = $('#receipt-file')[0];
+	var files = (fileInput && fileInput.files) ? Array.prototype.slice.call(fileInput.files) : [];
+
+	if (files.length === 0)
+	{
+		callback();
+		return;
+	}
+
+	var index = 0;
+
+	function UploadNext()
+	{
+		if (index >= files.length)
+		{
+			callback();
+			return;
+		}
+
+		var file = files[index];
+		var uploadedFileName = RandomString() + CleanFileName(file.name);
+
+		Grocy.Api.UploadFile(file, 'receipts', uploadedFileName,
+			function ()
+			{
+				Grocy.Api.Post('objects/receipt_files', { receipt_id: receiptId, file_name: uploadedFileName },
+					function ()
+					{
+						index++;
+						UploadNext();
+					},
+					function (xhr)
+					{
+						Grocy.FrontendHelpers.EndUiBusy();
+						console.error(xhr);
+						Grocy.FrontendHelpers.ShowGenericError('Error while uploading a file', xhr.response);
+					}
+				);
+			},
+			function (xhr)
+			{
+				Grocy.FrontendHelpers.EndUiBusy();
+				console.error(xhr);
+				Grocy.FrontendHelpers.ShowGenericError('Error while uploading a file', xhr.response);
+			}
+		);
+	}
+
+	UploadNext();
+}
+
 $(document).on('click', '.save-receipt-button', function (e)
 {
 	e.preventDefault();
@@ -18,20 +92,16 @@ $(document).on('click', '.save-receipt-button', function (e)
 		Grocy.Api.Post('objects/receipts', jsonData,
 			function (result)
 			{
-				Grocy.FrontendHelpers.EndUiBusy();
-				if (addAnother)
+				UploadReceiptFiles(result.created_object_id, function ()
 				{
-					window.location.href = U('/receipt/new');
-				}
-				else
-				{
-					window.location.href = U('/receipt/' + result.created_object_id);
-				}
+					ReceiptFormLeave(addAnother);
+				});
 			},
 			function (xhr)
 			{
 				Grocy.FrontendHelpers.EndUiBusy();
 				console.error(xhr);
+				Grocy.FrontendHelpers.ShowGenericError('Error while saving, probably this item already exists', xhr.response);
 			}
 		);
 	}
@@ -40,13 +110,16 @@ $(document).on('click', '.save-receipt-button', function (e)
 		Grocy.Api.Put('objects/receipts/' + Grocy.EditObjectId, jsonData,
 			function ()
 			{
-				Grocy.FrontendHelpers.EndUiBusy();
-				Grocy.FrontendHelpers.LeaveDialog();
+				UploadReceiptFiles(Grocy.EditObjectId, function ()
+				{
+					ReceiptFormLeave(false);
+				});
 			},
 			function (xhr)
 			{
 				Grocy.FrontendHelpers.EndUiBusy();
 				console.error(xhr);
+				Grocy.FrontendHelpers.ShowGenericError('Error while saving', xhr.response);
 			}
 		);
 	}
@@ -54,45 +127,19 @@ $(document).on('click', '.save-receipt-button', function (e)
 
 $(document).on('change', '#receipt-file', function ()
 {
-	var fileName = $(this)[0].files.length > 0 ? $(this)[0].files[0].name : 'No file selected';
-	$('#receipt-file-label').text(fileName);
-});
+	var files = $(this)[0].files;
+	var label = __t('No file selected');
 
-$(document).on('click', '#add-receipt-file-button', function (e)
-{
-	e.preventDefault();
-
-	var fileInput = $('#receipt-file')[0];
-	if (fileInput.files.length === 0)
+	if (files.length === 1)
 	{
-		return;
+		label = files[0].name;
+	}
+	else if (files.length > 1)
+	{
+		label = files.length + ' ' + __t('files selected');
 	}
 
-	Grocy.FrontendHelpers.BeginUiBusy();
-
-	var uploadedFileName = RandomString() + CleanFileName(fileInput.files[0].name);
-
-	Grocy.Api.UploadFile(fileInput.files[0], 'receipts', uploadedFileName,
-		function ()
-		{
-			Grocy.Api.Post('objects/receipt_files', { receipt_id: Grocy.EditObjectId, file_name: uploadedFileName },
-				function ()
-				{
-					window.location.reload();
-				},
-				function (xhr)
-				{
-					Grocy.FrontendHelpers.EndUiBusy();
-					console.error(xhr);
-				}
-			);
-		},
-		function (xhr)
-		{
-			Grocy.FrontendHelpers.EndUiBusy();
-			console.error(xhr);
-		}
-	);
+	$('#receipt-file-label').text(label);
 });
 
 $(document).on('click', '.delete-receipt-file-button', function (e)
