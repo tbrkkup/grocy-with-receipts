@@ -128,5 +128,23 @@
 			@endif
 		</form>
 	</div>
+
+	@if($mode == 'edit')
+	<div class="col-lg-6 col-12">
+		<div class="title-related-links mb-3">
+			<h4>{{ $__t('Equipment') }}</h4>
+		</div>
+		<ul class="list-group @if(empty($linkedEquipment)) d-none @endif"
+			id="linked-equipment-list">
+			@foreach($linkedEquipment as $equipmentItem)
+			<li class="list-group-item d-flex justify-content-between align-items-center">
+				<a href="{{ $U('/equipment/') }}{{ $equipmentItem->id }}">{{ $equipmentItem->name }}</a>
+			</li>
+			@endforeach
+		</ul>
+		<p class="text-muted font-italic @if(!empty($linkedEquipment)) d-none @endif"
+			id="no-linked-equipment-hint">{{ $__t('No equipment is associated with this receipt') }}</p>
+	</div>
+	@endif
 </div>
 @stop

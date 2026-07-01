@@ -39,6 +39,7 @@ class ReceiptsController extends BaseController
 			'receipt' => $this->DB->receipts($args['receiptId']),
 			'receiptFiles' => $this->DB->receipt_files()->where('receipt_id = ?', $args['receiptId']),
 			'shoppingLocations' => $shoppingLocations,
+			'linkedEquipment' => $this->DB->equipment()->where('receipt_id = ?', $args['receiptId'])->orderBy('name', 'COLLATE NOCASE'),
 		]);
 	}
 }
