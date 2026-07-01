@@ -122,6 +122,7 @@
 					<th class="d-none">Hidden purchased_date</th>
 					<th>{{ $__t('Timestamp') }}</th>
 					<th>{{ $__t('Note') }}</th>
+					<th>{{ $__t('Receipt') }}</th>
 
 					@include('components.userfields_thead', array(
 					'userfields' => $userfieldsProducts
@@ -342,6 +343,24 @@
 					</td>
 					<td>
 						<span id="stock-{{ $stockEntry->id }}-note">{{ $stockEntry->note }}</span>
+					</td>
+					<td>
+						@php
+						$linkedReceipt = $stockEntry->receipt_id != null ? FindObjectInArrayByPropertyValue($receipts, 'id', $stockEntry->receipt_id) : null;
+						@endphp
+						@if($linkedReceipt !== null)
+						@php
+						$receiptLabelParts = array();
+						if (!empty($linkedReceipt->date)) { $receiptLabelParts[] = $linkedReceipt->date; }
+						$receiptStore = FindObjectInArrayByPropertyValue($shoppinglocations, 'id', $linkedReceipt->shopping_location_id);
+						if ($receiptStore !== null) { $receiptLabelParts[] = $receiptStore->name; }
+						if (empty($receiptLabelParts)) { $receiptLabelParts[] = $__t('Receipt') . ' #' . $linkedReceipt->id; }
+						$receiptLabel = implode(' – ', $receiptLabelParts);
+						@endphp
+						<span class="custom-sort d-none">{{ $linkedReceipt->date }}</span>
+						<a class="show-as-dialog-link"
+							href="{{ $U('/receipt/' . $linkedReceipt->id . '?embedded') }}">{{ $receiptLabel }}</a>
+						@endif
 					</td>
 
 					@include('components.userfields_tbody', array(

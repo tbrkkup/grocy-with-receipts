@@ -11,7 +11,8 @@
 		{ "type": "html", "targets": 5 },
 		{ "type": "custom-sort", "targets": 8 },
 		{ "type": "html", "targets": 9 },
-		{ "type": "html", "targets": 10 }
+		{ "type": "html", "targets": 10 },
+		{ "type": "custom-sort", "targets": 13 }
 	].concat($.fn.dataTable.defaults.columnDefs)
 });
 $('#stockentries-table tbody').removeClass("d-none");
