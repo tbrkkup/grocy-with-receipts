@@ -13,6 +13,7 @@
 	}
 
 	var jsonData = $('#equipment-form').serializeJSON();
+	jsonData.receipt_id = jsonData.receipt_id || null;
 	Grocy.FrontendHelpers.BeginUiBusy("equipment-form");
 
 	if ($("#instruction-manual")[0].files.length > 0)

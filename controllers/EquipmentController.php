@@ -16,7 +16,9 @@ class EquipmentController extends BaseController
 		{
 			return $this->RenderPage($response, 'equipmentform', [
 				'mode' => 'create',
-				'userfields' => UserfieldsService::GetInstance()->GetFields('equipment')
+				'userfields' => UserfieldsService::GetInstance()->GetFields('equipment'),
+				'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
+				'shoppinglocations' => $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE')
 			]);
 		}
 		else
@@ -24,7 +26,9 @@ class EquipmentController extends BaseController
 			return $this->RenderPage($response, 'equipmentform', [
 				'equipment' => $this->DB->equipment($args['equipmentId']),
 				'mode' => 'edit',
-				'userfields' => UserfieldsService::GetInstance()->GetFields('equipment')
+				'userfields' => UserfieldsService::GetInstance()->GetFields('equipment'),
+				'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
+				'shoppinglocations' => $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE')
 			]);
 		}
 	}
