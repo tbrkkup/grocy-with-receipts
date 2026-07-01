@@ -373,10 +373,20 @@ $("#bulk-link-receipt-button").on("click", function(e)
 
 	var options = $.map(Grocy.Receipts, function(receipt)
 	{
-		var label = receipt.date || "";
-		if (receipt.description)
+		var labelParts = [];
+		if (receipt.date)
 		{
-			label += " – " + receipt.description;
+			labelParts.push(receipt.date);
+		}
+		var store = $.grep(Grocy.ShoppingLocations, function(sl) { return sl.id == receipt.shopping_location_id; });
+		if (store.length)
+		{
+			labelParts.push(store[0].name);
+		}
+		var label = labelParts.join(" – ");
+		if (!label)
+		{
+			label = __t("Receipt") + " #" + receipt.id;
 		}
 		return { text: label, value: receipt.id };
 	});

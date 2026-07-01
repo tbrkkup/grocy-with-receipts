@@ -12,6 +12,7 @@
 <script>
 	Grocy.Locations = {!! json_encode($locations) !!};
 	Grocy.Receipts = {!! json_encode($receipts) !!};
+	Grocy.ShoppingLocations = {!! json_encode($shoppinglocations) !!};
 </script>
 
 <div class="row d-none"
