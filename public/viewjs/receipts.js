@@ -1,12 +1,52 @@
-var receiptsTable = $('#receipts-table').DataTable({
-	'order': [[1, 'desc']],
-	'columnDefs': [
-		{ 'orderable': false, 'targets': 0 },
-		{ 'searchable': false, 'targets': 0 }
-	].concat($.fn.dataTable.defaults.columnDefs)
+function InitReceiptsTable()
+{
+	var table = $('#receipts-table').DataTable({
+		'order': [[1, 'desc']],
+		'columnDefs': [
+			{ 'orderable': false, 'targets': 0 },
+			{ 'searchable': false, 'targets': 0 }
+		].concat($.fn.dataTable.defaults.columnDefs)
+	});
+	$('#receipts-table tbody').removeClass('d-none');
+	table.columns.adjust().draw();
+	return table;
+}
+
+var receiptsTable = InitReceiptsTable();
+
+// Reloads the list from the server without a full page reload. Used after
+// "Save & add another" so a newly created receipt shows up while the add
+// dialog stays open.
+function ReloadReceiptsTable()
+{
+	$.get(U('/receipts'), function (responseHtml)
+	{
+		var newTable = new DOMParser().parseFromString(responseHtml, 'text/html').querySelector('#receipts-table');
+		if (!newTable)
+		{
+			return;
+		}
+
+		// Keep the attached-files lookup (used by the paperclip preview) in sync
+		var match = responseHtml.match(/Grocy\.ReceiptFilesByReceiptId\s*=\s*(\{[\s\S]*?\});/);
+		if (match)
+		{
+			try { Grocy.ReceiptFilesByReceiptId = JSON.parse(match[1]); } catch (e) { /* ignore */ }
+		}
+
+		receiptsTable.destroy();
+		$('#receipts-table').replaceWith(document.importNode(newTable, true));
+		receiptsTable = InitReceiptsTable();
+	});
+}
+
+$(window).on('message', function (e)
+{
+	if (e.originalEvent.data && e.originalEvent.data.Message === 'ReloadReceiptsTable')
+	{
+		ReloadReceiptsTable();
+	}
 });
-$('#receipts-table tbody').removeClass('d-none');
-receiptsTable.columns.adjust().draw();
 
 var receiptFilesPreviewState = {
 	files: [],
