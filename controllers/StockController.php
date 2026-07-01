@@ -542,6 +542,7 @@ class StockController extends BaseController
 			'products' => $this->DB->products()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'shoppinglocations' => $this->DB->shopping_locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
+			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 			'userfields' => UserfieldsService::GetInstance()->GetFields('stock')
 		]);
 	}

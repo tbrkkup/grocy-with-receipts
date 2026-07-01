@@ -132,6 +132,28 @@
 				</div>
 			</div>
 
+			<div class="form-group">
+				<label for="receipt_id">{{ $__t('Receipt') }}</label>
+				<select class="custom-control custom-select"
+					id="receipt_id"
+					name="receipt_id">
+					<option value=""></option>
+					@foreach($receipts as $receipt)
+					@php
+					$receiptLabelParts = array();
+					if (!empty($receipt->date)) { $receiptLabelParts[] = $receipt->date; }
+					$receiptStore = FindObjectInArrayByPropertyValue($shoppinglocations, 'id', $receipt->shopping_location_id);
+					if ($receiptStore !== null) { $receiptLabelParts[] = $receiptStore->name; }
+					if (!empty($receipt->description)) { $receiptLabelParts[] = $receipt->description; }
+					if (empty($receiptLabelParts)) { $receiptLabelParts[] = $__t('Receipt') . ' #' . $receipt->id; }
+					$receiptLabel = implode(' – ', $receiptLabelParts);
+					@endphp
+					<option @if($receipt->id == $stockEntry->receipt_id) selected="selected" @endif
+						value="{{ $receipt->id }}">{{ $receiptLabel }}</option>
+					@endforeach
+				</select>
+			</div>
+
 			@if(GROCY_FEATURE_FLAG_STOCK_PRODUCT_OPENED_TRACKING)
 			<div class="form-group">
 				<div class="custom-control custom-checkbox">

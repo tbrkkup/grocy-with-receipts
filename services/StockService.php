@@ -529,7 +529,7 @@ class StockService extends BaseService
 		}
 	}
 
-	public function EditStockEntry(int $stockRowId, float $amount, $bestBeforeDate, $locationId, $shoppingLocationId, $price, $open, $purchasedDate, $note = null)
+	public function EditStockEntry(int $stockRowId, float $amount, $bestBeforeDate, $locationId, $shoppingLocationId, $price, $open, $purchasedDate, $note = null, $receiptId = false)
 	{
 		$stockRow = $this->DB->stock()->where('id = :1', $stockRowId)->fetch();
 		if ($stockRow === null)
@@ -568,7 +568,7 @@ class StockService extends BaseService
 			$openedDate = null;
 		}
 
-		$stockRow->update([
+		$updateData = [
 			'amount' => $amount,
 			'price' => $price,
 			'best_before_date' => $bestBeforeDate,
@@ -578,7 +578,17 @@ class StockService extends BaseService
 			'open' => BoolToInt($open),
 			'purchased_date' => $purchasedDate,
 			'note' => $note
-		]);
+		];
+
+		// $receiptId === false means "leave the existing link untouched" (so
+		// callers that don't deal with receipts don't accidentally unlink one);
+		// null/empty explicitly unlinks, a numeric value sets the link.
+		if ($receiptId !== false)
+		{
+			$updateData['receipt_id'] = ($receiptId === null || $receiptId === '') ? null : $receiptId;
+		}
+
+		$stockRow->update($updateData);
 
 		$logNewRowForStockUpdate = $this->DB->stock_log()->createRow([
 			'product_id' => $stockRow->product_id,
