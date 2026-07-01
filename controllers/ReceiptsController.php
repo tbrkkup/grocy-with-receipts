@@ -40,7 +40,7 @@ class ReceiptsController extends BaseController
 			'receiptFiles' => $this->DB->receipt_files()->where('receipt_id = ?', $args['receiptId']),
 			'shoppingLocations' => $shoppingLocations,
 			'linkedEquipment' => $this->DB->equipment()->where('receipt_id = ?', $args['receiptId'])->orderBy('name', 'COLLATE NOCASE'),
-			'linkedStockEntries' => $this->DB->stock()->where('receipt_id = ?', $args['receiptId'])->orderBy('purchased_date', 'DESC'),
+			'linkedStockEntries' => $this->DB->stock()->where('receipt_id = ?', $args['receiptId'])->orderBy('purchased_date', 'DESC')->fetchAll(),
 			'products' => $this->DB->products()->orderBy('name', 'COLLATE NOCASE'),
 			'quantityUnits' => $this->DB->quantity_units()->orderBy('name', 'COLLATE NOCASE'),
 		]);

@@ -145,31 +145,59 @@
 		<p class="text-muted font-italic @if(!empty($linkedEquipment)) d-none @endif"
 			id="no-linked-equipment-hint">{{ $__t('No equipment is associated with this receipt') }}</p>
 
-		<div class="title-related-links mb-3 mt-4">
-			<h4>{{ $__t('Stock entries') }}</h4>
-		</div>
-		<ul class="list-group @if(empty($linkedStockEntries)) d-none @endif"
-			id="linked-stock-entries-list">
-			@foreach($linkedStockEntries as $stockEntry)
-			@php
-				$stockProduct = FindObjectInArrayByPropertyValue($products, 'id', $stockEntry->product_id);
-				$stockQu = $stockProduct ? FindObjectInArrayByPropertyValue($quantityUnits, 'id', $stockProduct->qu_id_stock) : null;
-				$stockProductName = $stockProduct ? $stockProduct->name : ('#' . $stockEntry->product_id);
-				$stockDetail = $stockEntry->amount . ($stockQu ? ' ' . $stockQu->name : '');
-				if (!empty($stockEntry->purchased_date))
-				{
-					$stockDetail .= ' · ' . $stockEntry->purchased_date;
-				}
-			@endphp
-			<li class="list-group-item d-flex justify-content-between align-items-center">
-				<a href="{{ $U('/product/') }}{{ $stockEntry->product_id }}">{{ $stockProductName }}</a>
-				<span class="text-muted">{{ $stockDetail }}</span>
-			</li>
-			@endforeach
-		</ul>
-		<p class="text-muted font-italic @if(!empty($linkedStockEntries)) d-none @endif"
-			id="no-linked-stock-entries-hint">{{ $__t('No stock entries are associated with this receipt') }}</p>
 	</div>
 	@endif
 </div>
+
+@if($mode == 'edit')
+<hr class="my-2">
+
+<div class="row">
+	<div class="col">
+		<h3>{{ $__t('Linked stock entries') }}</h3>
+		@if(count($linkedStockEntries) == 0)
+		<p class="text-muted">{{ $__t('No stock entries are linked to this receipt') }}</p>
+		@else
+		<table class="table table-sm table-striped w-100">
+			<thead>
+				<tr>
+					<th></th>
+					<th>{{ $__t('Product') }}</th>
+					<th>{{ $__t('Amount') }}</th>
+					<th>{{ $__t('Price') }}</th>
+					<th>{{ $__t('Purchased date') }}</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach($linkedStockEntries as $linkedStockEntry)
+				@php
+				$linkedProduct = FindObjectInArrayByPropertyValue($products, 'id', $linkedStockEntry->product_id);
+				$linkedQuName = '';
+				if ($linkedProduct !== null)
+				{
+					$linkedQu = FindObjectInArrayByPropertyValue($quantityUnits, 'id', $linkedProduct->qu_id_stock);
+					if ($linkedQu !== null) { $linkedQuName = $linkedQu->name; }
+				}
+				@endphp
+				<tr>
+					<td class="fit-content">
+						<a class="btn btn-info btn-sm show-as-dialog-link"
+							href="{{ $U('/stockentry/' . $linkedStockEntry->id . '?embedded') }}"
+							data-toggle="tooltip"
+							title="{{ $__t('Edit stock entry') }}">
+							<i class="fa-solid fa-edit"></i>
+						</a>
+					</td>
+					<td>@if($linkedProduct !== null){{ $linkedProduct->name }}@endif</td>
+					<td><span class="locale-number locale-number-quantity-amount">{{ $linkedStockEntry->amount }}</span> {{ $linkedQuName }}</td>
+					<td>@if($linkedStockEntry->price !== null)<span class="locale-number locale-number-currency">{{ $linkedStockEntry->price }}</span>@endif</td>
+					<td>{{ $linkedStockEntry->purchased_date }}</td>
+				</tr>
+				@endforeach
+			</tbody>
+		</table>
+		@endif
+	</div>
+</div>
+@endif
 @stop
