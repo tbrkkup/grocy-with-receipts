@@ -366,3 +366,54 @@ $("#bulk-edit-delete-button").on("click", function (e)
 		}
 	});
 });
+
+// Reloads the tasks list from the server and appends any newly created tasks
+// without a full page reload (used after "Save & add another"). New rows are
+// added via the DataTable API so the current search/filter/paging state stays
+// intact instead of rebuilding the whole table.
+function ReloadTasksTable()
+{
+	$.get(U('/tasks'), function (responseHtml)
+	{
+		var newRows = new DOMParser().parseFromString(responseHtml, 'text/html').querySelectorAll('#tasks-table tbody tr');
+		if (!newRows.length)
+		{
+			return;
+		}
+
+		var existingIds = {};
+		tasksTable.rows().every(function ()
+		{
+			var node = this.node();
+			if (node && node.id)
+			{
+				existingIds[node.id] = true;
+			}
+		});
+
+		var added = false;
+		newRows.forEach(function (tr)
+		{
+			if (tr.id && !existingIds[tr.id])
+			{
+				tasksTable.row.add(document.importNode(tr, true));
+				added = true;
+			}
+		});
+
+		if (added)
+		{
+			tasksTable.draw(false);
+			RefreshContextualTimeago("#tasks-table");
+			RefreshLocaleNumberDisplay("#tasks-table");
+		}
+	});
+}
+
+$(window).on('message', function (e)
+{
+	if (e.originalEvent.data && e.originalEvent.data.Message === 'ReloadTasksTable')
+	{
+		ReloadTasksTable();
+	}
+});

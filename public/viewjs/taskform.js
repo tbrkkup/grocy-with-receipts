@@ -33,6 +33,9 @@
 					{
 						if (addAnother)
 						{
+							// Refresh the list in the background so the just-saved task
+							// shows up, while keeping the dialog open with a fresh form.
+							window.parent.postMessage(WindowMessageBag("ReloadTasksTable"), Grocy.BaseUrl);
 							window.location.href = U('/task/new?embedded');
 						}
 						else
