@@ -56,6 +56,25 @@
 					name="description">@if($mode == 'edit'){{ $equipment->description }}@endif</textarea>
 			</div>
 
+			<div class="form-group">
+				<label for="receipt_id">{{ $__t('Receipt') }}</label>
+				<div class="input-group">
+					<select class="custom-control custom-select"
+						id="receipt_id"
+						name="receipt_id">
+						<option value="">{{ $__t('None') }}</option>
+						@foreach($receipts as $receipt)
+						@php
+							$receiptShop = $receipt->shopping_location_id ? FindObjectInArrayByPropertyValue($shoppinglocations, 'id', $receipt->shopping_location_id) : null;
+							$receiptLabel = $receipt->date . ($receiptShop ? ' – ' . $receiptShop->name : ($receipt->description ? ' – ' . $receipt->description : ''));
+						@endphp
+						<option value="{{ $receipt->id }}"
+							@if($mode == 'edit' && $equipment->receipt_id == $receipt->id) selected @endif>{{ $receiptLabel }}</option>
+						@endforeach
+					</select>
+				</div>
+			</div>
+
 			@include('components.userfieldsform', array(
 			'userfields' => $userfields,
 			'entity' => 'equipment'
