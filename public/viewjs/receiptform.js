@@ -4,7 +4,17 @@ function ReceiptFormLeave(addAnother)
 
 	if (addAnother)
 	{
-		window.location.href = U('/receipt/new' + (GetUriParam("embedded") !== undefined ? '?embedded' : ''));
+		if (GetUriParam("embedded") !== undefined)
+		{
+			// Refresh the list in the background (parent) so the just-saved receipt
+			// shows up, but keep the dialog open and load a fresh, empty form.
+			window.parent.postMessage(WindowMessageBag("ReloadReceiptsTable"), Grocy.BaseUrl);
+			window.location.href = U('/receipt/new?embedded');
+		}
+		else
+		{
+			window.location.href = U('/receipt/new');
+		}
 	}
 	else if (GetUriParam("embedded") !== undefined)
 	{
