@@ -144,6 +144,31 @@
 		</ul>
 		<p class="text-muted font-italic @if(!empty($linkedEquipment)) d-none @endif"
 			id="no-linked-equipment-hint">{{ $__t('No equipment is associated with this receipt') }}</p>
+
+		<div class="title-related-links mb-3 mt-4">
+			<h4>{{ $__t('Stock entries') }}</h4>
+		</div>
+		<ul class="list-group @if(empty($linkedStockEntries)) d-none @endif"
+			id="linked-stock-entries-list">
+			@foreach($linkedStockEntries as $stockEntry)
+			@php
+				$stockProduct = FindObjectInArrayByPropertyValue($products, 'id', $stockEntry->product_id);
+				$stockQu = $stockProduct ? FindObjectInArrayByPropertyValue($quantityUnits, 'id', $stockProduct->qu_id_stock) : null;
+				$stockProductName = $stockProduct ? $stockProduct->name : ('#' . $stockEntry->product_id);
+				$stockDetail = $stockEntry->amount . ($stockQu ? ' ' . $stockQu->name : '');
+				if (!empty($stockEntry->purchased_date))
+				{
+					$stockDetail .= ' · ' . $stockEntry->purchased_date;
+				}
+			@endphp
+			<li class="list-group-item d-flex justify-content-between align-items-center">
+				<a href="{{ $U('/product/') }}{{ $stockEntry->product_id }}">{{ $stockProductName }}</a>
+				<span class="text-muted">{{ $stockDetail }}</span>
+			</li>
+			@endforeach
+		</ul>
+		<p class="text-muted font-italic @if(!empty($linkedStockEntries)) d-none @endif"
+			id="no-linked-stock-entries-hint">{{ $__t('No stock entries are associated with this receipt') }}</p>
 	</div>
 	@endif
 </div>
