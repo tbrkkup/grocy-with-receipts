@@ -4,7 +4,8 @@
 		{ 'orderable': false, 'targets': 0 },
 		{ 'orderable': false, 'targets': 1 },
 		{ 'searchable': false, "targets": 0 },
-		{ 'searchable': false, "targets": 1 }
+		{ 'searchable': false, "targets": 1 },
+		{ 'visible': false, 'searchable': true, 'targets': 'description-column' }
 	].concat($.fn.dataTable.defaults.columnDefs),
 	select: {
 		style: 'single',

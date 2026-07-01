@@ -89,6 +89,8 @@
 					'excludeFieldTypes' => [\Grocy\Services\UserfieldsService::USERFIELD_TYPE_FILE]
 					))
 
+					<th class="description-column d-none">{{ $__t('Description') }}</th>
+
 				</tr>
 			</thead>
 			<tbody class="d-none">
@@ -132,6 +134,8 @@
 					'userfieldValues' => FindAllObjectsInArrayByPropertyValue($userfieldValues, 'object_id', $equipmentItem->id),
 					'excludeFieldTypes' => [\Grocy\Services\UserfieldsService::USERFIELD_TYPE_FILE]
 					))
+
+					<td class="description-column d-none">{{ strip_tags($equipmentItem->description ?? '') }}</td>
 
 				</tr>
 				@endforeach
