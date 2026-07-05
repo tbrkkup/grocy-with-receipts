@@ -374,3 +374,9 @@ body.night-mode,
 	}
 
 }
+
+/* Bulk selection row tint for dark mode (a bit brighter/stronger so it reads
+   on the dark striped background). */
+.night-mode table tbody tr.bulk-row-selected > td {
+	background-color: rgba(90, 160, 255, 0.22);
+}
