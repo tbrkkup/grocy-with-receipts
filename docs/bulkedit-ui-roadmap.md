@@ -54,9 +54,11 @@ Lokale Grocy-Instanz (Demo-Modus) + Playwright-Screenshots (vorher/nachher) auf
 /stockentries (viele Zeilen, Streifung, Zeilenfarben) und /locations (einfache Liste).
 
 ## Offene Tests / QA
-- [ ] **Iteration 1 (Zeilen-Highlight):** in Playwright (hell + dunkel) verifiziert,
-  aber **im echten Browser/Deploy noch nicht gegengetestet**.
-- [ ] Iteration 2 (Sticky Toolbar): Real-Test ausstehend.
+- [x] **Iteration 1 (Zeilen-Highlight, helles Design):** im echten Deploy bestätigt.
+- [ ] Iteration 1 im **Dark Mode**: real noch nicht gegengetestet (nur Playwright).
+- [x] **Iteration 2 (Sticky Toolbar):** im echten Deploy bestätigt.
+- [x] **Select-all (oberer Haken an/aus):** im echten Deploy bestätigt.
+- [x] **Shift-Klick Bereichsauswahl:** im echten Deploy bestätigt.
 
 ## Nicht im Scope (bewusst)
 - Keine Änderung der Bulk-Aktionen selbst (Funktionslogik bleibt).
