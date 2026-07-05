@@ -250,10 +250,11 @@ location /claude-proxy {
 
 **Ablauf**
 1. **Config:** Anthropic API-Key, Grocy-URL, Grocy API-Key eingeben → Verbindungstest
-2. **Upload:** PDF per Drag & Drop oder Dateidialog
-3. **Analyse (2 Claude-Calls):**
-   - Call 1: Alle Produktdaten + Datum + Geschäft aus PDF extrahieren
-   - Call 2: Produkte semantisch mit Grocy-Stammdaten abgleichen
+2. **Upload:** PDF **oder Foto/Scan** (JPG/PNG) per Drag & Drop oder Dateidialog (v18)
+3. **Analyse:**
+   - Digital-PDF: pdf.js-Text → Call 1 extrahiert Produktdaten + Datum + Geschäft
+   - Foto/Scan (v18): Bild direkt an Claude **Vision** → gleiches JSON wie Call 1 (kein OCR)
+   - Call 2: Produkte semantisch mit Grocy-Stammdaten abgleichen (beide Pfade)
 4. **Rechnung anlegen (v16):** Vor dem Review wird automatisch eine Rechnung (`receipt`) in Grocy angelegt – mit erkanntem Datum und Geschäft (leer, falls keins erkannt) sowie ab v17 der erkannten Rechnungsnummer (`invoice_number`)
 5. **Review:** Produkte prüfen, Mengen/Einheiten editieren, Datum/Geschäft bestätigen. Ein Banner oben zeigt die angelegte Rechnung mit „Rückgängig machen" / „Wiederherstellen"
 6. **Import:** Rechnung mit aktuellem Geschäft/Datum aktualisieren (PUT) → PDF als `receipt_file` anhängen → neue Produkte anlegen (mit Dialog) → Lagerbuchung in Grocy, jede Buchung via `receipt_id` mit der Rechnung verknüpft
@@ -446,8 +447,10 @@ Standard-Einheit für neue Produkte: **kg** (kg-ID wird beim Connect über `/obj
 | v15 | Preisberechnung korrigiert: Gesamtpreis/konvertierte Menge statt ppu/1000 |
 | v16 | Rechnungs-Integration: `receipt` vor Review anlegen (Datum + Geschäft), Banner mit Rückgängig/Wiederherstellen, Käufe via `receipt_id` verknüpft, PDF als `receipt_file` angehängt, Sync per PUT beim Import. Setzt Receipts-Fork voraus |
 | v17 | Rechnungsnummer: automatisch aus der PDF erkannt (Claude-Prompt), beim Anlegen der Rechnung gesetzt und beim Import per PUT synchronisiert; Banner zeigt die erkannte Nummer. Setzt die `invoice_number`-Spalte voraus (Migration 0260) |
+| v18 | Gescannte/fotografierte Kassenbons: Bild-Upload (JPG/PNG/…) zusätzlich zum PDF. Fotos werden per Claude **Vision** direkt gelesen (kein OCR), auf ~1600px herunterskaliert + als JPEG re-encodiert. Liefert dasselbe JSON-Schema wie der Text-Pfad → identischer Downstream; Foto wird als `receipt_file` angehängt. Entscheidung nach OCR-Spike (Tesseract: Namen auf Thermobons zu unzuverlässig). Siehe `docs/receipt-ocr-aliases-roadmap.md` |
 
-**Aktuelle Widget-Version:** v17 (`public/grocy-import.html`)
+**Aktuelle Widget-Version:** v18 (`public/grocy-import.html`)
 **Teststatus:**
 - v16 am 2026-07-05 erfolgreich gegen die Live-Receipts-Grocy-Instanz getestet – Rechnung anlegen, Banner mit Rückgängig/Wiederherstellen, `receipt_id`-Verknüpfung, PDF-Anhang und PUT-Sync funktionieren wie erwartet.
 - v17 am 2026-07-05 erfolgreich getestet – automatische Erkennung und Eintragung der Rechnungsnummer aus der PDF funktioniert (Voraussetzung: Migration 0260 `invoice_number` ist auf dem Server eingespielt).
+- v18 Verdrahtung headless getestet (`scratchpad/test-vision.js`: Bild → Vision-Zweig → Image-Block gesendet → JSON fließt in Review → Rechnung angelegt). **Offen:** End-to-End-Test gegen echte Vision-API + Live-Grocy durch den Nutzer.
