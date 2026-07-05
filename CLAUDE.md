@@ -447,3 +447,4 @@ Standard-Einheit für neue Produkte: **kg** (kg-ID wird beim Connect über `/obj
 | v16 | Rechnungs-Integration: `receipt` vor Review anlegen (Datum + Geschäft), Banner mit Rückgängig/Wiederherstellen, Käufe via `receipt_id` verknüpft, PDF als `receipt_file` angehängt, Sync per PUT beim Import. Setzt Receipts-Fork voraus |
 
 **Aktuelle Widget-Version:** v16 (`public/grocy-import.html`)
+**Teststatus:** v16 am 2026-07-05 erfolgreich gegen die Live-Receipts-Grocy-Instanz getestet – Rechnung anlegen, Banner mit Rückgängig/Wiederherstellen, `receipt_id`-Verknüpfung, PDF-Anhang und PUT-Sync funktionieren wie erwartet.
