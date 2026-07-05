@@ -274,6 +274,7 @@ Standard-Einheit für neue Produkte: **kg** (kg-ID wird beim Connect über `/obj
 
 **Aktuelle Version:** v16
 **Aktuelle Datei:** `public/grocy-import.html`
+**Teststatus:** v16 am 2026-07-05 erfolgreich gegen die Live-Receipts-Grocy-Instanz getestet – Rechnung anlegen, Banner mit Rückgängig/Wiederherstellen, `receipt_id`-Verknüpfung, PDF-Anhang und PUT-Sync funktionieren wie erwartet.
 
 ---
 
