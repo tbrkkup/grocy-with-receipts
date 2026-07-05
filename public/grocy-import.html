@@ -51,6 +51,12 @@ select.full:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,9
 .drop-zone:hover { border-color: var(--accent); background: var(--accent-bg); }
 .drop-zone.has-file { border-color: #16a34a; background: var(--success-bg); color: var(--success); }
 .drop-icon { font-size: 32px; margin-bottom: 8px; }
+.drop-row { display: flex; gap: 14px; margin-bottom: 1rem; }
+.drop-row .drop-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+.drop-row .drop-zone { margin-bottom: 0; padding: 1.75rem 1rem; height: 100%; }
+.drop-title { font-weight: 600; color: var(--text); margin-bottom: 6px; font-size: 14px; }
+.drop-sub-tag { font-size: 12px; color: var(--text-3); margin-top: 6px; }
+@media (max-width: 560px) { .drop-row { flex-direction: column; } }
 .step { display: none; }
 .step.active { display: block; }
 .prog-wrap { margin: 1rem 0; }
@@ -151,12 +157,27 @@ a { color: var(--accent); }
         <h2>Rechnung hochladen</h2>
         <span class="vtag">v18 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
-      <p class="sub">PDF oder Foto/Scan des Kassenbons auswählen oder hier ablegen.</p>
-      <div class="drop-zone" id="drop-zone">
-        <div class="drop-icon">📄</div>
-        <div id="drop-label">PDF oder Bild hier ablegen oder klicken</div>
+      <p class="sub">Wähle links eine <b>digitale Rechnung</b> (PDF) oder rechts einen <b>gescannten/fotografierten</b> Kassenbon.</p>
+      <div class="drop-row">
+        <div class="drop-col">
+          <div class="drop-title">Digitale Rechnung</div>
+          <div class="drop-zone" id="drop-zone-digital">
+            <div class="drop-icon">📄</div>
+            <div id="drop-label-digital">PDF hier ablegen oder klicken</div>
+            <div class="drop-sub-tag">Nur PDF · Textauslesung</div>
+          </div>
+          <input type="file" id="file-input-digital" accept=".pdf" style="display:none" />
+        </div>
+        <div class="drop-col">
+          <div class="drop-title">Gescannt / fotografiert</div>
+          <div class="drop-zone" id="drop-zone-scan">
+            <div class="drop-icon">📷</div>
+            <div id="drop-label-scan">PDF oder Bild hier ablegen oder klicken</div>
+            <div class="drop-sub-tag">PDF oder Bild · Claude Vision</div>
+          </div>
+          <input type="file" id="file-input-scan" accept=".pdf,image/*" style="display:none" />
+        </div>
       </div>
-      <input type="file" id="file-input" accept=".pdf,image/*" style="display:none" />
       <div id="upload-status" class="status" style="display:none"></div>
       <div class="btn-row">
         <button class="btn btn-primary" id="btn-analyze" disabled>Analysieren</button>
@@ -239,11 +260,11 @@ var CHANGELOG = [
   {
     version: 'v18', date: '2026-07',
     items: [
-      'Gescannte/fotografierte Kassenbons: Bild-Upload (JPG/PNG/…) zusätzlich zu PDF',
-      'Fotos werden per Claude Vision direkt gelesen (kein OCR) – gleiches JSON-Schema wie der PDF-Pfad, identischer Downstream',
-      'Bild wird vor dem Senden auf ~1600px lange Kante herunterskaliert (spart Tokens)',
-      'Das Foto wird wie bisher als receipt_file an die Rechnung angehängt',
-      'PDF-Pfad (digitale Rechnungen) unverändert'
+      'Zwei getrennte Upload-Felder: links „Digitale Rechnung“ (PDF, Textauslesung wie bisher), rechts „Gescannt/fotografiert“ (PDF oder Bild)',
+      'Das rechte Feld liest den Beleg per Claude Vision (kein OCR) – gescannte Bild-PDFs werden Seite für Seite zu Bildern gerendert',
+      'Fotos/Seiten werden auf ~1600px lange Kante herunterskaliert + als JPEG gesendet (spart Tokens)',
+      'Beide Pfade liefern dasselbe JSON-Schema → identischer Downstream (Matching, Rechnung, Review, Import)',
+      'Die hochgeladene Datei wird wie bisher als receipt_file an die Rechnung angehängt'
     ]
   },
   {
@@ -397,7 +418,7 @@ function goTo(name){steps.forEach(function(s){$('step-'+s).classList.toggle('act
 
 var grocyUrl='',grocyKey='',claudeKey='';
 var pdfFile=null,grocyProducts=[],grocyShops=[],grocyGroups=[],grocyLocations=[],analysisData=[];
-var uploadedIsImage=false;   // true wenn die hochgeladene Datei ein Foto/Scan ist (Vision-Pfad)
+var analysisMode='text';     // 'text' = digitale Rechnung (PDF, linkes Feld); 'vision' = Scan/Foto (rechtes Feld)
 var selectedShopId=null,kgQuId=null,defaultLocationId=null;
 // Receipt (Rechnung) state – v16
 var currentReceiptId=null;   // id der in Grocy angelegten Rechnung (null = keine/rückgängig)
@@ -607,20 +628,38 @@ $('btn-connect').addEventListener('click',function(){
   .finally(function(){btn.textContent='Verbindung testen';btn.disabled=false;});
 });
 
-var dz=$('drop-zone');
-dz.addEventListener('click',function(){$('file-input').click();});
-dz.addEventListener('dragover',function(e){e.preventDefault();});
-dz.addEventListener('drop',function(e){e.preventDefault();handleFile(e.dataTransfer.files[0]);});
-$('file-input').addEventListener('change',function(e){handleFile(e.target.files[0]);});
+function isPdfFile(f){return !!f&&((f.type==='application/pdf')||/\.pdf$/i.test(f.name));}
+function isImageFile(f){return !!f&&((f.type&&f.type.indexOf('image/')===0)||/\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(f.name));}
 
-function handleFile(f){
+function bindDropZone(zoneId,inputId,mode){
+  var z=$(zoneId),inp=$(inputId);
+  z.addEventListener('click',function(){inp.click();});
+  z.addEventListener('dragover',function(e){e.preventDefault();});
+  z.addEventListener('drop',function(e){e.preventDefault();selectFile(e.dataTransfer.files[0],mode);});
+  inp.addEventListener('change',function(e){selectFile(e.target.files[0],mode);});
+}
+bindDropZone('drop-zone-digital','file-input-digital','text');
+bindDropZone('drop-zone-scan','file-input-scan','vision');
+
+// Setzt beide Felder in den Ausgangszustand zurück (Auswahl exklusiv – nur ein Feld aktiv).
+function resetDropZones(){
+  $('drop-zone-digital').classList.remove('has-file');
+  $('drop-zone-scan').classList.remove('has-file');
+  $('drop-label-digital').textContent='PDF hier ablegen oder klicken';
+  $('drop-label-scan').textContent='PDF oder Bild hier ablegen oder klicken';
+  $('file-input-digital').value='';$('file-input-scan').value='';
+}
+
+function selectFile(f,mode){
   if(!f){return;}
-  var lname=f.name.toLowerCase();
-  var isPdf=lname.endsWith('.pdf')||f.type==='application/pdf';
-  var isImage=(f.type&&f.type.indexOf('image/')===0)||/\.(jpe?g|png|webp|gif|bmp|heic|heif)$/.test(lname);
-  if(!isPdf&&!isImage){showStatus('upload-status','Nur PDF- oder Bilddateien.','error');return;}
-  pdfFile=f;uploadedIsImage=isImage&&!isPdf;dz.classList.add('has-file');
-  $('drop-label').textContent=f.name+' ('+(f.size/1024).toFixed(0)+' KB)'+(uploadedIsImage?' · Foto/Scan (Vision)':'');
+  if(mode==='text'&&!isPdfFile(f)){showStatus('upload-status','Für digitale Rechnungen bitte eine PDF-Datei wählen.','error');return;}
+  if(mode==='vision'&&!isPdfFile(f)&&!isImageFile(f)){showStatus('upload-status','Für Scans/Fotos bitte eine PDF- oder Bilddatei wählen.','error');return;}
+  pdfFile=f;analysisMode=mode;
+  resetDropZones();
+  var zoneId=(mode==='text')?'drop-zone-digital':'drop-zone-scan';
+  var labelId=(mode==='text')?'drop-label-digital':'drop-label-scan';
+  $(zoneId).classList.add('has-file');
+  $(labelId).textContent=f.name+' ('+(f.size/1024).toFixed(0)+' KB)';
   $('upload-status').style.display='none';$('btn-analyze').disabled=false;
 }
 
@@ -647,6 +686,36 @@ function fileToVisionSource(file){
     };
     img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('Bild konnte nicht gelesen werden (Format nicht unterstützt?).'));};
     img.src=url;
+  });
+}
+
+// Rendert ein gescanntes (Bild-)PDF Seite für Seite auf Canvas und gibt je Seite
+// eine Base64-JPEG-Quelle für Claude Vision zurück (max. 5 Seiten, lange Kante ~1600px).
+function pdfToVisionSources(file){
+  return file.arrayBuffer().then(function(buf){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    return pdfjsLib.getDocument({data:buf}).promise;
+  }).then(function(pdf){
+    var maxPages=Math.min(pdf.numPages,5),pages=[];
+    for(var i=1;i<=maxPages;i++)pages.push(i);
+    return pages.reduce(function(chain,i){
+      return chain.then(function(acc){
+        return pdf.getPage(i).then(function(page){
+          var vp1=page.getViewport({scale:1});
+          var scale=Math.min(3,1600/Math.max(vp1.width,vp1.height))||1;
+          var vp=page.getViewport({scale:scale});
+          var canvas=document.createElement('canvas');
+          canvas.width=Math.max(1,Math.round(vp.width));
+          canvas.height=Math.max(1,Math.round(vp.height));
+          var ctx=canvas.getContext('2d');
+          ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+          return page.render({canvasContext:ctx,viewport:vp}).promise.then(function(){
+            acc.push({media_type:'image/jpeg',data:canvas.toDataURL('image/jpeg',0.85).split(',')[1]});
+            return acc;
+          });
+        });
+      });
+    },Promise.resolve([]));
   });
 }
 
@@ -787,11 +856,15 @@ $('btn-analyze').addEventListener('click',function(){
   selectedShopId=null;
   detectedInvoiceNumber=null;
   var analyzePromise;
-  if(uploadedIsImage){
+  if(analysisMode==='vision'){
     setProgress(5,'Foto/Scan wird vorbereitet…');
-    analyzePromise=fileToVisionSource(pdfFile).then(function(source){
+    var sourcesPromise=isPdfFile(pdfFile)
+      ? pdfToVisionSources(pdfFile)
+      : fileToVisionSource(pdfFile).then(function(source){return[source];});
+    analyzePromise=sourcesPromise.then(function(sources){
+      if(!sources||!sources.length)throw new Error('Kein lesbares Bild aus der Datei gewonnen.');
       setProgress(20,'Kassenbon wird per Vision gelesen…');
-      return claudeAnalyzeImage(source);
+      return claudeAnalyzeImage(sources);
     });
   }else{
     setProgress(5,'PDF wird gelesen…');
@@ -899,10 +972,13 @@ function parseAnalysisResult(raw){
 
 // Vision-Analyse für Fotos/Scans: Bild direkt an Claude, gleiches JSON-Schema
 // wie claudeAnalyzeAll → identischer Downstream (Matching, Rechnung, Review, Import).
-function claudeAnalyzeImage(source){
+function claudeAnalyzeImage(sources){
+  if(!Array.isArray(sources))sources=[sources];
   var shopListJson=JSON.stringify(grocyShops.map(function(s){return{id:s.id,name:s.name};}));
+  var multiHint=sources.length>1?'HINWEIS: Es liegen '+sources.length+' Bilder/Seiten desselben Belegs vor – berücksichtige ALLE und gib EINE gemeinsame products-Liste zurück.\n\n':'';
   var prompt=
 'Du liest das Foto/den Scan eines deutschen Supermarkt-Kassenbons. Antworte NUR mit einem JSON-Objekt, kein Markdown.\n\n'+
+multiHint+
 'FORMAT:\n'+
 '{\n'+
 '  "shop_detected_name": "string oder null",\n'+
@@ -930,11 +1006,9 @@ function claudeAnalyzeImage(source){
 'DATUM: Formate DD.MM.YYYY / DD.MM.YY (zweistellig 00-30 = 2000-2030).\n'+
 'RECHNUNGSNUMMER: "Beleg-Nr."/"Bon-Nr."/"Rechnungsnummer" exakt übernehmen; nicht mit Trace-/Kundennummer verwechseln; sonst null.\n\n'+
 'UNSICHERHEIT: Wenn ein Name unleserlich ist oder nur Herkunft/Kürzel dasteht, gib den best-lesbaren Text als name zurück (nichts erfinden).';
-  var messages=[{role:'user',content:[
-    {type:'image',source:{type:'base64',media_type:source.media_type,data:source.data}},
-    {type:'text',text:prompt}
-  ]}];
-  return claudeProxy(messages,3000).then(parseAnalysisResult);
+  var content=sources.map(function(s){return{type:'image',source:{type:'base64',media_type:s.media_type,data:s.data}};});
+  content.push({type:'text',text:prompt});
+  return claudeProxy([{role:'user',content:content}],3000).then(parseAnalysisResult);
 }
 
 function claudeMatchProducts(extracted){
@@ -1293,9 +1367,8 @@ $('btn-restart').addEventListener('click',function(){
   // nur UI/State zurücksetzen, NICHT die fertige Rechnung löschen.
   currentReceiptId=null;receiptUndone=false;receiptError=null;detectedInvoiceNumber=null;
   $('receipt-banner').style.display='none';
-  pdfFile=null;analysisData=[];selectedShopId=null;
-  $('drop-zone').classList.remove('has-file');
-  $('drop-label').textContent='PDF hier ablegen oder klicken';
+  pdfFile=null;analysisMode='text';analysisData=[];selectedShopId=null;
+  resetDropZones();
   $('btn-analyze').disabled=true;goTo('upload');
 });
 $('btn-back-config').addEventListener('click',function(){goTo('config');});
