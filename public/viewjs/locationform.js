@@ -13,6 +13,9 @@
 	}
 
 	var jsonData = $('#location-form').serializeJSON();
+	// Leeres Elternteil als NULL senden (nicht ""), damit Wurzel-Erkennung
+	// (parent_location_id IS NULL) und der Unique-Index korrekt greifen.
+	jsonData.parent_location_id = jsonData.parent_location_id || null;
 	Grocy.FrontendHelpers.BeginUiBusy("location-form");
 
 	if (Grocy.EditMode === 'create')

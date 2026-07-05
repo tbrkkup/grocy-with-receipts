@@ -103,18 +103,48 @@ class StockController extends BaseController
 
 	public function LocationEditForm(Request $request, Response $response, array $args)
 	{
+		// Mögliche Elternorte als Baum (Pfad-Reihenfolge) für das Dropdown
+		$parentOptions = $this->DB->locations_resolved()->orderBy('path');
+
 		if ($args['locationId'] == 'new')
 		{
 			return $this->RenderPage($response, 'locationform', [
 				'mode' => 'create',
+				'parentOptions' => $parentOptions,
+				'excludedParentIds' => [],
 				'userfields' => UserfieldsService::GetInstance()->GetFields('locations')
 			]);
 		}
 		else
 		{
+			// Zyklen verhindern: der Ort selbst und alle seine Nachfahren
+			// dürfen nicht als Elternteil gewählt werden.
+			$childrenByParent = [];
+			foreach ($this->DB->locations() as $loc)
+			{
+				$childrenByParent[$loc->parent_location_id][] = $loc->id;
+			}
+
+			$excludedParentIds = [];
+			$stack = [intval($args['locationId'])];
+			while (!empty($stack))
+			{
+				$current = array_pop($stack);
+				$excludedParentIds[] = $current;
+				if (isset($childrenByParent[$current]))
+				{
+					foreach ($childrenByParent[$current] as $childId)
+					{
+						$stack[] = $childId;
+					}
+				}
+			}
+
 			return $this->RenderPage($response, 'locationform', [
 				'location' => $this->DB->locations($args['locationId']),
 				'mode' => 'edit',
+				'parentOptions' => $parentOptions,
+				'excludedParentIds' => $excludedParentIds,
 				'userfields' => UserfieldsService::GetInstance()->GetFields('locations')
 			]);
 		}
@@ -122,17 +152,61 @@ class StockController extends BaseController
 
 	public function LocationsList(Request $request, Response $response, array $args)
 	{
-		if (isset($request->getQueryParams()['include_disabled']))
+		$showDisabled = isset($request->getQueryParams()['include_disabled']);
+
+		$locationsById = [];
+		$childrenByParent = [];
+		foreach ($this->DB->locations() as $loc)
 		{
-			$locations = $this->DB->locations()->orderBy('name', 'COLLATE NOCASE');
+			$locationsById[$loc->id] = $loc;
+			$childrenByParent[$loc->parent_location_id][] = $loc->id;
 		}
-		else
+
+		// Tree-Reihenfolge (nach Pfad) + Meta (Ebene, Elternname, hat Kinder)
+		$orderedLocations = [];
+		$locationMeta = [];
+		foreach ($this->DB->locations_resolved()->orderBy('path') as $resolved)
 		{
-			$locations = $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE');
+			if (!isset($locationsById[$resolved->id]))
+			{
+				continue;
+			}
+
+			$loc = $locationsById[$resolved->id];
+			if (!$showDisabled && $loc->active == 0)
+			{
+				continue;
+			}
+
+			$orderedLocations[] = $loc;
+			$locationMeta[$resolved->id] = [
+				'level' => $resolved->level,
+				'parent_name' => ($resolved->parent_location_id !== null && isset($locationsById[$resolved->parent_location_id])) ? $locationsById[$resolved->parent_location_id]->name : '',
+				'has_children' => isset($childrenByParent[$resolved->id])
+			];
+		}
+
+		// Sicherheitsnetz: Orte mit verwaistem parent_location_id (Verweis auf
+		// nicht (mehr) existierenden Ort) sind im Baum nicht erreichbar und
+		// würden sonst aus der Liste verschwinden – hier als Wurzel anhängen.
+		foreach ($locationsById as $loc)
+		{
+			if (isset($locationMeta[$loc->id]) || (!$showDisabled && $loc->active == 0))
+			{
+				continue;
+			}
+
+			$orderedLocations[] = $loc;
+			$locationMeta[$loc->id] = [
+				'level' => 0,
+				'parent_name' => '',
+				'has_children' => isset($childrenByParent[$loc->id])
+			];
 		}
 
 		return $this->RenderPage($response, 'locations', [
-			'locations' => $locations,
+			'locations' => $orderedLocations,
+			'locationMeta' => $locationMeta,
 			'userfields' => UserfieldsService::GetInstance()->GetFields('locations'),
 			'userfieldValues' => UserfieldsService::GetInstance()->GetAllValues('locations')
 		]);
