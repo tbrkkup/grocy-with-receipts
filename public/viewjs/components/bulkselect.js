@@ -3,6 +3,23 @@ Grocy.Components.BulkSelect = function(options)
 	var tableSelector = options.tableSelector;
 	var toolbarSelector = options.toolbarSelector;
 	var countSelector = options.countSelector;
+	var rangeAnchorIndex = null;
+
+	// grocy's DataTables use scrollX, which clones the table header (incl. the
+	// "select all" checkbox) into a .dataTables_scrollHead that lives OUTSIDE
+	// #table. So target the select-all in the whole DataTables wrapper (original
+	// + clone), and treat a change on either as belonging to this table.
+	function SelectAllCheckboxes()
+	{
+		var wrapper = $(tableSelector).closest('.dataTables_wrapper');
+		return wrapper.length ? wrapper.find('.bulk-select-all') : $(tableSelector + ' .bulk-select-all');
+	}
+
+	function BelongsToThisTable(el)
+	{
+		var $el = $(el);
+		return $el.closest(tableSelector).length > 0 || $el.closest('.dataTables_wrapper').find(tableSelector).length > 0;
+	}
 
 	function UpdateToolbar()
 	{
@@ -24,7 +41,7 @@ Grocy.Components.BulkSelect = function(options)
 
 		var total = $(tableSelector + ' .bulk-row-checkbox:visible').length;
 		var checkedVisible = $(tableSelector + ' .bulk-row-checkbox:visible:checked').length;
-		$(tableSelector + ' .bulk-select-all').prop('checked', total > 0 && checkedVisible === total);
+		SelectAllCheckboxes().prop('checked', total > 0 && checkedVisible === total);
 
 		// Highlight the whole row of every selected checkbox (covers individual
 		// clicks, "select all" and Reset, since they all funnel through here).
@@ -60,11 +77,39 @@ Grocy.Components.BulkSelect = function(options)
 
 	$(document).on('change', tableSelector + ' .bulk-row-checkbox', UpdateToolbar);
 
-	$(document).on('change', tableSelector + ' .bulk-select-all', function()
+	// Delegated on any .bulk-select-all (not scoped to #table) so the cloned
+	// scroll-header checkbox is caught too; BelongsToThisTable filters to ours.
+	$(document).on('change', '.bulk-select-all', function()
 	{
+		if (!BelongsToThisTable(this))
+		{
+			return;
+		}
+
 		var checked = $(this).prop('checked');
 		$(tableSelector + ' .bulk-row-checkbox:visible').prop('checked', checked);
 		UpdateToolbar();
+	});
+
+	// Shift-click range selection (like Windows Explorer): a plain click sets the
+	// anchor, a shift-click additionally selects every row between the anchor and
+	// the clicked row (in the current display order).
+	$(document).on('click', tableSelector + ' .bulk-row-checkbox', function(e)
+	{
+		var checkboxes = $(tableSelector + ' .bulk-row-checkbox');
+		var index = checkboxes.index(this);
+
+		if (e.shiftKey && rangeAnchorIndex !== null && rangeAnchorIndex !== index)
+		{
+			var start = Math.min(rangeAnchorIndex, index);
+			var end = Math.max(rangeAnchorIndex, index);
+			checkboxes.slice(start, end + 1).prop('checked', true);
+			UpdateToolbar();
+		}
+		else
+		{
+			rangeAnchorIndex = index;
+		}
 	});
 
 	this.GetSelectedIds = function()
@@ -80,7 +125,8 @@ Grocy.Components.BulkSelect = function(options)
 	this.Reset = function()
 	{
 		$(tableSelector + ' .bulk-row-checkbox').prop('checked', false);
-		$(tableSelector + ' .bulk-select-all').prop('checked', false);
+		SelectAllCheckboxes().prop('checked', false);
+		rangeAnchorIndex = null;
 		UpdateToolbar();
 	};
 
