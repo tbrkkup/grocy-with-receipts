@@ -6,13 +6,31 @@ auch **gescannte/fotografierte** Supermarkt-Belege verarbeiten kann – assistie
 nicht vollautomatisch.
 
 ## Festgelegte Entscheidungen
-- **Extraktion:** OCR (Tesseract.js) → Text → Claude (nicht Claude-Vision direkt).
+- **Extraktion:** Claude **Vision** – Foto/Scan direkt an Claude, das die Positionen
+  strukturiert zurückgibt (**nur** für die Bon-Erkennung). Entschieden nach OCR-Spike
+  (2026-07-05): Tesseract.js liest zwar Zahlen/Struktur, aber Produktnamen
+  unzuverlässig und pro Scan unterschiedlich verstümmelt (`ZUCCHINI`→`ScHINT`,
+  `EXC FUS 85SELPP`→`B5SELPP`) → instabiler Alias-Schlüssel. Vision liefert saubere,
+  stabile Namen. **Kein Tesseract im Produktivpfad.**
+- **Nur für Scans/Fotos:** Der bestehende Digital-PDF-Pfad (pdf.js-Text → Claude-Text)
+  bleibt unverändert; Vision ist der neue Eingabepfad für Bilder/gescannte PDFs und
+  liefert **dasselbe JSON-Schema** wie die bisherige Text-Analyse (`shop_detected_name`,
+  `date_iso`, `invoice_number`, `products[]`) → gemeinsamer Downstream (Matching,
+  Wörterbuch, Review, Import).
 - **Lern-Wörterbuch von Anfang an:** marktspezifische Kürzel → Produkt, das aus
-  Korrekturen lernt.
+  Korrekturen lernt. Bleibt wertvoll: bildet die nutzerspezifische Zuordnung
+  „Kassentext Y (bei Markt X) = mein Grocy-Produkt Z" ab, die kein Modell raten kann.
 - **Unsichere Positionen** werden markiert; der Nutzer bestätigt/korrigiert/lässt weg
-  (nichts wird still falsch gebucht).
+  (nichts wird still falsch gebucht). Gilt auch bei Vision (Halluzinations-Risiko →
+  Pflicht-Review + Summen-Check bleiben).
 - **Speicher des Wörterbuchs:** eigene Grocy-Tabelle `product_receipt_aliases`
   (nicht `description`, kein Userfield-Blob), marktspezifisch, mit Häufigkeit.
+
+### OCR-Spike-Ergebnis (Gate, 2026-07-05) – archiviert
+Tesseract.js `deu` auf echtem REWE-Ponzer-Thermobon, RAW vs. Otsu-Threshold+Single-Block:
+Preise/`EUR/kg`/kg-Mengen/Steuerklasse A|B/SUMME größtenteils rekonstruierbar (nur mit
+Otsu-Binarisierung), Confidence ~44–49; **Produktnamen unbrauchbar und lauf-instabil.**
+→ Route „reines lokales OCR" verworfen. Spike-Skripte: `scratchpad/ocr-spike*.js`.
 
 ## Warum eine eigene Tabelle
 Die Zuordnung ist eine **Relation** („bei Markt X bedeutet Kassentext Y das Produkt
@@ -41,40 +59,47 @@ CREATE TABLE product_receipt_aliases (
 
 ## Pipeline (Zielbild)
 ```
-Foto/Scan
-  -> Vorverarbeitung (Canvas: Graustufen, Kontrast/Schwellwert, ggf. Entzerren)
-  -> OCR (Tesseract.js, deu) -> Rohtext
-  -> Zeilen-Parser (REWE-Format: Name / "Menge kg x EUR/kg" / Betrag / Steuer A|B)
-  -> Wörterbuch-Lookup (product_receipt_aliases, marktspezifisch)
-  -> Claude nur für Unbekanntes (Kürzel auflösen + Grocy-Abgleich)
-  -> Confidence pro Position
+Foto/Scan (JPG/PNG oder gescanntes Bild-PDF)
+  -> (clientseitig) auf Base64 + ggf. Downscale/Re-Encode (JPEG) für die API
+  -> Claude Vision (ein Call): Bild -> strukturiertes JSON
+        (shop_detected_name, date_iso, invoice_number,
+         products[]: {receipt_text, name, quantity, unit, price_total, price_per_unit,
+                      tax_class, confidence})
+  -> Wörterbuch-Lookup (product_receipt_aliases, marktspezifisch):
+        receipt_text -> bekanntes Grocy-Produkt? -> Vorbelegung + Confidence-Bonus
+  -> semantisches Matching (bestehender Call 2) für den Rest
   -> Review-UI: unsichere Zeilen markiert; Nutzer bestätigt/korrigiert
        -> Korrekturen schreiben/aktualisieren product_receipt_aliases (Lernen)
   -> Summen-Check (Positionen ~ "SUMME")
-  -> Import + Beleg verknüpfen (bestehender v16-Flow)
+  -> Import + Beleg verknüpfen (bestehender v16-Flow, Bild als receipt_file)
 ```
+Der Digital-PDF-Pfad bleibt: pdf.js-Text → Claude-Text (Call 1) → identisches JSON.
+Vision und Text-Analyse münden in denselben Downstream.
 
 ## Iterationsplan
 - [x] **Phase A – Backend (konfliktfrei):** Migration `product_receipt_aliases` +
   `/api/objects`-Freigabe. CRUD verifiziert.
-- [ ] **OCR-Spike (Gate):** Tesseract.js auf echten Beleg (REWE Ponzer) – Rohtext-
-  Qualität bewerten, Vorverarbeitungsbedarf bestimmen.
-- [ ] **Widget – Vorverarbeitung + OCR** (auf aktueller `grocy-import.html`, mit der
-  parallelen v17-Session koordiniert).
-- [ ] **Widget – REWE-Zeilenparser** → strukturierte Rohpositionen.
-- [ ] **Widget – Wörterbuch-Lookup + Claude-Fallback + Confidence.**
-- [ ] **Widget – Review-UI** (unsicher markieren) + Korrekturen lernen + Summen-Check.
-- [ ] **Import + Beleg-Verknüpfung** (v16-Flow wiederverwenden).
+- [x] **OCR-Spike (Gate):** Tesseract.js auf REWE Ponzer – Ergebnis: reine lokale OCR
+  trägt die Namen nicht (siehe oben). Entscheidung: Claude Vision.
+- [x] **Widget – Bild-Eingabepfad (v18):** Bild-Upload (JPG/PNG/…) zusätzlich zu PDF,
+  Downscale auf ~1600px + JPEG-Re-Encode, Claude-Vision-Call → identisches Analyse-JSON,
+  gemeinsamer Downstream; Foto wird als `receipt_file` angehängt. **Verdrahtung
+  headless getestet** (`scratchpad/test-vision.js`: Image-Block gesendet, JSON fließt in
+  Review, Rechnung angelegt). Offen: End-to-End-Test gegen echte Vision-API/Live-Grocy
+  durch den Nutzer. Gescanntes **Bild-PDF** (pdf.js → Canvas → Vision) noch offen.
+- [ ] **Widget – Wörterbuch-Lookup + Lernen:** `product_receipt_aliases` beim Matching
+  vorbelegen; Korrekturen zurückschreiben.
+- [ ] **Widget – Review-Feinschliff:** unsichere Positionen markieren + Summen-Check.
+- [ ] **Import + Beleg-Verknüpfung:** v16-Flow wiederverwenden, Bild als `receipt_file`.
 
 ## Offene Punkte / Risiken
-- **Risiko #1 – OCR-Qualität** auf geknitterten Thermo-Belegen. Deshalb Spike vor
-  dem Widget-Ausbau.
-- **Markt-Format-Vielfalt:** erst REWE, Parser später erweiterbar (Aldi/dm/…).
+- **Vision-Halluzination:** plausibel erfundene Namen → Pflicht-Review + Summen-Check.
+- **Bildgröße/Token-Kosten:** Fotos vor dem Senden herunterskalieren (lange Kante ~1600 px).
+- **Markt-Format-Vielfalt:** erst REWE; der Vision-Prompt ist generischer als ein Parser.
 - **Normalisierung der Alias-Schlüssel** (Groß/Klein, Leerzeichen, Sonderzeichen).
 
 ## Koordination
-`public/grocy-import.html` wird parallel von einer anderen Session bearbeitet
-(Branch `claude/half-external-import-feature-gp02gn`, „Widget v17: Rechnungsnummer").
-Die Widget-Phasen (OCR-Pipeline) daher erst angehen, wenn deren Änderung im Deploy
-ist – sonst Kollisionen an derselben Datei. Das Backend (diese Tabelle) ist davon
-unabhängig.
+`public/grocy-import.html`: die parallele v17-Arbeit
+(`claude/half-external-import-feature-gp02gn`, „Rechnungsnummer") ist **bereits im
+Deploy** und in diesem Branch enthalten (Titel v17). Kollisionsrisiko damit aufgelöst –
+der Vision-Eingabepfad kann auf v17 aufsetzen. Backend (Tabelle) ist ohnehin unabhängig.
