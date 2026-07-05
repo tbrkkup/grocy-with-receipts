@@ -67,6 +67,15 @@
 			</div>
 
 			<div class="form-group">
+				<label for="invoice_number">{{ $__t('Invoice number') }}</label>
+				<input type="text"
+					class="form-control"
+					id="invoice_number"
+					name="invoice_number"
+					value="@if($mode == 'edit'){{ $receipt->invoice_number }}@endif">
+			</div>
+
+			<div class="form-group">
 				<label for="status">{{ $__t('Status') }}</label>
 				<select class="custom-control custom-select"
 					id="status"
