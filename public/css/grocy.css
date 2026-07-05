@@ -549,3 +549,13 @@ html {
 		margin-top: 8px;
 	}
 }
+
+/* Bulk selection: tint the whole selected row while keeping the striped
+   (odd/even) background visible. A translucent blue cell background layers over
+   the row's stripe (which grocy/DataTables render via an inset box-shadow), so
+   the odd/even difference and contextual colors (due-date warning/danger) stay
+   visible underneath. Using background-color avoids clashing with that
+   box-shadow-based striping. */
+table tbody tr.bulk-row-selected > td {
+	background-color: rgba(0, 123, 255, 0.14);
+}

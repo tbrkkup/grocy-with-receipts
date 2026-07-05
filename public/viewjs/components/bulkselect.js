@@ -25,6 +25,13 @@ Grocy.Components.BulkSelect = function(options)
 		var total = $(tableSelector + ' .bulk-row-checkbox:visible').length;
 		var checkedVisible = $(tableSelector + ' .bulk-row-checkbox:visible:checked').length;
 		$(tableSelector + ' .bulk-select-all').prop('checked', total > 0 && checkedVisible === total);
+
+		// Highlight the whole row of every selected checkbox (covers individual
+		// clicks, "select all" and Reset, since they all funnel through here).
+		$(tableSelector + ' .bulk-row-checkbox').each(function()
+		{
+			$(this).closest('tr').toggleClass('bulk-row-selected', $(this).prop('checked'));
+		});
 	}
 
 	$(document).on('change', tableSelector + ' .bulk-row-checkbox', UpdateToolbar);
