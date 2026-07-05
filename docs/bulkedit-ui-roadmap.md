@@ -53,6 +53,11 @@ daher werden die Fixes an zentraler Stelle gemacht und gelten überall.
 Lokale Grocy-Instanz (Demo-Modus) + Playwright-Screenshots (vorher/nachher) auf
 /stockentries (viele Zeilen, Streifung, Zeilenfarben) und /locations (einfache Liste).
 
+## Offene Tests / QA
+- [ ] **Iteration 1 (Zeilen-Highlight):** in Playwright (hell + dunkel) verifiziert,
+  aber **im echten Browser/Deploy noch nicht gegengetestet**.
+- [ ] Iteration 2 (Sticky Toolbar): Real-Test ausstehend.
+
 ## Nicht im Scope (bewusst)
 - Keine Änderung der Bulk-Aktionen selbst (Funktionslogik bleibt).
 - Kein Redesign der Toolbar-Inhalte/Buttons.
