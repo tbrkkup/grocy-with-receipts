@@ -453,4 +453,6 @@ Standard-Einheit für neue Produkte: **kg** (kg-ID wird beim Connect über `/obj
 **Teststatus:**
 - v16 am 2026-07-05 erfolgreich gegen die Live-Receipts-Grocy-Instanz getestet – Rechnung anlegen, Banner mit Rückgängig/Wiederherstellen, `receipt_id`-Verknüpfung, PDF-Anhang und PUT-Sync funktionieren wie erwartet.
 - v17 am 2026-07-05 erfolgreich getestet – automatische Erkennung und Eintragung der Rechnungsnummer aus der PDF funktioniert (Voraussetzung: Migration 0260 `invoice_number` ist auf dem Server eingespielt).
-- v18 Verdrahtung headless getestet (`scratchpad/test-vision.js`: Bild → Vision-Zweig → Image-Block gesendet → JSON fließt in Review → Rechnung angelegt). **Offen:** End-to-End-Test gegen echte Vision-API + Live-Grocy durch den Nutzer.
+- v18 Verdrahtung headless getestet (`scratchpad/test-vision.js`: Bild → Vision-Zweig → Image-Block gesendet → JSON fließt in Review → Rechnung angelegt).
+- v18 am 2026-07-05 vom Nutzer **oberflächlich end-to-end getestet**: Foto/Scan hochgeladen, Rechnung angelegt, **alle Produkte konnten eingetragen werden**. Zwei-Felder-UI (digital/Scan) funktioniert.
+- **NICHT getestet / noch offen:** Ob eine Assoziationstabelle (`product_receipt_aliases`) für einfacheres künftiges Zuordnen von Produkt (und Menge) befüllt wird. **Grund:** Der Lern-/Schreib-Schritt ist im Widget noch NICHT implementiert – das Widget schreibt aktuell nichts in `product_receipt_aliases`, die Tabelle bleibt leer. Nur Backend (Migration 0261 + `/api/objects`-Freigabe) existiert.

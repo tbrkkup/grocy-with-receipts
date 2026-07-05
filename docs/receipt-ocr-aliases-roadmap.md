@@ -88,7 +88,10 @@ Vision und Text-Analyse münden in denselben Downstream.
   Review, Rechnung angelegt). Offen: End-to-End-Test gegen echte Vision-API/Live-Grocy
   durch den Nutzer. Gescanntes **Bild-PDF** (pdf.js → Canvas → Vision) noch offen.
 - [ ] **Widget – Wörterbuch-Lookup + Lernen:** `product_receipt_aliases` beim Matching
-  vorbelegen; Korrekturen zurückschreiben.
+  vorbelegen; Korrekturen zurückschreiben. **NOCH NICHT IMPLEMENTIERT** – das Widget
+  schreibt derzeit nichts in die Tabelle; sie bleibt nach einem Import leer. (Vom Nutzer
+  am 2026-07-05 bemerkt: v18-Import funktioniert oberflächlich, alle Produkte eingetragen,
+  aber keine Alias-Assoziation gespeichert.)
 - [ ] **Widget – Review-Feinschliff:** unsichere Positionen markieren + Summen-Check.
 - [ ] **Import + Beleg-Verknüpfung:** v16-Flow wiederverwenden, Bild als `receipt_file`.
 
