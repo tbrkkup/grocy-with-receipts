@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grocy Rechnungsimport v16</title>
+<title>Grocy Rechnungsimport v17</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -119,7 +119,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h1>Grocy Rechnungsimport</h1>
-        <span class="vtag">v16 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v17 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Verbindungsdaten eingeben, dann Rechnung hochladen.</p>
       <div class="field">
@@ -149,7 +149,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Rechnung hochladen</h2>
-        <span class="vtag">v16 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v17 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">PDF-Datei auswählen oder hier ablegen.</p>
       <div class="drop-zone" id="drop-zone">
@@ -169,7 +169,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Produkte prüfen</h2>
-        <span class="vtag">v16 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v17 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Menge und Einheit sind direkt editierbar. Neue Produkte können vor dem Import bearbeitet werden.</p>
       <div id="receipt-banner" class="status" style="display:none"></div>
@@ -236,6 +236,15 @@ a { color: var(--accent); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 var CHANGELOG = [
+  {
+    version: 'v17', date: '2026-07',
+    items: [
+      'Rechnungsnummer: Wird automatisch aus der PDF erkannt und in die Grocy-Rechnung eingetragen',
+      'Rechnungsnummer wird beim Import per PUT mit der Rechnung synchronisiert',
+      'Banner im Prüfen-Dialog zeigt die erkannte Rechnungsnummer',
+      'Setzt das Receipts-Feature mit invoice_number-Spalte voraus (Migration 0260)'
+    ]
+  },
   {
     version: 'v16', date: '2026-07',
     items: [
@@ -383,6 +392,7 @@ var selectedShopId=null,kgQuId=null,defaultLocationId=null;
 var currentReceiptId=null;   // id der in Grocy angelegten Rechnung (null = keine/rückgängig)
 var receiptUndone=false;     // true wenn Nutzer die Rechnung rückgängig gemacht hat
 var receiptError=null;       // Fehlermeldung falls Anlegen fehlschlug
+var detectedInvoiceNumber=null; // aus der PDF erkannte Rechnungsnummer (v17)
 var STORE_KEY='grocy_imp_v15';
 var UNITS=['kg','g','l','ml','Stueck','Packung'];
 
@@ -631,6 +641,7 @@ function createReceipt(){
   var date=$('purchase-date').value||todayIso();
   var body={date:date,status:'paid'};
   if(selectedShopId)body.shopping_location_id=parseInt(selectedShopId,10);
+  if(detectedInvoiceNumber)body.invoice_number=detectedInvoiceNumber;
   return grocyFetch('/objects/receipts','POST',body).then(function(r){
     currentReceiptId=r.created_object_id;
     receiptUndone=false;
@@ -645,6 +656,7 @@ function createReceipt(){
 function updateReceipt(receiptId,purchaseDate){
   var body={date:purchaseDate};
   body.shopping_location_id=selectedShopId?parseInt(selectedShopId,10):null;
+  body.invoice_number=detectedInvoiceNumber||null;
   return grocyFetch('/objects/receipts/'+receiptId,'PUT',body);
 }
 
@@ -693,11 +705,14 @@ function renderReceiptBanner(){
     return;
   }
   el.className='status ok';
+  var invStr=detectedInvoiceNumber?' · Nr. <b>'+escHtml(detectedInvoiceNumber)+'</b>':' · Nr. nicht erkannt';
   el.innerHTML='<div class="receipt-banner-row"><span class="rb-text">✓ Neue Rechnung <b>#'+currentReceiptId+'</b> angelegt · '+
-    ($('purchase-date').value||todayIso())+' · '+currentShopName()+'</span>'+
+    ($('purchase-date').value||todayIso())+' · '+currentShopName()+invStr+'</span>'+
     '<button class="btn-danger" id="receipt-undo">Rückgängig machen</button></div>';
   var ru=$('receipt-undo');if(ru)ru.addEventListener('click',undoReceipt);
 }
+
+function escHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
 // ---- Datei-Upload für Rechnungen ----
 function cleanFileName(n){return(n||'rechnung.pdf').replace(/[^a-zA-Z0-9._-]/g,'_');}
@@ -729,6 +744,7 @@ $('btn-analyze').addEventListener('click',function(){
   $('receipt-banner').style.display='none';
   discardReceiptIfAny();
   selectedShopId=null;
+  detectedInvoiceNumber=null;
   setProgress(5,'PDF wird gelesen…');
   extractPdfText(pdfFile).then(function(text){
     setProgress(20,'Datum, Geschäft und Produkte werden erkannt…');
@@ -781,6 +797,7 @@ function claudeAnalyzeAll(text){
 '  "shop_detected_name": "string oder null",\n'+
 '  "shop_matched_id": null,\n'+
 '  "date_iso": "YYYY-MM-DD oder null",\n'+
+'  "invoice_number": "string oder null",\n'+
 '  "products": [\n'+
 '    {"name":"string","quantity":1.0,"unit":"kg","price_total":0.00,"price_per_unit":0.00}\n'+
 '  ]\n'+
@@ -800,6 +817,10 @@ function claudeAnalyzeAll(text){
 '- Schlüsselwörter: "Rechnungsdatum", "Datum", "Lieferdatum", "Bestelldatum"\n'+
 '- Formate: DD.MM.YYYY oder DD.MM.YY ("21.05.26"→"2026-05-21")\n'+
 '- Zweistellig: 00-30=2000-2030\n\n'+
+'RECHNUNGSNUMMER:\n'+
+'- Schlüsselwörter: "Rechnungsnummer", "Rechnungs-Nr", "Rechnung Nr", "Beleg-Nr", "Belegnummer", "Invoice No", "Nr."\n'+
+'- Exakt übernehmen wie angegeben (inkl. Buchstaben/Bindestriche), nur umgebende Beschriftung weglassen\n'+
+'- Nicht mit Kunden-/Bestellnummer verwechseln; wenn keine erkennbar: null\n\n'+
 'PRODUKTNAMEN: Mehrzeilige Namen zu kurzem deutschen Namen zusammenfassen.\n\n'+
 'RECHNUNGSTEXT:\n'+text.slice(0,8000);
 
@@ -848,6 +869,8 @@ function renderInfoGrid(result){
   var shopMatchedId=result.shop_matched_id||null;
   var shopDetectedName=result.shop_detected_name||'';
   var dateIso=result.date_iso||null;
+  // Rechnungsnummer merken (v17) – wird beim Anlegen/Sync der Rechnung gesetzt
+  detectedInvoiceNumber=(result.invoice_number&&String(result.invoice_number).trim())?String(result.invoice_number).trim():null;
   var shopOpts='<option value="">– kein Geschäft –</option>';
   grocyShops.forEach(function(s){shopOpts+='<option value="'+s.id+'"'+(shopMatchedId&&shopMatchedId==s.id?' selected':'')+'>'+s.name+'</option>';});
   shopOpts+='<option value="__new__">+ Neues Geschäft anlegen…</option>';
@@ -1173,7 +1196,7 @@ $('btn-import').addEventListener('click', function() {
 $('btn-restart').addEventListener('click',function(){
   // Nach abgeschlossenem Import ist currentReceiptId bereits freigegeben – hier
   // nur UI/State zurücksetzen, NICHT die fertige Rechnung löschen.
-  currentReceiptId=null;receiptUndone=false;receiptError=null;
+  currentReceiptId=null;receiptUndone=false;receiptError=null;detectedInvoiceNumber=null;
   $('receipt-banner').style.display='none';
   pdfFile=null;analysisData=[];selectedShopId=null;
   $('drop-zone').classList.remove('has-file');
