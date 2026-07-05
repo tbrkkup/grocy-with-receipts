@@ -23,8 +23,8 @@
 					id="product_presets_location_id"
 					data-setting-key="product_presets_location_id">
 					<option value="-1"></option>
-					@foreach($locations as $location)
-					<option value="{{ $location->id }}">{{ $location->name }}</option>
+					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+					<option value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
 					@endforeach
 				</select>
 			</div>

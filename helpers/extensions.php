@@ -13,6 +13,73 @@ function FindObjectInArrayByPropertyValue($array, $propertyName, $propertyValue)
 	return null;
 }
 
+// Ordnet eine flache Liste von Location-Objekten (mit id, name, parent_location_id)
+// als Baum: Rückgabe in Tiefen-/Pfad-Reihenfolge, jeweils mit level und vollem
+// Pfad ("Küche › Kühlschrank"). Zyklen-sicher; verwaiste parent-Verweise werden
+// als Wurzeln behandelt.
+function SortLocationsAsTree($locations, $parentProperty = 'parent_location_id')
+{
+	$byId = [];
+	$childrenByParent = [];
+	foreach ($locations as $location)
+	{
+		$byId[$location->id] = $location;
+		$parentKey = $location->{$parentProperty};
+		if ($parentKey === null || $parentKey === '')
+		{
+			$parentKey = '';
+		}
+		$childrenByParent[$parentKey][] = $location->id;
+	}
+
+	foreach ($childrenByParent as $parentKey => $ids)
+	{
+		usort($childrenByParent[$parentKey], function ($a, $b) use ($byId)
+		{
+			return strcasecmp($byId[$a]->name, $byId[$b]->name);
+		});
+	}
+
+	$result = [];
+	$visited = [];
+	$walk = function ($parentKey, $level, $parentPath) use (&$walk, &$result, &$visited, $childrenByParent, $byId)
+	{
+		if (!isset($childrenByParent[$parentKey]))
+		{
+			return;
+		}
+
+		foreach ($childrenByParent[$parentKey] as $id)
+		{
+			if (isset($visited[$id]))
+			{
+				continue;
+			}
+
+			$visited[$id] = true;
+			$name = $byId[$id]->name;
+			$path = ($parentPath === '') ? $name : $parentPath . ' › ' . $name;
+			$result[] = ['id' => $id, 'name' => $name, 'level' => $level, 'path' => $path, 'obj' => $byId[$id]];
+			$walk($id, $level + 1, $path);
+		}
+	};
+
+	$walk('', 0, '');
+
+	// Verwaiste (parent zeigt auf nicht vorhandenen Ort) als Wurzeln anhängen
+	foreach ($byId as $id => $location)
+	{
+		if (!isset($visited[$id]))
+		{
+			$visited[$id] = true;
+			$result[] = ['id' => $id, 'name' => $location->name, 'level' => 0, 'path' => $location->name, 'obj' => $location];
+			$walk($id, 1, $location->name);
+		}
+	}
+
+	return $result;
+}
+
 function FindAllObjectsInArrayByPropertyValue($array, $propertyName, $propertyValue, $operator = '==')
 {
 	$returnArray = [];

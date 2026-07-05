@@ -84,8 +84,8 @@
 					id="location_id"
 					name="location_id">
 					<option></option>
-					@foreach($locations as $location)
-					<option value="{{ $location->id }}">{{ $location->name }}</option>
+					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+					<option value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
 					@endforeach
 				</select>
 				<div class="invalid-feedback">{{ $__t('A location is required') }}</div>
