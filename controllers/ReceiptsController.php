@@ -45,4 +45,13 @@ class ReceiptsController extends BaseController
 			'quantityUnits' => $this->DB->quantity_units()->orderBy('name', 'COLLATE NOCASE'),
 		]);
 	}
+
+	public function ReceiptAliasesList(Request $request, Response $response, array $args)
+	{
+		return $this->RenderPage($response, 'receiptaliases', [
+			'aliases' => $this->DB->product_receipt_aliases()->orderBy('times_confirmed', 'DESC')->fetchAll(),
+			'products' => $this->DB->products()->orderBy('name', 'COLLATE NOCASE')->fetchAll(),
+			'shoppingLocations' => $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE')->fetchAll(),
+		]);
+	}
 }

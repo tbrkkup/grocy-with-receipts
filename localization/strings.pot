@@ -2489,3 +2489,27 @@ msgstr[1] ""
 
 msgid "Deselect all"
 msgstr ""
+
+msgid "Receipt aliases"
+msgstr ""
+
+msgid "Receipt aliases map the (often cryptic) text printed on a store receipt to one of your Grocy products, per store. They are learned automatically when you import scanned/photographed receipts, so the next import can pre-fill the matching."
+msgstr ""
+
+msgid "No receipt aliases have been learned yet"
+msgstr ""
+
+msgid "Receipt text"
+msgstr ""
+
+msgid "Times confirmed"
+msgstr ""
+
+msgid "Last used"
+msgstr ""
+
+msgid "Any store"
+msgstr ""
+
+msgid "Are you sure you want to delete the receipt alias \"%s\"?"
+msgstr ""

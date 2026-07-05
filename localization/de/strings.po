@@ -2877,3 +2877,27 @@ msgstr[1] "Packungen"
 
 msgid "Deselect all"
 msgstr "Alle abwählen"
+
+msgid "Receipt aliases"
+msgstr "Rechnungs-Aliase"
+
+msgid "Receipt aliases map the (often cryptic) text printed on a store receipt to one of your Grocy products, per store. They are learned automatically when you import scanned/photographed receipts, so the next import can pre-fill the matching."
+msgstr "Rechnungs-Aliase ordnen den (oft kryptischen) Text auf einem Kassenbon einem deiner Grocy-Produkte zu – je Geschäft. Sie werden automatisch gelernt, wenn du gescannte/fotografierte Belege importierst, damit der nächste Import die Zuordnung vorbelegen kann."
+
+msgid "No receipt aliases have been learned yet"
+msgstr "Es wurden noch keine Rechnungs-Aliase gelernt"
+
+msgid "Receipt text"
+msgstr "Kassentext"
+
+msgid "Times confirmed"
+msgstr "Bestätigungen"
+
+msgid "Last used"
+msgstr "Zuletzt verwendet"
+
+msgid "Any store"
+msgstr "Alle Geschäfte"
+
+msgid "Are you sure you want to delete the receipt alias \"%s\"?"
+msgstr "Möchtest du den Rechnungs-Alias „%s“ wirklich löschen?"

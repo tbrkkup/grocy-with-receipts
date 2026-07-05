@@ -143,6 +143,7 @@ $app->group('', function (RouteCollectorProxy $group)
 	// Receipt routes
 	$group->get('/receipts', [ReceiptsController::class, 'Overview']);
 	$group->get('/receipt/{receiptId}', [ReceiptsController::class, 'ReceiptEditForm']);
+	$group->get('/receiptaliases', [ReceiptsController::class, 'ReceiptAliasesList']);
 
 	// Calendar routes
 	$group->get('/calendar', [CalendarController::class, 'Overview']);

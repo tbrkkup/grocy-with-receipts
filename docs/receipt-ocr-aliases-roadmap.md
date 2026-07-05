@@ -87,11 +87,19 @@ Vision und Text-Analyse münden in denselben Downstream.
   headless getestet** (`scratchpad/test-vision.js`: Image-Block gesendet, JSON fließt in
   Review, Rechnung angelegt). Offen: End-to-End-Test gegen echte Vision-API/Live-Grocy
   durch den Nutzer. Gescanntes **Bild-PDF** (pdf.js → Canvas → Vision) noch offen.
+- [x] **Grocy-Ansichtsseite `/receiptaliases`** (native Stammdaten-Unterseite): Menüeintrag
+  unter „Stammdaten", DataTable (Produkt, Geschäft, Kassentext, Bestätigungen, Zuletzt
+  verwendet), Suche, Löschen je Zeile. Read-only + Delete (Aliase werden gelernt, nicht
+  manuell angelegt). Lokal gegen Demo-Grocy gerendert + Seed-Daten verifiziert (2026-07-05).
+  Dateien: `controllers/ReceiptsController::ReceiptAliasesList`, Route `/receiptaliases`,
+  `views/receiptaliases.blade.php`, `public/viewjs/receiptaliases.js`, Menü in
+  `layout/default.blade.php`, Übersetzungen (en/de).
 - [ ] **Widget – Wörterbuch-Lookup + Lernen:** `product_receipt_aliases` beim Matching
   vorbelegen; Korrekturen zurückschreiben. **NOCH NICHT IMPLEMENTIERT** – das Widget
   schreibt derzeit nichts in die Tabelle; sie bleibt nach einem Import leer. (Vom Nutzer
   am 2026-07-05 bemerkt: v18-Import funktioniert oberflächlich, alle Produkte eingetragen,
-  aber keine Alias-Assoziation gespeichert.)
+  aber keine Alias-Assoziation gespeichert.) **← nächster Schritt, damit die Ansichtsseite
+  echte Daten zeigt.**
 - [ ] **Widget – Review-Feinschliff:** unsichere Positionen markieren + Summen-Check.
 - [ ] **Import + Beleg-Verknüpfung:** v16-Flow wiederverwenden, Bild als `receipt_file`.
 
