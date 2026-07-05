@@ -32,7 +32,31 @@ Grocy.Components.BulkSelect = function(options)
 		{
 			$(this).closest('tr').toggleClass('bulk-row-selected', $(this).prop('checked'));
 		});
+
+		LayoutToolbar();
 	}
+
+	// The toolbar is position:fixed (see grocy.css) so it stays visible while
+	// scrolling. Because fixed elements are viewport-relative, set its left/width
+	// to match the content column and reserve that height above the content so it
+	// doesn't cover the top rows. Re-runs on show/hide and on window resize.
+	function LayoutToolbar()
+	{
+		var toolbar = $(toolbarSelector);
+		var parent = toolbar.parent();
+
+		if (toolbar.hasClass('d-none'))
+		{
+			parent.css('padding-top', '');
+			return;
+		}
+
+		var rect = parent[0].getBoundingClientRect();
+		toolbar.css({ left: rect.left + 'px', width: rect.width + 'px' });
+		parent.css('padding-top', toolbar.outerHeight() + 'px');
+	}
+
+	$(window).on('resize', LayoutToolbar);
 
 	$(document).on('change', tableSelector + ' .bulk-row-checkbox', UpdateToolbar);
 

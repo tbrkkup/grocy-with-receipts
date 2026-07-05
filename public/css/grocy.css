@@ -559,3 +559,23 @@ html {
 table tbody tr.bulk-row-selected > td {
 	background-color: rgba(0, 123, 255, 0.14);
 }
+
+/* Bulk edit: pin the actions toolbar below the fixed navbar (56px) as an
+   overlay so it stays visible while scrolling long lists. position:fixed is
+   used (not sticky) because grocy's .content-wrapper has overflow-y:auto, which
+   breaks viewport-level sticky. Its left/width are set from JS to match the
+   content column (responsive to the sidebar/resize); margins are zeroed so the
+   fixed row aligns to that box. z-index stays below the navbar (1030) but above
+   the table. The inner alert gets a shadow to read as a floating overlay. */
+#bulk-edit-toolbar {
+	position: fixed;
+	top: 56px;
+	z-index: 1020;
+	margin-left: 0;
+	margin-right: 0;
+}
+
+#bulk-edit-toolbar .alert {
+	margin-bottom: 0;
+	box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.2);
+}
