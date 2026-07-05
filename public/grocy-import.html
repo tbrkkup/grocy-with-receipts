@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grocy Rechnungsimport v17</title>
+<title>Grocy Rechnungsimport v18</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -119,7 +119,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h1>Grocy Rechnungsimport</h1>
-        <span class="vtag">v17 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v18 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Verbindungsdaten eingeben, dann Rechnung hochladen.</p>
       <div class="field">
@@ -149,14 +149,14 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Rechnung hochladen</h2>
-        <span class="vtag">v17 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v18 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
-      <p class="sub">PDF-Datei auswählen oder hier ablegen.</p>
+      <p class="sub">PDF oder Foto/Scan des Kassenbons auswählen oder hier ablegen.</p>
       <div class="drop-zone" id="drop-zone">
         <div class="drop-icon">📄</div>
-        <div id="drop-label">PDF hier ablegen oder klicken</div>
+        <div id="drop-label">PDF oder Bild hier ablegen oder klicken</div>
       </div>
-      <input type="file" id="file-input" accept=".pdf" style="display:none" />
+      <input type="file" id="file-input" accept=".pdf,image/*" style="display:none" />
       <div id="upload-status" class="status" style="display:none"></div>
       <div class="btn-row">
         <button class="btn btn-primary" id="btn-analyze" disabled>Analysieren</button>
@@ -169,7 +169,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Produkte prüfen</h2>
-        <span class="vtag">v17 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v18 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Menge und Einheit sind direkt editierbar. Neue Produkte können vor dem Import bearbeitet werden.</p>
       <div id="receipt-banner" class="status" style="display:none"></div>
@@ -236,6 +236,16 @@ a { color: var(--accent); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 var CHANGELOG = [
+  {
+    version: 'v18', date: '2026-07',
+    items: [
+      'Gescannte/fotografierte Kassenbons: Bild-Upload (JPG/PNG/…) zusätzlich zu PDF',
+      'Fotos werden per Claude Vision direkt gelesen (kein OCR) – gleiches JSON-Schema wie der PDF-Pfad, identischer Downstream',
+      'Bild wird vor dem Senden auf ~1600px lange Kante herunterskaliert (spart Tokens)',
+      'Das Foto wird wie bisher als receipt_file an die Rechnung angehängt',
+      'PDF-Pfad (digitale Rechnungen) unverändert'
+    ]
+  },
   {
     version: 'v17', date: '2026-07',
     items: [
@@ -387,6 +397,7 @@ function goTo(name){steps.forEach(function(s){$('step-'+s).classList.toggle('act
 
 var grocyUrl='',grocyKey='',claudeKey='';
 var pdfFile=null,grocyProducts=[],grocyShops=[],grocyGroups=[],grocyLocations=[],analysisData=[];
+var uploadedIsImage=false;   // true wenn die hochgeladene Datei ein Foto/Scan ist (Vision-Pfad)
 var selectedShopId=null,kgQuId=null,defaultLocationId=null;
 // Receipt (Rechnung) state – v16
 var currentReceiptId=null;   // id der in Grocy angelegten Rechnung (null = keine/rückgängig)
@@ -603,10 +614,40 @@ dz.addEventListener('drop',function(e){e.preventDefault();handleFile(e.dataTrans
 $('file-input').addEventListener('change',function(e){handleFile(e.target.files[0]);});
 
 function handleFile(f){
-  if(!f||!f.name.toLowerCase().endsWith('.pdf')){showStatus('upload-status','Nur PDF-Dateien.','error');return;}
-  pdfFile=f;dz.classList.add('has-file');
-  $('drop-label').textContent=f.name+' ('+(f.size/1024).toFixed(0)+' KB)';
+  if(!f){return;}
+  var lname=f.name.toLowerCase();
+  var isPdf=lname.endsWith('.pdf')||f.type==='application/pdf';
+  var isImage=(f.type&&f.type.indexOf('image/')===0)||/\.(jpe?g|png|webp|gif|bmp|heic|heif)$/.test(lname);
+  if(!isPdf&&!isImage){showStatus('upload-status','Nur PDF- oder Bilddateien.','error');return;}
+  pdfFile=f;uploadedIsImage=isImage&&!isPdf;dz.classList.add('has-file');
+  $('drop-label').textContent=f.name+' ('+(f.size/1024).toFixed(0)+' KB)'+(uploadedIsImage?' · Foto/Scan (Vision)':'');
   $('upload-status').style.display='none';$('btn-analyze').disabled=false;
+}
+
+// Liest ein Foto/Scan ein, skaliert die lange Kante auf ~1600px herunter und
+// gibt eine Base64-JPEG-Quelle für Claude Vision zurück (spart Tokens/Größe).
+function fileToVisionSource(file){
+  return new Promise(function(resolve,reject){
+    var img=new Image();
+    var url=URL.createObjectURL(file);
+    img.onload=function(){
+      URL.revokeObjectURL(url);
+      var maxEdge=1600;
+      var w=img.naturalWidth,h=img.naturalHeight;
+      if(!w||!h){reject(new Error('Bild hat keine lesbaren Maße.'));return;}
+      var scale=Math.min(1,maxEdge/Math.max(w,h));
+      var cw=Math.max(1,Math.round(w*scale)),ch=Math.max(1,Math.round(h*scale));
+      var canvas=document.createElement('canvas');
+      canvas.width=cw;canvas.height=ch;
+      var ctx=canvas.getContext('2d');
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);
+      ctx.drawImage(img,0,0,cw,ch);
+      var base64=canvas.toDataURL('image/jpeg',0.85).split(',')[1];
+      resolve({media_type:'image/jpeg',data:base64});
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('Bild konnte nicht gelesen werden (Format nicht unterstützt?).'));};
+    img.src=url;
+  });
 }
 
 function extractPdfText(file){
@@ -745,11 +786,21 @@ $('btn-analyze').addEventListener('click',function(){
   discardReceiptIfAny();
   selectedShopId=null;
   detectedInvoiceNumber=null;
-  setProgress(5,'PDF wird gelesen…');
-  extractPdfText(pdfFile).then(function(text){
-    setProgress(20,'Datum, Geschäft und Produkte werden erkannt…');
-    return claudeAnalyzeAll(text);
-  }).then(function(result){
+  var analyzePromise;
+  if(uploadedIsImage){
+    setProgress(5,'Foto/Scan wird vorbereitet…');
+    analyzePromise=fileToVisionSource(pdfFile).then(function(source){
+      setProgress(20,'Kassenbon wird per Vision gelesen…');
+      return claudeAnalyzeImage(source);
+    });
+  }else{
+    setProgress(5,'PDF wird gelesen…');
+    analyzePromise=extractPdfText(pdfFile).then(function(text){
+      setProgress(20,'Datum, Geschäft und Produkte werden erkannt…');
+      return claudeAnalyzeAll(text);
+    });
+  }
+  analyzePromise.then(function(result){
     setProgress(70,'Produkte werden zugeordnet…');
     renderInfoGrid(result);
     return claudeMatchProducts(result.products);
@@ -824,22 +875,66 @@ function claudeAnalyzeAll(text){
 'PRODUKTNAMEN: Mehrzeilige Namen zu kurzem deutschen Namen zusammenfassen.\n\n'+
 'RECHNUNGSTEXT:\n'+text.slice(0,8000);
 
-  return claudeProxy([{role:'user',content:prompt}],3000).then(function(raw){
-    var clean=raw.replace(/```json|```/g,'').trim();
-    var result=JSON.parse(clean);
-    if(!result.shop_matched_id&&result.shop_detected_name){
-      var nd=normalizeShopName(result.shop_detected_name);
-      var bm=null,bs=0;
-      grocyShops.forEach(function(s){
-        var ns=normalizeShopName(s.name),sc=0;
-        if(nd.indexOf(ns)!==-1||ns.indexOf(nd)!==-1){sc=0.9;}
-        else{var wd=nd.split(/\s+/),ws=ns.split(/\s+/),h=0;ws.forEach(function(w){if(w.length>2&&wd.some(function(d){return d.indexOf(w)!==-1||w.indexOf(d)!==-1;}))h++;});sc=ws.length>0?h/ws.length:0;}
-        if(sc>bs){bs=sc;bm=s;}
-      });
-      if(bs>0.5&&bm)result.shop_matched_id=bm.id;
-    }
-    return result;
-  });
+  return claudeProxy([{role:'user',content:prompt}],3000).then(parseAnalysisResult);
+}
+
+// Parst die Claude-Antwort (Text- oder Vision-Analyse) und ergänzt bei Bedarf
+// den clientseitigen Geschäfts-Fallback. Beide Analysepfade liefern dasselbe Schema.
+function parseAnalysisResult(raw){
+  var clean=raw.replace(/```json|```/g,'').trim();
+  var result=JSON.parse(clean);
+  if(!result.shop_matched_id&&result.shop_detected_name){
+    var nd=normalizeShopName(result.shop_detected_name);
+    var bm=null,bs=0;
+    grocyShops.forEach(function(s){
+      var ns=normalizeShopName(s.name),sc=0;
+      if(nd.indexOf(ns)!==-1||ns.indexOf(nd)!==-1){sc=0.9;}
+      else{var wd=nd.split(/\s+/),ws=ns.split(/\s+/),h=0;ws.forEach(function(w){if(w.length>2&&wd.some(function(d){return d.indexOf(w)!==-1||w.indexOf(d)!==-1;}))h++;});sc=ws.length>0?h/ws.length:0;}
+      if(sc>bs){bs=sc;bm=s;}
+    });
+    if(bs>0.5&&bm)result.shop_matched_id=bm.id;
+  }
+  return result;
+}
+
+// Vision-Analyse für Fotos/Scans: Bild direkt an Claude, gleiches JSON-Schema
+// wie claudeAnalyzeAll → identischer Downstream (Matching, Rechnung, Review, Import).
+function claudeAnalyzeImage(source){
+  var shopListJson=JSON.stringify(grocyShops.map(function(s){return{id:s.id,name:s.name};}));
+  var prompt=
+'Du liest das Foto/den Scan eines deutschen Supermarkt-Kassenbons. Antworte NUR mit einem JSON-Objekt, kein Markdown.\n\n'+
+'FORMAT:\n'+
+'{\n'+
+'  "shop_detected_name": "string oder null",\n'+
+'  "shop_matched_id": null,\n'+
+'  "date_iso": "YYYY-MM-DD oder null",\n'+
+'  "invoice_number": "string oder null",\n'+
+'  "products": [\n'+
+'    {"name":"string","quantity":1.0,"unit":"kg","price_total":0.00,"price_per_unit":0.00}\n'+
+'  ]\n'+
+'}\n\n'+
+'BON-LAYOUT (wichtig):\n'+
+'- Produktname und ggf. eine Mengenzeile ("0,854 kg x 1,39 EUR/kg" oder "6 Stk x 0,99") stehen oft in getrennten Zeilen; der Betrag steht rechts, meist auf Höhe der Mengenzeile.\n'+
+'- Steuerkennzeichen (A/B) am Zeilenende gehören NICHT zum Namen.\n'+
+'- Nimm NUR echte Einkaufspositionen. Ignoriere SUMME, Geg./Auszahlung/Rückgeld, Zahlart, UID/Beleg-/Trace-Nr., Kopf-/Fußzeilen.\n\n'+
+'MENGEN UND EINHEITEN:\n'+
+'- Erlaubte Einheiten: kg, g, l, ml, Stueck, Packung\n'+
+'- Gewichts-/Volumenware ("x,xxx kg x .. EUR/kg"): quantity=Gewicht, unit=kg (bzw. l).\n'+
+'- Stückware ("n Stk x Einzelpreis"): quantity=n, unit=Stueck, price_per_unit=Einzelpreis.\n'+
+'- Ohne Mengenangabe: quantity=1, unit="Stueck".\n'+
+'- price_total = rechts gedruckter Zeilenbetrag; Komma ist Dezimaltrennzeichen ("1,39"=1.39).\n\n'+
+'GESCHÄFT:\n'+
+'- Kopfzeile lesen (z.B. "REWE ..."). Firmenzusätze ignorieren: GmbH, KG, AG, oHG, eG, e.K.\n'+
+'- Grocy-Geschäfte: '+shopListJson+'\n'+
+'- Großzügig/case-insensitiv vergleichen; passende id in shop_matched_id, sonst null.\n\n'+
+'DATUM: Formate DD.MM.YYYY / DD.MM.YY (zweistellig 00-30 = 2000-2030).\n'+
+'RECHNUNGSNUMMER: "Beleg-Nr."/"Bon-Nr."/"Rechnungsnummer" exakt übernehmen; nicht mit Trace-/Kundennummer verwechseln; sonst null.\n\n'+
+'UNSICHERHEIT: Wenn ein Name unleserlich ist oder nur Herkunft/Kürzel dasteht, gib den best-lesbaren Text als name zurück (nichts erfinden).';
+  var messages=[{role:'user',content:[
+    {type:'image',source:{type:'base64',media_type:source.media_type,data:source.data}},
+    {type:'text',text:prompt}
+  ]}];
+  return claudeProxy(messages,3000).then(parseAnalysisResult);
 }
 
 function claudeMatchProducts(extracted){
