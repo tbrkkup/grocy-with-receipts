@@ -5909,7 +5909,8 @@
 					"product_barcodes_view",
 					"permission_hierarchy",
 					"receipts",
-					"receipt_files"
+					"receipt_files",
+					"product_receipt_aliases"
 				]
 			},
 			"ExposedEntityNoListing": {
