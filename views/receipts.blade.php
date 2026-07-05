@@ -50,6 +50,7 @@
 							href="#"><i class="fa-solid fa-eye"></i></a>
 					</th>
 					<th>{{ $__t('Date') }}</th>
+					<th>{{ $__t('Invoice number') }}</th>
 					<th>{{ $__t('Store') }}</th>
 					<th>{{ $__t('Status') }}</th>
 					<th>{{ $__t('Description') }}</th>
@@ -83,6 +84,7 @@
 							</a>
 						</td>
 						<td>{{ $receipt->date }}</td>
+						<td>{{ $receipt->invoice_number }}</td>
 						<td>
 							@if($receipt->shopping_location_id != null)
 								{{ FindObjectInArrayByPropertyValue($shoppingLocations, 'id', $receipt->shopping_location_id)->name }}
