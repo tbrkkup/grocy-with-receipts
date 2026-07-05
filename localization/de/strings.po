@@ -2874,3 +2874,6 @@ msgid "Pack"
 msgid_plural "Packs"
 msgstr[0] "Packung"
 msgstr[1] "Packungen"
+
+msgid "Deselect all"
+msgstr "Alle abwählen"

@@ -130,5 +130,28 @@ Grocy.Components.BulkSelect = function(options)
 		UpdateToolbar();
 	};
 
+	// Add a "Deselect all" button to the toolbar (shared across all bulk lists),
+	// right after the "n selected" count. Clicking it clears the whole selection.
+	var self = this;
+	var toolbar = $(toolbarSelector);
+	if (!toolbar.find('.bulk-deselect-all-button').length)
+	{
+		var deselectButton = $('<button type="button" class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1 bulk-deselect-all-button">' + __t('Deselect all') + '</button>');
+		var countSpan = countSelector ? $(countSelector).closest('span') : $();
+		if (countSpan.length)
+		{
+			countSpan.after(deselectButton);
+		}
+		else
+		{
+			toolbar.find('.alert').append(deselectButton);
+		}
+	}
+
+	$(document).on('click', toolbarSelector + ' .bulk-deselect-all-button', function()
+	{
+		self.Reset();
+	});
+
 	UpdateToolbar();
 };
