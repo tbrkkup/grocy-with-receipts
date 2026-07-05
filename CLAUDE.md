@@ -50,11 +50,14 @@ Anthropic blockiert direkte Browser-Requests (`CORS preflight 400`). Der nginx-P
 ### Ablauf
 1. **Config:** Anthropic API-Key, Grocy-URL, Grocy API-Key eingeben → Verbindungstest
 2. **Upload:** PDF per Drag & Drop oder Dateidialog
-3. **Analyse (3 Claude-Calls):**
+3. **Analyse (2 Claude-Calls):**
    - Call 1: Alle Produktdaten + Datum + Geschäft aus PDF extrahieren
    - Call 2: Produkte semantisch mit Grocy-Stammdaten abgleichen
-4. **Review:** Produkte prüfen, Mengen/Einheiten editieren, Datum/Geschäft bestätigen
-5. **Import:** Neue Produkte anlegen (mit Dialog) → Lagerbuchung in Grocy
+4. **Rechnung anlegen (v16):** Vor dem Review wird automatisch eine Rechnung (`receipt`) in Grocy angelegt – mit erkanntem Datum und Geschäft (leer, falls keins erkannt)
+5. **Review:** Produkte prüfen, Mengen/Einheiten editieren, Datum/Geschäft bestätigen. Ein Banner oben zeigt die angelegte Rechnung mit „Rückgängig machen" / „Wiederherstellen"
+6. **Import:** Rechnung mit aktuellem Geschäft/Datum aktualisieren (PUT) → PDF als `receipt_file` anhängen → neue Produkte anlegen (mit Dialog) → Lagerbuchung in Grocy, jede Buchung via `receipt_id` mit der Rechnung verknüpft
+
+> **Hinweis:** Ab v16 setzt das Widget das Receipts-Feature dieses Grocy-Forks voraus (`receipts`, `receipt_files`, `receipt_id` in `stock_log`). Gegen ein reines Grocy 4.6.0 ohne diese Erweiterung funktioniert der Rechnungs-Teil nicht mehr.
 
 ### Globale JS-Funktionen (wichtig für Scope)
 Alle Funktionen müssen **global** definiert sein, nicht innerhalb von Event-Listenern:
@@ -82,7 +85,10 @@ Alle Funktionen müssen **global** definiert sein, nicht innerhalb von Event-Lis
 | `/api/objects/locations` | GET | Standorte laden |
 | `/api/objects/quantity_units` | GET | Mengeneinheiten laden (für kg-ID) |
 | `/api/objects/stock_log` | GET | Lagerjournal für Duplikaterkennung |
-| `/api/stock/products/{id}/add` | POST | Lagerzugang buchen |
+| `/api/stock/products/{id}/add` | POST | Lagerzugang buchen (akzeptiert optionales `receipt_id`) |
+| `/api/objects/receipts` | POST / PUT / DELETE | Rechnung anlegen / aktualisieren / löschen (v16, nur mit Receipts-Fork) |
+| `/api/objects/receipt_files` | POST | PDF-Datei mit Rechnung verknüpfen (v16) |
+| `/api/files/receipts/{base64name}` | PUT | PDF-Datei hochladen (`application/octet-stream`, v16) |
 
 ### Nicht funktionierend in v4.6.0
 | Endpunkt | Problem |
@@ -264,9 +270,10 @@ Standard-Einheit für neue Produkte: **kg** (kg-ID wird beim Connect über `/obj
 | v13 | Undo-Endpunkt korrigiert (POST /undo/tx_id); alle Funktionen global |
 | v14 | Standort im Neuanlegen-Dialog (Standard: Keller); Undo deaktiviert mit Hinweis |
 | v15 | Preisberechnung korrigiert: Gesamtpreis/konvertierte Menge statt ppu/1000 |
+| v16 | Rechnungs-Integration: `receipt` vor Review anlegen (Datum + Geschäft), Banner mit Rückgängig/Wiederherstellen, Käufe via `receipt_id` verknüpft, PDF als `receipt_file` angehängt, Sync per PUT beim Import. Setzt Receipts-Fork voraus |
 
-**Aktuelle Version:** v15
-**Aktuelle Datei:** `grocy-import-v15.html`
+**Aktuelle Version:** v16
+**Aktuelle Datei:** `public/grocy-import.html`
 
 ---
 
@@ -275,6 +282,6 @@ Standard-Einheit für neue Produkte: **kg** (kg-ID wird beim Connect über `/obj
 ```
 Ich entwickle ein HTML-Widget für Grocy-Rechnungsimport.
 Lies CLAUDE.md für den vollständigen Kontext.
-Die aktuelle Version ist v15 (grocy-import-v15.html).
+Die aktuelle Version ist v16 (public/grocy-import.html).
 Bitte erhöhe die Versionsnummer bei jeder Änderung und pflege den Changelog.
 ```
