@@ -59,6 +59,7 @@ Lokale Grocy-Instanz (Demo-Modus) + Playwright-Screenshots (vorher/nachher) auf
 - [x] **Iteration 2 (Sticky Toolbar):** im echten Deploy bestätigt.
 - [x] **Select-all (oberer Haken an/aus):** im echten Deploy bestätigt.
 - [x] **Shift-Klick Bereichsauswahl:** im echten Deploy bestätigt.
+- [x] **„Alle abwählen"-Button:** im echten Deploy bestätigt.
 
 ## Nicht im Scope (bewusst)
 - Keine Änderung der Bulk-Aktionen selbst (Funktionslogik bleibt).
