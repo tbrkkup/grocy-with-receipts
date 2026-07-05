@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grocy Rechnungsimport v15</title>
+<title>Grocy Rechnungsimport v16</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -107,6 +107,8 @@ select.full:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,9
 .key-note { font-size: 12px; color: var(--text-3); margin-top: 6px; }
 .vtag { font-size: 11px; color: var(--text-3); font-weight: 400; }
 .header-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+.receipt-banner-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.receipt-banner-row .rb-text { flex: 1; min-width: 180px; }
 a { color: var(--accent); }
 </style>
 </head>
@@ -117,7 +119,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h1>Grocy Rechnungsimport</h1>
-        <span class="vtag">v15 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v16 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Verbindungsdaten eingeben, dann Rechnung hochladen.</p>
       <div class="field">
@@ -147,7 +149,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Rechnung hochladen</h2>
-        <span class="vtag">v15 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v16 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">PDF-Datei auswählen oder hier ablegen.</p>
       <div class="drop-zone" id="drop-zone">
@@ -167,9 +169,10 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Produkte prüfen</h2>
-        <span class="vtag">v15 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v16 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Menge und Einheit sind direkt editierbar. Neue Produkte können vor dem Import bearbeitet werden.</p>
+      <div id="receipt-banner" class="status" style="display:none"></div>
       <div class="prog-wrap" id="prog-wrap" style="display:none">
         <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
         <div class="prog-label" id="prog-label">Analysiere…</div>
@@ -233,6 +236,18 @@ a { color: var(--accent); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 var CHANGELOG = [
+  {
+    version: 'v16', date: '2026-07',
+    items: [
+      'Rechnungs-Integration: Vor dem Prüfen-Dialog wird eine Rechnung (receipt) in Grocy angelegt – mit erkanntem Datum und Geschäft (leer, falls keins erkannt)',
+      'Banner im Prüfen-Dialog zeigt die angelegte Rechnung mit „Rückgängig machen“ (löscht sie in Grocy) und „Wiederherstellen“ (legt sie neu an)',
+      'Bei „Rückgängig machen“ wird der Import-Button deaktiviert – ohne Rechnung kein Import',
+      'Alle importierten Käufe werden über receipt_id mit der Rechnung verknüpft',
+      'Beim Import wird die Rechnung mit aktuell gewähltem Geschäft/Datum aktualisiert (PUT)',
+      'Die hochgeladene PDF wird als receipt_file an die Rechnung angehängt',
+      'Setzt das Receipts-Feature dieses Grocy-Forks voraus (nicht mehr Grocy 4.6.0-kompatibel)'
+    ]
+  },
   {
     version: 'v15', date: '2026-01',
     items: [
@@ -364,6 +379,10 @@ function goTo(name){steps.forEach(function(s){$('step-'+s).classList.toggle('act
 var grocyUrl='',grocyKey='',claudeKey='';
 var pdfFile=null,grocyProducts=[],grocyShops=[],grocyGroups=[],grocyLocations=[],analysisData=[];
 var selectedShopId=null,kgQuId=null,defaultLocationId=null;
+// Receipt (Rechnung) state – v16
+var currentReceiptId=null;   // id der in Grocy angelegten Rechnung (null = keine/rückgängig)
+var receiptUndone=false;     // true wenn Nutzer die Rechnung rückgängig gemacht hat
+var receiptError=null;       // Fehlermeldung falls Anlegen fehlschlug
 var STORE_KEY='grocy_imp_v15';
 var UNITS=['kg','g','l','ml','Stueck','Packung'];
 
@@ -598,30 +617,153 @@ function extractPdfText(file){
 
 function setProgress(pct,label){$('prog-fill').style.width=pct+'%';$('prog-label').textContent=label;}
 
+// ---- Rechnungs-(Receipt-)Logik (v16) ----
+function currentShopName(){
+  if(!selectedShopId)return'– kein Geschäft –';
+  var s=grocyShops.find(function(x){return String(x.id)===String(selectedShopId);});
+  return s?s.name:'– kein Geschäft –';
+}
+
+// Legt in Grocy eine Rechnung mit aktuellem Datum + erkanntem Geschäft an.
+// Kein Geschäft erkannt → shopping_location_id wird weggelassen (bleibt leer).
+function createReceipt(){
+  receiptError=null;
+  var date=$('purchase-date').value||todayIso();
+  var body={date:date,status:'paid'};
+  if(selectedShopId)body.shopping_location_id=parseInt(selectedShopId,10);
+  return grocyFetch('/objects/receipts','POST',body).then(function(r){
+    currentReceiptId=r.created_object_id;
+    receiptUndone=false;
+    receiptError=null;
+  }).catch(function(e){
+    currentReceiptId=null;
+    receiptError=e.message||'Unbekannter Fehler';
+  });
+}
+
+// Aktualisiert die Rechnung mit aktuell gewähltem Geschäft/Datum (vor dem Import).
+function updateReceipt(receiptId,purchaseDate){
+  var body={date:purchaseDate};
+  body.shopping_location_id=selectedShopId?parseInt(selectedShopId,10):null;
+  return grocyFetch('/objects/receipts/'+receiptId,'PUT',body);
+}
+
+// Löscht die Rechnung in Grocy (Rückgängig).
+function undoReceipt(){
+  if(!currentReceiptId)return;
+  var id=currentReceiptId;
+  var el=$('receipt-banner');el.className='status';el.innerHTML='Rechnung wird rückgängig gemacht…';
+  grocyFetch('/objects/receipts/'+id,'DELETE',null).then(function(){
+    currentReceiptId=null;receiptUndone=true;
+    renderReceiptBanner();updateImportButtonState();
+  }).catch(function(e){
+    alert('Rechnung konnte nicht gelöscht werden: '+e.message);
+    renderReceiptBanner();
+  });
+}
+
+// Legt die Rechnung erneut an (Wiederherstellen).
+function restoreReceipt(){
+  var el=$('receipt-banner');el.className='status';el.innerHTML='Rechnung wird wiederhergestellt…';
+  createReceipt().then(function(){
+    renderReceiptBanner();updateImportButtonState();
+  });
+}
+
+function updateImportButtonState(){
+  var btn=$('btn-import');
+  if(btn)btn.disabled=!(currentReceiptId&&!receiptUndone);
+}
+
+function renderReceiptBanner(){
+  var el=$('receipt-banner');
+  el.style.display='block';
+  if(receiptError){
+    el.className='status error';
+    el.innerHTML='<div class="receipt-banner-row"><span class="rb-text"><b>Rechnung konnte nicht angelegt werden:</b> '+receiptError+'</span>'+
+      '<button class="btn-sm" id="receipt-retry">Erneut versuchen</button></div>';
+    var rr=$('receipt-retry');if(rr)rr.addEventListener('click',restoreReceipt);
+    return;
+  }
+  if(receiptUndone||!currentReceiptId){
+    el.className='status';
+    el.innerHTML='<div class="receipt-banner-row"><span class="rb-text">Die Rechnung wurde rückgängig gemacht. Ein Import ist erst nach dem Wiederherstellen möglich.</span>'+
+      '<button class="btn-accent" id="receipt-restore">Wiederherstellen</button></div>';
+    var rs=$('receipt-restore');if(rs)rs.addEventListener('click',restoreReceipt);
+    return;
+  }
+  el.className='status ok';
+  el.innerHTML='<div class="receipt-banner-row"><span class="rb-text">✓ Neue Rechnung <b>#'+currentReceiptId+'</b> angelegt · '+
+    ($('purchase-date').value||todayIso())+' · '+currentShopName()+'</span>'+
+    '<button class="btn-danger" id="receipt-undo">Rückgängig machen</button></div>';
+  var ru=$('receipt-undo');if(ru)ru.addEventListener('click',undoReceipt);
+}
+
+// ---- Datei-Upload für Rechnungen ----
+function cleanFileName(n){return(n||'rechnung.pdf').replace(/[^a-zA-Z0-9._-]/g,'_');}
+function randomString(){var s='',c='abcdefghijklmnopqrstuvwxyz0123456789';for(var i=0;i<8;i++)s+=c.charAt(Math.floor(Math.random()*c.length));return s+'_';}
+
+function grocyUploadFile(file,group,fileName){
+  var url=grocyUrl.replace(/\/+$/,'')+'/api/files/'+group+'/'+btoa(fileName);
+  return fetch(url,{method:'PUT',headers:{'GROCY-API-KEY':grocyKey,'Content-Type':'application/octet-stream'},body:file}).then(function(r){
+    if(!r.ok)throw new Error('Datei-Upload HTTP '+r.status);
+    return{};
+  });
+}
+
+// Hängt die hochgeladene PDF als receipt_file an die Rechnung.
+function uploadPdfToReceipt(receiptId){
+  if(!pdfFile||!receiptId)return Promise.resolve();
+  var fileName=randomString()+cleanFileName(pdfFile.name);
+  return grocyUploadFile(pdfFile,'receipts',fileName).then(function(){
+    return grocyFetch('/objects/receipt_files','POST',{receipt_id:receiptId,file_name:fileName});
+  });
+}
+
 $('btn-analyze').addEventListener('click',function(){
   goTo('review');
   $('prog-wrap').style.display='block';
   $('info-grid').style.display='none';
   $('product-list').innerHTML='';
   $('review-actions').style.display='none';
+  $('receipt-banner').style.display='none';
+  discardReceiptIfAny();
   selectedShopId=null;
   setProgress(5,'PDF wird gelesen…');
   extractPdfText(pdfFile).then(function(text){
     setProgress(20,'Datum, Geschäft und Produkte werden erkannt…');
     return claudeAnalyzeAll(text);
   }).then(function(result){
-    setProgress(75,'Produkte werden zugeordnet…');
+    setProgress(70,'Produkte werden zugeordnet…');
     renderInfoGrid(result);
     return claudeMatchProducts(result.products);
   }).then(function(matched){
     analysisData=matched;
+    setProgress(90,'Rechnung wird in Grocy angelegt…');
+    return createReceipt();
+  }).then(function(){
     setProgress(100,'Fertig.');
-    setTimeout(function(){$('prog-wrap').style.display='none';renderReview();$('review-actions').style.display='flex';},300);
+    setTimeout(function(){
+      $('prog-wrap').style.display='none';
+      renderReview();
+      renderReceiptBanner();
+      updateImportButtonState();
+      $('review-actions').style.display='flex';
+    },300);
   }).catch(function(e){
     $('prog-wrap').style.display='none';
     $('product-list').innerHTML='<div class="status error">Fehler: '+e.message+'</div>';
   });
 });
+
+// Löscht eine ggf. bereits angelegte Rechnung (verhindert verwaiste Rechnungen
+// beim erneuten Analysieren oder beim Verlassen des Dialogs).
+function discardReceiptIfAny(){
+  var id=currentReceiptId;
+  currentReceiptId=null;receiptUndone=false;receiptError=null;
+  var el=$('receipt-banner');if(el)el.style.display='none';
+  if(id){grocyFetch('/objects/receipts/'+id,'DELETE',null).catch(function(){});}
+}
 
 function normalizeShopName(name){
   if(!name)return'';
@@ -715,6 +857,7 @@ function renderInfoGrid(result){
   $('purchase-date').value=dateIso||todayIso();
   $('date-detected-label').textContent=dateIso?'Erkannt: '+dateIso+' (korrigierbar)':'Nicht erkannt – heute eingesetzt';
   $('info-grid').style.display='grid';
+  $('purchase-date').addEventListener('change',function(){renderReceiptBanner();});
   $('shop-select').addEventListener('change',function(){
     var val=this.value;
     if(val==='__new__'){
@@ -726,7 +869,7 @@ function renderInfoGrid(result){
       showModal({title:'Neues Geschäft anlegen',content:el,buttons:[
         {label:'Anlegen',primary:true,resolve:function(){
           var name=inp.value.trim();
-          if(!name){$('shop-select').value='';selectedShopId=null;return;}
+          if(!name){$('shop-select').value='';selectedShopId=null;renderReceiptBanner();return;}
           grocyFetch('/objects/shopping_locations','POST',{name:name,description:''}).then(function(r){
             var newId=r.created_object_id;
             grocyShops.push({id:newId,name:name});
@@ -734,12 +877,13 @@ function renderInfoGrid(result){
             var sel=$('shop-select');
             var o=document.createElement('option');o.value=newId;o.textContent=name;o.selected=true;
             sel.insertBefore(o,sel.lastElementChild);sel.value=newId;
-          }).catch(function(e){alert('Fehler: '+e.message);$('shop-select').value='';selectedShopId=null;});
+            renderReceiptBanner();
+          }).catch(function(e){alert('Fehler: '+e.message);$('shop-select').value='';selectedShopId=null;renderReceiptBanner();});
         }},
-        {label:'Abbrechen',primary:false,resolve:function(){$('shop-select').value='';selectedShopId=null;}}
+        {label:'Abbrechen',primary:false,resolve:function(){$('shop-select').value='';selectedShopId=null;renderReceiptBanner();}}
       ]});
       setTimeout(function(){var inp2=document.querySelector('#modal-inner input[type=text]');if(inp2){inp2.focus();inp2.select();}},50);
-    }else{selectedShopId=val||null;}
+    }else{selectedShopId=val||null;renderReceiptBanner();}
   });
 }
 
@@ -894,6 +1038,9 @@ function doImport(toImport, purchaseDate, doUpdate, dupIds) {
 
   function importNext(i) {
     if (i >= toImport.length) {
+      // Import fertig: Rechnung ist jetzt dauerhaft (mit Buchungen verknüpft) –
+      // Referenz freigeben, damit spätere Navigation sie nicht mehr löscht.
+      currentReceiptId = null; receiptUndone = false; receiptError = null;
       setTimeout(function() { renderDone(results); }, 400);
       return;
     }
@@ -929,6 +1076,7 @@ function doImport(toImport, purchaseDate, doUpdate, dupIds) {
         purchased_date: purchaseDate
       };
       if (selectedShopId) body.shopping_location_id = parseInt(selectedShopId, 10);
+      if (currentReceiptId) body.receipt_id = currentReceiptId;
       return grocyFetch('/stock/products/' + pid + '/add', 'POST', body);
     }).then(function() {
       var converted = toBaseUnit(item.quantity || 1, item.unit || 'Stueck');
@@ -955,7 +1103,27 @@ function doImport(toImport, purchaseDate, doUpdate, dupIds) {
   importNext(0);
 }
 
+// Vor dem Import: Rechnung mit aktuell gewähltem Geschäft/Datum aktualisieren (PUT),
+// die hochgeladene PDF anhängen, dann die Käufe buchen (mit receipt_id verknüpft).
+function finalizeAndImport(toImport, purchaseDate) {
+  var btn = $('btn-import');
+  if (btn) { btn.disabled = true; btn.textContent = 'Importiere…'; }
+  updateReceipt(currentReceiptId, purchaseDate).then(function() {
+    return uploadPdfToReceipt(currentReceiptId);
+  }).catch(function(e) {
+    // Sync/Upload-Fehler sind nicht fatal – die Buchungen werden trotzdem durchgeführt.
+    console.warn('Rechnung finalisieren fehlgeschlagen:', e);
+  }).then(function() {
+    if (btn) btn.textContent = 'Bestätigt – importieren';
+    doImport(toImport, purchaseDate, false, []);
+  });
+}
+
 $('btn-import').addEventListener('click', function() {
+  if (!currentReceiptId || receiptUndone) {
+    alert('Es ist keine Rechnung angelegt (rückgängig gemacht). Bitte zuerst „Wiederherstellen“ wählen.');
+    return;
+  }
   analysisData.forEach(function(item, idx) {
     var qi = $('qty-' + idx);
     var ui = $('unit-' + idx);
@@ -968,7 +1136,7 @@ $('btn-import').addEventListener('click', function() {
 
   checkDuplicates(matchedIds, purchaseDate, selectedShopId).then(function(dupIds) {
     if (dupIds.length === 0) {
-      doImport(toImport, purchaseDate, false, []);
+      finalizeAndImport(toImport, purchaseDate);
       return;
     }
     var dupNames = toImport
@@ -990,7 +1158,7 @@ $('btn-import').addEventListener('click', function() {
       content: el,
       buttons: [
         {label: 'Neu hinzufügen', primary: true, resolve: function() {
-          doImport(toImport, purchaseDate, false, []);
+          finalizeAndImport(toImport, purchaseDate);
         }},
         {label: 'Abbrechen', primary: false, resolve: function() {
           // nichts tun
@@ -998,18 +1166,26 @@ $('btn-import').addEventListener('click', function() {
       ]
     });
   }).catch(function() {
-    doImport(toImport, purchaseDate, false, []);
+    finalizeAndImport(toImport, purchaseDate);
   });
 });
 
 $('btn-restart').addEventListener('click',function(){
+  // Nach abgeschlossenem Import ist currentReceiptId bereits freigegeben – hier
+  // nur UI/State zurücksetzen, NICHT die fertige Rechnung löschen.
+  currentReceiptId=null;receiptUndone=false;receiptError=null;
+  $('receipt-banner').style.display='none';
   pdfFile=null;analysisData=[];selectedShopId=null;
   $('drop-zone').classList.remove('has-file');
   $('drop-label').textContent='PDF hier ablegen oder klicken';
   $('btn-analyze').disabled=true;goTo('upload');
 });
 $('btn-back-config').addEventListener('click',function(){goTo('config');});
-$('btn-back-upload').addEventListener('click',function(){goTo('upload');});
+$('btn-back-upload').addEventListener('click',function(){
+  // Review verlassen ohne Import → noch nicht genutzte Rechnung verwerfen (löschen).
+  discardReceiptIfAny();
+  goTo('upload');
+});
 $('btn-back-settings').addEventListener('click',function(){goTo('config');});
 </script>
 </body>
