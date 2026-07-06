@@ -57,6 +57,32 @@
 			</div>
 
 			<div class="form-group">
+				<label for="location_id">{{ $__t('Location') }}</label>
+				<select class="custom-control custom-select"
+					id="location_id"
+					name="location_id">
+					<option value="">{{ $__t('None') }}</option>
+					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+					<option value="{{ $locationTreeItem['id'] }}"
+						@if($mode == 'edit' && $equipment->location_id == $locationTreeItem['id']) selected="selected" @endif>{{ $locationTreeItem['path'] }}</option>
+					@endforeach
+				</select>
+			</div>
+
+			<div class="form-group">
+				<label for="product_group_id">{{ $__t('Product group') }}</label>
+				<select class="custom-control custom-select"
+					id="product_group_id"
+					name="product_group_id">
+					<option value="">{{ $__t('None') }}</option>
+					@foreach($productgroups as $productgroup)
+					<option value="{{ $productgroup->id }}"
+						@if($mode == 'edit' && $equipment->product_group_id == $productgroup->id) selected="selected" @endif>{{ $productgroup->name }}</option>
+					@endforeach
+				</select>
+			</div>
+
+			<div class="form-group">
 				<label for="receipt_id">{{ $__t('Receipt') }}</label>
 				<div class="input-group">
 					<select class="custom-control custom-select"

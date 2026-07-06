@@ -83,6 +83,8 @@
 							href="#"><i class="fa-solid fa-eye"></i></a>
 					</th>
 					<th>{{ $__t('Name') }}</th>
+					<th>{{ $__t('Location') }}</th>
+					<th>{{ $__t('Product group') }}</th>
 
 					@include('components.userfields_thead', array(
 					'userfields' => $userfields,
@@ -94,6 +96,10 @@
 				</tr>
 			</thead>
 			<tbody class="d-none">
+				@php
+				$equipmentLocationPaths = [];
+				foreach (SortLocationsAsTree($locations) as $locationTreeItem) { $equipmentLocationPaths[$locationTreeItem['id']] = $locationTreeItem['path']; }
+				@endphp
 				@foreach($equipment as $equipmentItem)
 				<tr data-equipment-id="{{ $equipmentItem->id }}">
 					<td class="fit-content">
@@ -127,6 +133,13 @@
 					</td>
 					<td>
 						{{ $equipmentItem->name }}
+					</td>
+					<td>
+						@if($equipmentItem->location_id && isset($equipmentLocationPaths[$equipmentItem->location_id])){{ CollapseLocationPath($equipmentLocationPaths[$equipmentItem->location_id]) }}@endif
+					</td>
+					<td>
+						@php $equipmentProductGroup = $equipmentItem->product_group_id ? FindObjectInArrayByPropertyValue($productgroups, 'id', $equipmentItem->product_group_id) : null; @endphp
+						@if($equipmentProductGroup != null){{ $equipmentProductGroup->name }}@endif
 					</td>
 
 					@include('components.userfields_tbody', array(
