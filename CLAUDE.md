@@ -219,7 +219,7 @@ Ergänzende Dokumentation des standalone HTML-Widgets zum PDF-Rechnungsimport (s
 - **Webroot:** `/var/www/grocy/public/`
 - **Widget-URL:** `https://grocy.offges.de/grocy-import.html`
 - **Deploy-Befehl:** `sudo cp grocy-import-vX.html /var/www/grocy/public/grocy-import.html`
-- **Ab v20 zusätzlich:** `sudo cp url-proxy.php /var/www/grocy/public/url-proxy.php` – serverseitiger Abruf-Proxy für den Produkt-Link-Import (wird von nginx+PHP-FPM direkt ausgeliefert, kein nginx-Umbau nötig; nur http/https, blockt private IPs → SSRF-Schutz). Ohne diese Datei funktioniert nur der „Abrufen"-Teil des Neuanlegen-Dialogs nicht; der Rest des Widgets bleibt unberührt.
+- **Ab v20 zusätzlich:** `sudo cp url-proxy.php /var/www/grocy/public/url-proxy.php` – serverseitiger Abruf-Proxy für den Produkt-Link-Import (wird von nginx+PHP-FPM direkt ausgeliefert, kein nginx-Umbau nötig). **Härtung (öffentlicher Server):** verlangt einen gültigen Grocy-API-Key (Header `GROCY-API-KEY`, geprüft gegen `data/grocy.db` → `api_keys`) → kein anonymer Zugriff; nur http/https + IPv4, blockt private/reservierte IPs, verfolgt Redirects manuell und prüft jeden Hop, pinnt die Verbindung an die geprüfte IP (SSRF-/DNS-Rebinding-Schutz), 15s-Timeout, max. 8 MB. Liegt die DB nicht unter `../data/grocy.db`, `GROCY_DB_PATH` in der Datei bzw. `GROCY_DB_FILE`-Env anpassen. Ohne diese Datei funktioniert nur der „Abrufen"-Teil des Neuanlegen-Dialogs nicht; der Rest des Widgets bleibt unberührt.
 
 **nginx-Konfiguration**
 - **Config:** `/etc/nginx/sites-enabled/grocy.offges.de`
