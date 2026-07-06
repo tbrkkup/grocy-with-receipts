@@ -122,10 +122,10 @@
 					id="location_id"
 					name="location_id">
 					<option></option>
-					@foreach($locations as $location)
+					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
 					<option @if($mode=='edit'
 						&&
-						$location->id == $product->location_id) selected="selected" @endif value="{{ $location->id }}">{{ $location->name }}</option>
+						$locationTreeItem['id'] == $product->location_id) selected="selected" @endif value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
 					@endforeach
 				</select>
 				<div class="invalid-feedback">{{ $__t('A location is required') }}</div>
@@ -142,10 +142,10 @@
 					id="default_consume_location_id"
 					name="default_consume_location_id">
 					<option></option>
-					@foreach($locations as $location)
+					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
 					<option @if($mode=='edit'
 						&&
-						$location->id == $product->default_consume_location_id) selected="selected" @endif value="{{ $location->id }}">{{ $location->name }}</option>
+						$locationTreeItem['id'] == $product->default_consume_location_id) selected="selected" @endif value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
 					@endforeach
 				</select>
 

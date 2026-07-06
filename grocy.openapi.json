@@ -4660,6 +4660,11 @@
 					"description": {
 						"type": "string"
 					},
+					"parent_location_id": {
+						"type": "integer",
+						"nullable": true,
+						"description": "Optional parent location id for hierarchical (nested) locations; null = top-level"
+					},
 					"row_created_timestamp": {
 						"type": "string",
 						"format": "date-time"
@@ -5910,7 +5915,8 @@
 					"permission_hierarchy",
 					"receipts",
 					"receipt_files",
-					"product_receipt_aliases"
+					"product_receipt_aliases",
+					"locations_resolved"
 				]
 			},
 			"ExposedEntityNoListing": {
@@ -5933,7 +5939,8 @@
 					"recipes_pos_resolved",
 					"battery_charge_cycles",
 					"product_barcodes_view",
-					"permission_hierarchy"
+					"permission_hierarchy",
+					"locations_resolved"
 				]
 			},
 			"ExposedEntityNoDelete": {
@@ -5949,7 +5956,8 @@
 					"recipes_pos_resolved",
 					"battery_charge_cycles",
 					"product_barcodes_view",
-					"permission_hierarchy"
+					"permission_hierarchy",
+					"locations_resolved"
 				]
 			},
 			"ExposedEntityEditRequiresAdmin": {

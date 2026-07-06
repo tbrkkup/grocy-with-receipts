@@ -104,6 +104,7 @@
 							href="#"><i class="fa-solid fa-eye"></i></a>
 					</th>
 					<th>{{ $__t('Name') }}</th>
+					<th>{{ $__t('Parent location') }}</th>
 					<th>{{ $__t('Description') }}</th>
 
 					@include('components.userfields_thead', array(
@@ -131,13 +132,17 @@
 							href="#"
 							data-location-id="{{ $location->id }}"
 							data-location-name="{{ $location->name }}"
+							data-has-children="@if($locationMeta[$location->id]['has_children'])1@else0@endif"
 							data-toggle="tooltip"
 							title="{{ $__t('Delete this item') }}">
 							<i class="fa-solid fa-trash"></i>
 						</a>
 					</td>
 					<td>
-						{{ $location->name }}
+						{!! str_repeat('&nbsp;&nbsp;&nbsp;', $locationMeta[$location->id]['level']) !!}{{ $location->name }}
+					</td>
+					<td>
+						{{ $locationMeta[$location->id]['parent_name'] }}
 					</td>
 					<td>
 						{{ $location->description }}
