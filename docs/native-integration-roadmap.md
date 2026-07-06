@@ -33,7 +33,7 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
 
 | Heute (Widget) | Nativ (Ziel) |
 |---|---|
-| `/claude-proxy` (nginx), Key im Browser | **ZWEI getrennte Endpunkte** (gemeinsames Antwort-JSON, unabhängig austauschbare Backends): `POST /api/receipts/parse-invoice` (digital, Text) und `POST /api/receipts/analyze-scan` (Scan/Foto, Bild→Vision). Grocy-Controller ruft Anthropic via **Guzzle**; Key aus `GROCY_ANTHROPIC_API_KEY` (config.php/Env). Kein Key mehr im Browser. |
+| `/claude-proxy` (nginx), Key im Browser | **ZWEI getrennte Endpunkte** (konsistentes Verb, gemeinsames Antwort-JSON, unabhängig austauschbare Backends): `POST /api/receipts/analyze-invoice` (digital, Text) und `POST /api/receipts/analyze-scan` (Scan/Foto, Bild→Vision). Grocy-Controller ruft Anthropic via **Guzzle**; Key aus `GROCY_ANTHROPIC_API_KEY` (config.php/Env). Kein Key mehr im Browser. |
 | `url-proxy.php` (standalone) | **`GET /api/receipts/fetch-url`** – Controller mit denselben SSRF-Schutzmaßnahmen (IP-Pinning, Redirect-Prüfung), Auth über Grocy-Session/API-Key (statt eigener DB-Abfrage). |
 | Datei-Upload per `/api/files/receipts/...` | unverändert (Grocy-Files-API + `receipt_files`). |
 | Lagerzugang je Position via `/api/stock/products/{id}/add` | wahlweise so belassen **oder** dedizierter transaktionaler **`POST /api/receipts/{id}/import`** (Rechnung+Buchungen+Dateien+Alias-Lernen atomar). |
@@ -48,11 +48,12 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
   Feature-Flag `Setting('FEATURE_FLAG_RECEIPT_IMPORT', true)`.
 - Controller `ReceiptImportApiController` mit **zwei getrennten Analyse-Endpunkten**
   (bewusst getrennt, damit der digitale Pfad die KI später verlustfrei ersetzen kann):
-  - `POST /api/receipts/parse-invoice` – **digital**. Body: `{ text, context }` (pdf.js-Text
+  - `POST /api/receipts/analyze-invoice` – **digital**. Body: `{ text, context }` (pdf.js-Text
     aus dem Browser). Backend heute Anthropic (Text-Prompt); über
     `GROCY_RECEIPT_DIGITAL_BACKEND = 'anthropic' | 'parser'` (Default `anthropic`) später auf
     einen regelbasierten Parser umstellbar (z. B. ZUGFeRD/XRechnung-XML) – **ohne Frontend-/
-    Scan-Änderung**, dann sogar ohne Anthropic-Key.
+    Scan-Änderung**, dann sogar ohne Anthropic-Key. (Verb bewusst „analyze", nicht „parse":
+    der Name bleibt implementierungs-neutral, das Backend ist frei tauschbar.)
   - `POST /api/receipts/analyze-scan` – **Scan/Foto**. Body: `{ images: [base64], context }` →
     Anthropic **Vision**.
   - Beide liefern **dasselbe Antwort-JSON**; gemeinsame Normalisierung (Geschäfts-Fallback,
