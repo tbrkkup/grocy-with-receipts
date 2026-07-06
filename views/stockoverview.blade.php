@@ -468,7 +468,12 @@
 						{{ $currentStockEntry->parent_product_name }}
 					</td>
 					<td>
+						@php $defaultLocationId = $productDefaultLocationId[$currentStockEntry->product_id] ?? null; @endphp
+						@if($defaultLocationId !== null && isset($locationFullPathById[$defaultLocationId]))
+						<span data-toggle="tooltip" title="{{ $locationFullPathById[$defaultLocationId] }}">{{ CollapseLocationPath($locationFullPathById[$defaultLocationId]) }}</span>
+						@else
 						{{ $currentStockEntry->product_default_location_name }}
+						@endif
 					</td>
 					<td>
 						@if(!empty($currentStockEntry->product_picture_file_name))
