@@ -2513,3 +2513,39 @@ msgstr ""
 
 msgid "Are you sure you want to delete the receipt alias \"%s\"?"
 msgstr ""
+
+msgid "Receipt import settings"
+msgstr ""
+
+msgid "The Anthropic API key is stored on the server (not in the browser) and is used to analyze receipts for the bulk purchase. It is required for scanned/photographed receipts."
+msgstr ""
+
+msgid "Anthropic API key"
+msgstr ""
+
+msgid "Configured – leave empty to keep unchanged"
+msgstr ""
+
+msgid "Not configured"
+msgstr ""
+
+msgid "A key is currently configured"
+msgstr ""
+
+msgid "No key configured yet"
+msgstr ""
+
+msgid "Analysis backend for digital invoices"
+msgstr ""
+
+msgid "Anthropic (AI)"
+msgstr ""
+
+msgid "Rule-based parser (not implemented yet)"
+msgstr ""
+
+msgid "Scanned/photographed receipts always use Anthropic (vision)."
+msgstr ""
+
+msgid "Settings saved"
+msgstr ""

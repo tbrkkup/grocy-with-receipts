@@ -44,13 +44,26 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
 ## 4. Phasenplan (inkrementell – Widget bleibt bis Phase 6 nutzbar)
 
 ### Phase 0 – Server-Fundament (unsichtbar, kein UI)
-> **Fortschritt (2026-07-06):** Config-Settings (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`,
-> `RECEIPT_DIGITAL_BACKEND`, `FEATURE_FLAG_RECEIPT_IMPORT`), `ReceiptAnalysisService`
-> (Guzzle→Anthropic, geteilte Normalisierung/Shop-Fallback, `receipt_text`) und
-> `ReceiptImportApiController` mit Routen `POST /api/receipts/parse-invoice` und
-> `…/parse-scan` gebaut. Verdrahtung gegen Demo-Grocy verifiziert (Route→Controller→Service;
-> ohne Key sauberer Fehler). **Offen in Phase 0:** UI-Einstellung für den Key,
-> `GET /api/receipts/fetch-url`, und Umstellung des Widgets auf die neuen Endpunkte.
+> **✅ Phase 0 abgeschlossen (Server-Seite, 2026-07-06):**
+> - Config-Settings (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `RECEIPT_DIGITAL_BACKEND`,
+>   `FEATURE_FLAG_RECEIPT_IMPORT`) + `ReceiptAnalysisService` (Guzzle→Anthropic, geteilte
+>   Normalisierung/Shop-Fallback, `receipt_text`).
+> - `ReceiptImportApiController`: `POST /api/receipts/parse-invoice`, `POST …/parse-scan`,
+>   `GET …/fetch-url` (SSRF-hardened, Admin-frei da /api bereits auth-geschützt),
+>   `POST …/settings` (schreibt settingoverrides, nur Admin).
+> - **UI-Einstellungsseite** `/receiptimportsettings` (Key server-seitig pflegbar, ohne
+>   config.php; „konfiguriert/nicht konfiguriert"-Status) + Menüeintrag.
+> - **Getestet mit Playwright/curl:** Settings-Seite rendert, Speichern schreibt override,
+>   Reload zeigt „konfiguriert" (Key wird server-seitig gelesen); `fetch-url` blockt
+>   loopback/Metadaten (403), fehlende URL (400); parse-Endpunkte melden ohne Key sauberen
+>   Fehler.
+>
+> **Bewusst NICHT in Phase 0 (Begründung):** Umstellung des **Legacy-Widgets** auf die
+> Endpunkte. Um den Anthropic-Key *vollständig* aus dem Browser zu holen, müssten auch
+> Produkt-Matching (Call 2) und URL-Extraktion server-seitig werden (nicht Teil des
+> Phase-0-Endpunkt-Scopes). Da das Widget in Phase 2/3 durch native Seiten ersetzt wird
+> (die die neuen Endpunkte von Anfang an nutzen), wäre eine Teilmigration des Widgets
+> Wegwerf-Arbeit. Der Key bleibt daher im Legacy-Widget, bis die native UI es ablöst.
 
 - Settings: `Setting('ANTHROPIC_API_KEY', '')`, `Setting('ANTHROPIC_MODEL', 'claude-sonnet-4-6')`,
   Feature-Flag `Setting('FEATURE_FLAG_RECEIPT_IMPORT', true)`.
