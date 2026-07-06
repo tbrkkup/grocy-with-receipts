@@ -470,7 +470,7 @@
 					<td>
 						@php $defaultLocationId = $productDefaultLocationId[$currentStockEntry->product_id] ?? null; @endphp
 						@if($defaultLocationId !== null && isset($locationFullPathById[$defaultLocationId]))
-						<span data-toggle="tooltip" title="{{ $locationFullPathById[$defaultLocationId] }}">{{ CollapseLocationPath($locationFullPathById[$defaultLocationId]) }}</span>
+						{{ CollapseLocationPath($locationFullPathById[$defaultLocationId]) }}
 						@else
 						{{ $currentStockEntry->product_default_location_name }}
 						@endif

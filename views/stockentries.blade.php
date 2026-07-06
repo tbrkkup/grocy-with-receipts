@@ -76,7 +76,7 @@
 				id="location-filter">
 				<option value="all">{{ $__t('All') }}</option>
 				@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
-				<option value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
+				<option value="{{ $locationTreeItem['id'] }}">{{ CollapseLocationPath($locationFullPathById[$locationTreeItem['id']] ?? $locationTreeItem['path']) }}</option>
 				@endforeach
 			</select>
 		</div>
@@ -310,7 +310,7 @@
 					<td id="stock-{{ $stockEntry->id }}-location"
 						class="@if(!GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING) d-none @endif"
 						data-location-id="{{ $stockEntry->location_id }}">
-						{{ FindObjectInArrayByPropertyValue($locations, 'id', $stockEntry->location_id)->name }}
+						@if(isset($locationFullPathById[$stockEntry->location_id])){{ CollapseLocationPath($locationFullPathById[$stockEntry->location_id]) }}@endif
 					</td>
 					<td id="stock-{{ $stockEntry->id }}-shopping-location"
 						class="@if(!GROCY_FEATURE_FLAG_STOCK_PRICE_TRACKING) d-none @endif"

@@ -52,7 +52,9 @@ $("#location-filter").on("change", function()
 		text = "";
 	}
 
-	stockEntriesTable.column(stockEntriesTable.colReorder.transpose(6)).search(text).draw();
+	// Literale (nicht-smarte) Suche: der Standort-Pfad enthält Sonderzeichen
+	// (›, …), die die Smart-Suche sonst in Einzel-Tokens zerlegen würde.
+	stockEntriesTable.column(stockEntriesTable.colReorder.transpose(6)).search(text, false, false).draw();
 });
 
 Grocy.Components.ProductPicker.GetPicker().on('change', function(e)

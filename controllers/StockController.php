@@ -742,7 +742,15 @@ class StockController extends BaseController
 		$usersService = UsersService::GetInstance();
 		$nextXDays = $usersService->GetUserSettings(GROCY_USER_ID)['stock_due_soon_days'];
 
+		// Voller Pfad je Location (für die Standort-Spalte, ggf. gekürzt angezeigt)
+		$locationFullPathById = [];
+		foreach (SortLocationsAsTree($this->DB->locations()) as $locationTreeItem)
+		{
+			$locationFullPathById[$locationTreeItem['id']] = $locationTreeItem['path'];
+		}
+
 		return $this->RenderPage($response, 'stockentries', [
+			'locationFullPathById' => $locationFullPathById,
 			'products' => $this->DB->products()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'quantityunits' => $this->DB->quantity_units()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
