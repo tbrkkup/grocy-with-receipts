@@ -44,6 +44,14 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
 ## 4. Phasenplan (inkrementell – Widget bleibt bis Phase 6 nutzbar)
 
 ### Phase 0 – Server-Fundament (unsichtbar, kein UI)
+> **Fortschritt (2026-07-06):** Config-Settings (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`,
+> `RECEIPT_DIGITAL_BACKEND`, `FEATURE_FLAG_RECEIPT_IMPORT`), `ReceiptAnalysisService`
+> (Guzzle→Anthropic, geteilte Normalisierung/Shop-Fallback, `receipt_text`) und
+> `ReceiptImportApiController` mit Routen `POST /api/receipts/parse-invoice` und
+> `…/parse-scan` gebaut. Verdrahtung gegen Demo-Grocy verifiziert (Route→Controller→Service;
+> ohne Key sauberer Fehler). **Offen in Phase 0:** UI-Einstellung für den Key,
+> `GET /api/receipts/fetch-url`, und Umstellung des Widgets auf die neuen Endpunkte.
+
 - Settings: `Setting('ANTHROPIC_API_KEY', '')`, `Setting('ANTHROPIC_MODEL', 'claude-sonnet-4-6')`,
   Feature-Flag `Setting('FEATURE_FLAG_RECEIPT_IMPORT', true)`.
 - Controller `ReceiptImportApiController` mit **zwei getrennten Analyse-Endpunkten**

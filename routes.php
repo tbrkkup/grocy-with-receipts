@@ -7,6 +7,7 @@ use Grocy\Controllers\Api\FilesApiController;
 use Grocy\Controllers\Api\GenericEntityApiController;
 use Grocy\Controllers\Api\OpenApiController;
 use Grocy\Controllers\Api\PrintApiController;
+use Grocy\Controllers\Api\ReceiptImportApiController;
 use Grocy\Controllers\Api\RecipesApiController;
 use Grocy\Controllers\Api\StockApiController;
 use Grocy\Controllers\Api\SystemApiController;
@@ -166,6 +167,10 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->get('/system/config', [SystemApiController::class, 'GetConfig']);
 	$group->post('/system/log-missing-localization', [SystemApiController::class, 'LogMissingLocalization']);
 	$group->get('/system/localization-strings', [SystemApiController::class, 'GetLocalizationStrings']);
+
+	// Receipt import (Sammeleinkauf) – serverseitige Beleg-Analyse
+	$group->post('/receipts/parse-invoice', [ReceiptImportApiController::class, 'ParseInvoice']);
+	$group->post('/receipts/parse-scan', [ReceiptImportApiController::class, 'ParseScan']);
 
 	// Generic entity interaction
 	$group->get('/objects/{entity}', [GenericEntityApiController::class, 'GetObjects']);
