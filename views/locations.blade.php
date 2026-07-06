@@ -132,7 +132,7 @@
 							href="#"
 							data-location-id="{{ $location->id }}"
 							data-location-name="{{ $location->name }}"
-							data-has-children="@if($locationMeta[$location->id]['has_children'])1@else0@endif"
+							data-has-children="{{ $locationMeta[$location->id]['has_children'] ? '1' : '0' }}"
 							data-toggle="tooltip"
 							title="{{ $__t('Delete this item') }}">
 							<i class="fa-solid fa-trash"></i>
