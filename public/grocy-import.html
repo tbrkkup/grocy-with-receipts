@@ -262,7 +262,7 @@ var CHANGELOG = [
     items: [
       'Neues Produkt aus Link: Im Neuanlegen-Dialog kann ein Produkt-Link abgerufen werden – Claude zieht Name, Gewicht und Produktbild von der Seite',
       'Gewicht landet in der Produktbeschreibung, das Bild wird als Grocy-Produktbild angehängt',
-      'Abruf läuft über den serverseitigen Proxy public/url-proxy.php (umgeht CORS; mit SSRF-Schutz). Muss wie das Widget nach /public/ deployt werden',
+      'Abruf über serverseitigen Proxy public/url-proxy.php: verlangt einen gültigen Grocy-API-Key (kein offener Proxy), verfolgt Redirects nur geprüft und pinnt die IP (SSRF-/Rebinding-Schutz). Muss wie das Widget nach /public/ deployt werden',
       'Bild-/Seitenabruf und Bild-Upload sind nicht fatal – schlägt etwas fehl, wird das Produkt trotzdem angelegt'
     ]
   },
@@ -519,7 +519,13 @@ function promptNewProduct(suggestedName){
           var wStr='Gewicht: '+info.quantity+' '+info.unit;
           descInput.value=descInput.value?(descInput.value+' · '+wStr):wStr;
         }
-        if(info.image_url){fetchedImageUrl=info.image_url;imgPreview.src=urlProxy(info.image_url);imgPreview.style.display='block';}
+        if(info.image_url){
+          fetchedImageUrl=info.image_url;
+          // Vorschau über den Proxy laden (mit API-Key-Header) → ObjectURL, da <img src> keinen Header sendet.
+          proxyFetch(info.image_url).then(function(r){return r.ok?r.blob():null;}).then(function(b){
+            if(b){imgPreview.src=URL.createObjectURL(b);imgPreview.style.display='block';}
+          }).catch(function(){});
+        }
         urlStatus.style.color='var(--success)';
         urlStatus.textContent='Übernommen'+(info.image_url?' (inkl. Bild)':'')+((info.quantity&&info.unit)?' · '+info.quantity+' '+info.unit:'');
       }).catch(function(e){
@@ -1270,11 +1276,13 @@ function setNew(idx){analysisData[idx].match=null;renderReview();}
 function applyManual(idx){var sel=$('manual-'+idx);if(sel&&sel.value)changeMatch(idx,sel.value);}
 
 // Serverseitiger Abruf-Proxy (public/url-proxy.php) – umgeht CORS für fremde Seiten/Bilder.
+// Der Proxy verlangt einen gültigen Grocy-API-Key (kein offener Internet-Proxy).
 function urlProxy(u){return 'url-proxy.php?url='+encodeURIComponent(u);}
+function proxyFetch(u){return fetch(urlProxy(u),{headers:{'GROCY-API-KEY':grocyKey}});}
 
 // Holt eine Produktseite über den Proxy und lässt Claude Name/Gewicht/Bild extrahieren.
 function fetchProductFromUrl(pageUrl){
-  return fetch(urlProxy(pageUrl)).then(function(r){
+  return proxyFetch(pageUrl).then(function(r){
     if(!r.ok)throw new Error('Abruf HTTP '+r.status);
     return r.text();
   }).then(function(html){
@@ -1297,7 +1305,7 @@ function fetchProductFromUrl(pageUrl){
 
 // Lädt ein Produktbild über den Proxy und hängt es als Grocy-Produktbild an.
 function uploadProductPicture(productId,imageUrl){
-  return fetch(urlProxy(imageUrl)).then(function(r){
+  return proxyFetch(imageUrl).then(function(r){
     if(!r.ok)throw new Error('Bild HTTP '+r.status);
     return r.blob();
   }).then(function(blob){
