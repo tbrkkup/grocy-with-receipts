@@ -373,7 +373,7 @@
 
 				@php
 				$masterDataViews = [
-				'products', 'locations', 'shoppinglocations', 'quantityunits',
+				'products', 'locations', 'locationoverview', 'shoppinglocations', 'quantityunits',
 				'productgroups', 'receiptaliases', 'chores', 'batteries', 'taskcategories',
 				'userfields', 'userentities'
 				]
@@ -403,6 +403,12 @@
 							<a class="nav-link discrete-link"
 								href="{{ $U('/locations') }}">
 								<span class="nav-link-text">{{ $__t('Locations') }}</span>
+							</a>
+						</li>
+						<li class="@if($viewName == 'locationoverview') active-page @endif">
+							<a class="nav-link discrete-link"
+								href="{{ $U('/locationoverview') }}">
+								<span class="nav-link-text">{{ $__t('Location overview') }}</span>
 							</a>
 						</li>
 						@endif

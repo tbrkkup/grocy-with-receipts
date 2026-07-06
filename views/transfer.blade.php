@@ -31,9 +31,9 @@
 					id="location_id_from"
 					name="location_id_from">
 					<option></option>
-					@foreach($locations as $location)
-					<option value="{{ $location->id }}"
-						data-is-freezer="{{ $location->is_freezer }}">{{ $location->name }}</option>
+					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+					<option value="{{ $locationTreeItem['id'] }}"
+						data-is-freezer="{{ $locationTreeItem['obj']->is_freezer }}">{{ $locationTreeItem['path'] }}</option>
 					@endforeach
 				</select>
 				<div class="invalid-feedback">{{ $__t('A location is required') }}</div>
@@ -52,9 +52,9 @@
 					id="location_id_to"
 					name="location_id_to">
 					<option></option>
-					@foreach($locations as $location)
-					<option value="{{ $location->id }}"
-						data-is-freezer="{{ $location->is_freezer }}">{{ $location->name }}</option>
+					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+					<option value="{{ $locationTreeItem['id'] }}"
+						data-is-freezer="{{ $locationTreeItem['obj']->is_freezer }}">{{ $locationTreeItem['path'] }}</option>
 					@endforeach
 				</select>
 				<div class="invalid-feedback">{{ $__t('A location is required') }}</div>

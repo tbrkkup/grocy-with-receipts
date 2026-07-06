@@ -42,6 +42,21 @@
 			</div>
 
 			<div class="form-group">
+				<label for="parent_location_id">{{ $__t('Parent location') }}</label>
+				<select class="form-control"
+					id="parent_location_id"
+					name="parent_location_id">
+					<option value="">{{ $__t('None') }}</option>
+					@foreach($parentOptions as $parentOption)
+					@if(!in_array($parentOption->id, $excludedParentIds))
+					<option value="{{ $parentOption->id }}"
+						@if($mode == 'edit' && $location->parent_location_id == $parentOption->id) selected="selected" @endif>{!! str_repeat('&nbsp;&nbsp;&nbsp;', $parentOption->level) !!}{{ $parentOption->name }}</option>
+					@endif
+					@endforeach
+				</select>
+			</div>
+
+			<div class="form-group">
 				<div class="custom-control custom-checkbox">
 					<input @if($mode=='create'
 						)

@@ -82,8 +82,8 @@
 			<select class="custom-control custom-select"
 				id="location-filter">
 				<option value="all">{{ $__t('All') }}</option>
-				@foreach($locations as $location)
-				<option value="{{ $location->id }}">{{ $location->name }}</option>
+				@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+				<option value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
 				@endforeach
 			</select>
 		</div>

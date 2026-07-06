@@ -1,5 +1,5 @@
 ﻿var locationsTable = $('#locations-table').DataTable({
-	'order': [[2, 'asc']],
+	'order': [], // serverseitige Pfad-Reihenfolge (Baum) beibehalten
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
 		{ 'orderable': false, 'targets': 1 },
@@ -29,6 +29,12 @@ $("#clear-filter-button").on("click", function()
 
 $(document).on('click', '.location-delete-button', function(e)
 {
+	if ($(e.currentTarget).attr('data-has-children') === '1')
+	{
+		bootbox.alert(__t('This location has sub-locations. Please move or delete them first.'));
+		return;
+	}
+
 	var objectName = $(e.currentTarget).attr('data-location-name');
 	var objectId = $(e.currentTarget).attr('data-location-id');
 
