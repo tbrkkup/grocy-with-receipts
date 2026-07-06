@@ -17,6 +17,8 @@ class EquipmentController extends BaseController
 			return $this->RenderPage($response, 'equipmentform', [
 				'mode' => 'create',
 				'userfields' => UserfieldsService::GetInstance()->GetFields('equipment'),
+				'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
+				'productgroups' => $this->DB->product_groups()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 				'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 				'shoppinglocations' => $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE')
 			]);
@@ -27,6 +29,8 @@ class EquipmentController extends BaseController
 				'equipment' => $this->DB->equipment($args['equipmentId']),
 				'mode' => 'edit',
 				'userfields' => UserfieldsService::GetInstance()->GetFields('equipment'),
+				'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
+				'productgroups' => $this->DB->product_groups()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 				'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 				'shoppinglocations' => $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE')
 			]);
@@ -37,6 +41,8 @@ class EquipmentController extends BaseController
 	{
 		return $this->RenderPage($response, 'equipment', [
 			'equipment' => $this->DB->equipment()->orderBy('name', 'COLLATE NOCASE'),
+			'locations' => $this->DB->locations()->orderBy('name', 'COLLATE NOCASE'),
+			'productgroups' => $this->DB->product_groups()->orderBy('name', 'COLLATE NOCASE'),
 			'userfields' => UserfieldsService::GetInstance()->GetFields('equipment'),
 			'userfieldValues' => UserfieldsService::GetInstance()->GetAllValues('equipment')
 		]);
