@@ -298,7 +298,23 @@ class StockController extends BaseController
 			$where = '1=1';
 		}
 
+		// Voller Pfad je Location (für die Default-Location-Spalte als Tooltip +
+		// abgekürzte Anzeige) sowie Default-Location je Produkt.
+		$locationFullPathById = [];
+		foreach (SortLocationsAsTree($this->DB->locations()) as $locationTreeItem)
+		{
+			$locationFullPathById[$locationTreeItem['id']] = $locationTreeItem['path'];
+		}
+
+		$productDefaultLocationId = [];
+		foreach ($this->DB->products() as $overviewProduct)
+		{
+			$productDefaultLocationId[$overviewProduct->id] = $overviewProduct->location_id;
+		}
+
 		return $this->RenderPage($response, 'stockoverview', [
+			'locationFullPathById' => $locationFullPathById,
+			'productDefaultLocationId' => $productDefaultLocationId,
 			'currentStock' => $this->DB->uihelper_stock_current_overview()->where($where),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'currentStockLocations' => StockService::GetInstance()->GetCurrentStockLocations(),

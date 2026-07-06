@@ -108,6 +108,20 @@ function GetLocationAncestorIdMap($locations, $parentProperty = 'parent_location
 	return $map;
 }
 
+// Kürzt einen Location-Pfad ab, sobald er mittlere Ebenen hat: "A › B › C › D"
+// wird zu "A › … › D" (oberste + unterste Ebene bleiben). Pfade mit höchstens
+// zwei Ebenen bleiben unverändert.
+function CollapseLocationPath($path, $separator = ' › ')
+{
+	$parts = explode($separator, $path);
+	if (count($parts) <= 2)
+	{
+		return $path;
+	}
+
+	return $parts[0] . $separator . '…' . $separator . $parts[count($parts) - 1];
+}
+
 function FindAllObjectsInArrayByPropertyValue($array, $propertyName, $propertyValue, $operator = '==')
 {
 	$returnArray = [];
