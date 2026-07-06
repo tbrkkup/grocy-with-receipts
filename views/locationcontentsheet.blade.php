@@ -69,6 +69,14 @@
 
 <hr class="my-2 d-print-none">
 
+@php
+$locationPathById = [];
+foreach (SortLocationsAsTree($locations) as $locationTreeItem)
+{
+	$locationPathById[$locationTreeItem['id']] = $locationTreeItem['path'];
+}
+@endphp
+
 @foreach($locations as $location)
 @if(FindAllObjectsInArrayByPropertyValue($currentStockLocationContent, 'location_id', $location->id) == null)
 @continue
@@ -79,7 +87,7 @@
 			width="114"
 			height="30"
 			class="d-none d-print-flex mx-auto">
-		{{ $location->name }}
+		{{ $locationPathById[$location->id] ?? $location->name }}
 		<a class="btn btn-outline-dark btn-sm responsive-button print-single-location-button d-print-none"
 			href="#">
 			{{ $__t('Print') . ' (' . $__t('this location') . ')' }}

@@ -302,6 +302,7 @@ class StockController extends BaseController
 			'currentStock' => $this->DB->uihelper_stock_current_overview()->where($where),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'currentStockLocations' => StockService::GetInstance()->GetCurrentStockLocations(),
+			'locationAncestorIds' => GetLocationAncestorIdMap($this->DB->locations()),
 			'nextXDays' => $nextXDays,
 			'productGroups' => $this->DB->product_groups()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'userfields' => UserfieldsService::GetInstance()->GetFields('products'),
