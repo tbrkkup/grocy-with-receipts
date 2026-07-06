@@ -54,16 +54,16 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
   umgestellt werden → **Anthropic-Key raus aus dem Browser**, `/claude-proxy` und
   `url-proxy.php` werden perspektivisch überflüssig.
 
-### Phase 1 – Einstiegspunkt im UI
-- Menüpunkt **[ENTSCHEIDUNG: Ort]** „Beleg importieren".
-- **[ENTSCHEIDUNG: Interim-Embed]** Optional als Zwischenschritt das bestehende Widget als
-  eingebettete Grocy-Seite (Blade-View, die die HTML/JS wiederverwendet, in Grocy-Layout)
-  → schnell sichtbarer „ist im UI"-Nutzen, während die nativen Views entstehen.
+### Phase 1 – Menü-Umbau & Einstiegspunkt (entschieden)
+- Bestehendes Einkauf-Menülabel → **„Einzeleinkauf"** (nur Anzeige; Route/Controller
+  bleiben `purchase`). Übersetzungen `Single purchase`/„Einzeleinkauf".
+- Neuer Menüpunkt **„Sammeleinkauf" („Bulk purchase")** direkt darunter → zeigt auf die
+  neue native Seite (`GET /bulkpurchase`). Kein Interim-Embed.
 
-### Phase 2 – Native Upload-/Analyse-Seite
-- `GET /receiptimport` → Blade-View + `viewjs/receiptimport.js`.
+### Phase 2 – Native Upload-/Analyse-Seite („Sammeleinkauf")
+- `GET /bulkpurchase` → Blade-View + `viewjs/bulkpurchase.js`.
 - Zwei Felder wie im Widget (digital = PDF/Text, Scan/Foto = Vision), Grocy-Fortschrittsanzeige.
-- Ruft `POST /api/receipts/analyze`.
+- pdf.js **clientseitig** (gebundelt), ruft `POST /api/receipts/analyze`.
 
 ### Phase 3 – Native Review-/Korrektur-Seite
 - Editierbare Positionen (Menge/Einheit/Produkt-Match), Geschäft-/Datum-Auswahl, Rechnungs-Banner.
@@ -83,14 +83,27 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
 - Wenn nativ vollständig: Widget als Legacy markieren/entfernen; `/claude-proxy` und
   `url-proxy.php` (und die CDN-pdf.js-Abhängigkeit) entfallen.
 
-## 5. Offene Entscheidungen (Rücksprache)
-1. **Anthropic-Key & Claude-Aufruf:** server-seitig (Grocy-Config, Server ruft Anthropic)
-   vs. vorerst client-seitig lassen. → Empfehlung: **server-seitig** (sicherer, kein Key im Browser).
-2. **Einstiegspunkt im Menü:** unter „Einkauf", eigener Punkt „Belege/Beleg importieren",
-   oder Button auf der bestehenden `/receipts`-Seite.
-3. **Interim-Embed:** das jetzige Widget kurzfristig als Grocy-Seite einbetten (schnell sichtbar)
-   – ja/nein.
-4. **PDF/Bild-Verarbeitung:** client-seitig (pdf.js bundeln) vs. server-seitig (Ghostscript/Imagick).
+## 5. Entscheidungen (getroffen am 2026-07-06)
+1. **Anthropic-Key & Claude-Aufruf: SERVERSEITIG.** Der Key wird server-seitig gespeichert
+   und **im UI über das Einstellungsmenü** gepflegt (nicht nur config.php). Server ruft
+   Anthropic per Guzzle. → Umsetzung: UI-editierbare Einstellung (siehe „Offen" unten),
+   Fallback auf `GROCY_ANTHROPIC_API_KEY` (config.php/Env).
+2. **Benennung & Menü-Platzierung (WICHTIG):**
+   - Das Import-Feature (heute `grocy-import.html`) heißt künftig **„Bulk purchase"**
+     (deutsche UI: **„Sammeleinkauf"**).
+   - In der Seitenleiste **unter „Einkauf"**. Der bestehende Einkauf wird **UI-seitig zu
+     „Einzeleinkauf"** umbenannt.
+   - **Backend bleibt `purchase`** (Route/Controller/Endpunkte) für maximale
+     Abwärtskompatibilität – nur die **Anzeige-Labels** ändern sich.
+3. **Kein Interim-Embed – gleich nativ** (Blade + viewjs von Anfang an).
+4. **PDF/Bild-Verarbeitung CLIENTSEITIG** (wie heute, pdf.js/Canvas im Browser; pdf.js
+   künftig bundeln statt CDN).
+
+### Noch offen (kleiner Klärungspunkt bei Umsetzung)
+- **Wo genau lebt die Key-Einstellung im UI?** Grocy kennt UI-editierbar v.a. *User-Settings*
+  (`/usersettings`, pro Nutzer, DB). Für eine Einzelnutzer-Instanz gut geeignet. Alternativ
+  eine eigene kleine Einstellungsseite „Beleg-Import". Vorschlag: als Setting auf einer
+  Einstellungsseite des Features (instanzweit), da der Key die ganze Instanz betrifft.
 
 ## 6. Risiken / Rahmen
 - **Multi-User/Key-Verwaltung:** ein globaler Instanz-Key (config) vs. pro Nutzer.
