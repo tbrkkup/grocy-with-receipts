@@ -212,6 +212,80 @@ class StockController extends BaseController
 		]);
 	}
 
+	public function LocationOverview(Request $request, Response $response, array $args)
+	{
+		// Direkte Bestände je Lagerort: Menge der (distinkten) Produkte
+		$directProducts = [];
+		foreach ($this->DB->stock() as $stockEntry)
+		{
+			if ($stockEntry->location_id === null)
+			{
+				continue;
+			}
+
+			$directProducts[$stockEntry->location_id][$stockEntry->product_id] = true;
+		}
+
+		// Baumstruktur (einmal laden)
+		$allLocations = [];
+		$childrenByParent = [];
+		foreach ($this->DB->locations() as $loc)
+		{
+			$allLocations[] = $loc;
+			$childrenByParent[$loc->parent_location_id][] = $loc->id;
+		}
+
+		// Distinkte Produkte inkl. aller Unterorte (memoisiert, zyklen-sicher)
+		$inclCache = [];
+		$visiting = [];
+		$computeIncl = function ($id) use (&$computeIncl, &$inclCache, &$visiting, $childrenByParent, $directProducts)
+		{
+			if (isset($inclCache[$id]))
+			{
+				return $inclCache[$id];
+			}
+
+			if (isset($visiting[$id]))
+			{
+				return []; // Zyklenschutz
+			}
+			$visiting[$id] = true;
+
+			$productSet = isset($directProducts[$id]) ? $directProducts[$id] : [];
+			if (isset($childrenByParent[$id]))
+			{
+				foreach ($childrenByParent[$id] as $childId)
+				{
+					foreach ($computeIncl($childId) as $productId => $ignored)
+					{
+						$productSet[$productId] = true;
+					}
+				}
+			}
+
+			unset($visiting[$id]);
+			$inclCache[$id] = $productSet;
+			return $productSet;
+		};
+
+		$rows = [];
+		foreach (SortLocationsAsTree($allLocations) as $treeItem)
+		{
+			$id = $treeItem['id'];
+			$rows[] = [
+				'name' => $treeItem['name'],
+				'level' => $treeItem['level'],
+				'is_freezer' => $treeItem['obj']->is_freezer,
+				'products_direct' => isset($directProducts[$id]) ? count($directProducts[$id]) : 0,
+				'products_incl' => count($computeIncl($id))
+			];
+		}
+
+		return $this->RenderPage($response, 'locationoverview', [
+			'rows' => $rows
+		]);
+	}
+
 	public function Overview(Request $request, Response $response, array $args)
 	{
 		$usersService = UsersService::GetInstance();
