@@ -18,6 +18,19 @@
 $('#stockentries-table tbody').removeClass("d-none");
 stockEntriesTable.columns.adjust().draw();
 
+// Kürzt einen Location-Pfad ab (analog zum PHP-Helper CollapseLocationPath):
+// ab 3 Ebenen werden die mittleren zu … zusammengefasst.
+function CollapseLocationPathJs(path)
+{
+	var parts = (path || "").split(" › ");
+	if (parts.length <= 2)
+	{
+		return path;
+	}
+
+	return parts[0] + " › … › " + parts[parts.length - 1];
+}
+
 $.fn.dataTable.ext.search.push(function(settings, data, dataIndex)
 {
 	var productId = Grocy.Components.ProductPicker.GetValue();
@@ -229,10 +242,10 @@ function RefreshStockEntryRow(stockRowId)
 				$(".stock-consume-button").attr('data-location-id', result.location_id);
 
 				var locationName = "";
-				Grocy.Api.Get("objects/locations/" + result.location_id,
+				Grocy.Api.Get("objects/locations_resolved/" + result.location_id,
 					function(locationResult)
 					{
-						locationName = locationResult.name;
+						locationName = CollapseLocationPathJs(locationResult.path || locationResult.name);
 
 						$('#stock-' + stockRowId + '-location').attr('data-location-id', result.location_id);
 						$('#stock-' + stockRowId + '-location').text(locationName);
