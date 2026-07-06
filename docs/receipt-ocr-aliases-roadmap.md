@@ -94,12 +94,14 @@ Vision und Text-Analyse münden in denselben Downstream.
   Dateien: `controllers/ReceiptsController::ReceiptAliasesList`, Route `/receiptaliases`,
   `views/receiptaliases.blade.php`, `public/viewjs/receiptaliases.js`, Menü in
   `layout/default.blade.php`, Übersetzungen (en/de).
-- [ ] **Widget – Wörterbuch-Lookup + Lernen:** `product_receipt_aliases` beim Matching
-  vorbelegen; Korrekturen zurückschreiben. **NOCH NICHT IMPLEMENTIERT** – das Widget
-  schreibt derzeit nichts in die Tabelle; sie bleibt nach einem Import leer. (Vom Nutzer
-  am 2026-07-05 bemerkt: v18-Import funktioniert oberflächlich, alle Produkte eingetragen,
-  aber keine Alias-Assoziation gespeichert.) **← nächster Schritt, damit die Ansichtsseite
-  echte Daten zeigt.**
+- [x] **Widget – Wörterbuch-Lookup + Lernen (v19):** Beim Import wird pro gebuchter
+  Position ein Alias `Kassentext → Produkt` (je Geschäft) geschrieben bzw. `times_confirmed`
+  hochgezählt (`learnOneAlias`, sequentiell im Import-Loop, auch für neu angelegte Produkte).
+  Beim nächsten Import wird ein bekannter Kassentext per `matchWithAliases` vorbelegt, bevor
+  Claude gefragt wird (spart Tokens). Vision liefert zusätzlich `receipt_text` als stabilen
+  Schlüssel. Headless getestet (`scratchpad/test-learn.js`: Lernen schreibt Alias,
+  Vorbelegung ohne Claude-Match, Re-Import zählt hoch). **Offen:** End-to-End gegen echte
+  API + Live-Grocy durch den Nutzer.
 - [ ] **Widget – Review-Feinschliff:** unsichere Positionen markieren + Summen-Check.
 - [ ] **Import + Beleg-Verknüpfung:** v16-Flow wiederverwenden, Bild als `receipt_file`.
 

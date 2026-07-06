@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grocy Rechnungsimport v18</title>
+<title>Grocy Rechnungsimport v19</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -125,7 +125,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h1>Grocy Rechnungsimport</h1>
-        <span class="vtag">v18 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v19 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Verbindungsdaten eingeben, dann Rechnung hochladen.</p>
       <div class="field">
@@ -155,7 +155,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Rechnung hochladen</h2>
-        <span class="vtag">v18 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v19 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Wähle links eine <b>digitale Rechnung</b> (PDF) oder rechts einen <b>gescannten/fotografierten</b> Kassenbon.</p>
       <div class="drop-row">
@@ -190,7 +190,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Produkte prüfen</h2>
-        <span class="vtag">v18 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v19 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Menge und Einheit sind direkt editierbar. Neue Produkte können vor dem Import bearbeitet werden.</p>
       <div id="receipt-banner" class="status" style="display:none"></div>
@@ -257,6 +257,16 @@ a { color: var(--accent); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 var CHANGELOG = [
+  {
+    version: 'v19', date: '2026-07',
+    items: [
+      'Lern-Wörterbuch (product_receipt_aliases): beim Import wird der Kassentext mit dem gebuchten Grocy-Produkt verknüpft – je Geschäft, mit Häufigkeit (times_confirmed)',
+      'Beim nächsten Import wird ein bekannter Kassentext automatisch vorbelegt (Wörterbuch-Lookup vor dem Claude-Abgleich, spart Tokens)',
+      'Vision liefert zusätzlich receipt_text (exakter Kassentext) als stabilen Alias-Schlüssel; name bleibt der lesbare Name',
+      'Korrigierte Zuordnungen und neu angelegte Produkte werden ebenfalls gelernt',
+      'Ansehen/Löschen der gelernten Aliase in Grocy unter Stammdaten → „Rechnungs-Aliase“'
+    ]
+  },
   {
     version: 'v18', date: '2026-07',
     items: [
@@ -419,6 +429,7 @@ function goTo(name){steps.forEach(function(s){$('step-'+s).classList.toggle('act
 var grocyUrl='',grocyKey='',claudeKey='';
 var pdfFile=null,grocyProducts=[],grocyShops=[],grocyGroups=[],grocyLocations=[],analysisData=[];
 var analysisMode='text';     // 'text' = digitale Rechnung (PDF, linkes Feld); 'vision' = Scan/Foto (rechtes Feld)
+var aliasLearnCache=[];      // beim Import geladene product_receipt_aliases (für Upsert während der Buchung)
 var selectedShopId=null,kgQuId=null,defaultLocationId=null;
 // Receipt (Rechnung) state – v16
 var currentReceiptId=null;   // id der in Grocy angelegten Rechnung (null = keine/rückgängig)
@@ -876,7 +887,7 @@ $('btn-analyze').addEventListener('click',function(){
   analyzePromise.then(function(result){
     setProgress(70,'Produkte werden zugeordnet…');
     renderInfoGrid(result);
-    return claudeMatchProducts(result.products);
+    return matchWithAliases(result.products);
   }).then(function(matched){
     analysisData=matched;
     setProgress(90,'Rechnung wird in Grocy angelegt…');
@@ -986,9 +997,10 @@ multiHint+
 '  "date_iso": "YYYY-MM-DD oder null",\n'+
 '  "invoice_number": "string oder null",\n'+
 '  "products": [\n'+
-'    {"name":"string","quantity":1.0,"unit":"kg","price_total":0.00,"price_per_unit":0.00}\n'+
+'    {"receipt_text":"exakt wie gedruckt","name":"lesbarer Name","quantity":1.0,"unit":"kg","price_total":0.00,"price_per_unit":0.00}\n'+
 '  ]\n'+
 '}\n\n'+
+'receipt_text = der Produkttext GENAU wie auf dem Bon gedruckt (inkl. Kürzel/Abkürzungen, z.B. "EXC FUS 85SELPP"). name = daraus abgeleiteter, lesbarer Produktname.\n\n'+
 'BON-LAYOUT (wichtig):\n'+
 '- Produktname und ggf. eine Mengenzeile ("0,854 kg x 1,39 EUR/kg" oder "6 Stk x 0,99") stehen oft in getrennten Zeilen; der Betrag steht rechts, meist auf Höhe der Mengenzeile.\n'+
 '- Steuerkennzeichen (A/B) am Zeilenende gehören NICHT zum Namen.\n'+
@@ -1032,6 +1044,85 @@ function claudeMatchProducts(extracted){
       return Object.assign({},item,{match:mp||null,skip:false});
     });
   });
+}
+
+// ---- Lern-Wörterbuch (product_receipt_aliases) ----
+// Alias-Schlüssel = normalisierter Kassentext (Großschreibung, Leerzeichen zusammengefasst).
+function normalizeAliasKey(s){
+  if(!s)return'';
+  return String(s).toUpperCase().replace(/\s+/g,' ').trim();
+}
+function nowSqlTimestamp(){
+  return new Date().toISOString().slice(0,19).replace('T',' ');
+}
+function aliasReceiptKey(item){
+  return normalizeAliasKey(item.receipt_text||item.name);
+}
+function loadAliases(){
+  return grocyFetch('/objects/product_receipt_aliases').then(function(r){
+    return Array.isArray(r)?r:[];
+  }).catch(function(){return[];});
+}
+// Bestes passendes Alias für ein erkanntes Produkt (markt-spezifisch bevorzugt, dann Häufigkeit).
+function findAliasMatch(aliases,product){
+  var key=aliasReceiptKey(product);
+  if(!key)return null;
+  var best=null;
+  aliases.forEach(function(a){
+    if(normalizeAliasKey(a.alias)!==key)return;
+    var shopOk=(a.shopping_location_id==null)||(selectedShopId&&String(a.shopping_location_id)===String(selectedShopId));
+    if(!shopOk)return;
+    if(!best){best=a;return;}
+    var aStore=a.shopping_location_id!=null?1:0,bStore=best.shopping_location_id!=null?1:0;
+    if(aStore!==bStore){if(aStore>bStore)best=a;}
+    else if((parseInt(a.times_confirmed,10)||0)>(parseInt(best.times_confirmed,10)||0))best=a;
+  });
+  return best;
+}
+// Wörterbuch-Lookup zuerst; nur unbekannte Positionen gehen an Claude (spart Tokens, nutzt Gelerntes).
+function matchWithAliases(products){
+  if(!products||!products.length)return Promise.resolve([]);
+  return loadAliases().then(function(aliases){
+    var resolved=new Array(products.length);
+    var toClaude=[],toClaudeIdx=[];
+    products.forEach(function(p,i){
+      var hit=findAliasMatch(aliases,p);
+      var prod=hit?grocyProducts.find(function(x){return x.id==hit.product_id;}):null;
+      if(prod){resolved[i]=Object.assign({},p,{match:prod,skip:false,fromAlias:true});}
+      else{toClaude.push(p);toClaudeIdx.push(i);}
+    });
+    return claudeMatchProducts(toClaude).then(function(cm){
+      cm.forEach(function(item,k){resolved[toClaudeIdx[k]]=item;});
+      return resolved;
+    });
+  });
+}
+// Lernt/aktualisiert einen Alias während des Imports (sequentiell → keine Races auf dem Cache).
+function learnOneAlias(item,productId){
+  try{
+    var key=aliasReceiptKey(item);
+    if(!key||!productId)return;
+    var shopId=selectedShopId?parseInt(selectedShopId,10):null;
+    var ts=nowSqlTimestamp();
+    var existing=aliasLearnCache.find(function(a){
+      return normalizeAliasKey(a.alias)===key&&
+        String(a.shopping_location_id==null?'':a.shopping_location_id)===String(shopId==null?'':shopId);
+    });
+    if(existing){
+      var changedProduct=String(existing.product_id)!==String(productId);
+      var body=changedProduct
+        ?{product_id:productId,times_confirmed:1,last_used_timestamp:ts}
+        :{times_confirmed:(parseInt(existing.times_confirmed,10)||1)+1,last_used_timestamp:ts};
+      existing.product_id=productId;existing.times_confirmed=body.times_confirmed;
+      grocyFetch('/objects/product_receipt_aliases/'+existing.id,'PUT',body).catch(function(){});
+    }else{
+      var post={product_id:productId,alias:key,times_confirmed:1,last_used_timestamp:ts};
+      if(shopId!=null)post.shopping_location_id=shopId;
+      var row={product_id:productId,alias:key,shopping_location_id:shopId,times_confirmed:1};
+      aliasLearnCache.push(row);
+      grocyFetch('/objects/product_receipt_aliases','POST',post).then(function(r){row.id=r&&r.created_object_id;}).catch(function(){});
+    }
+  }catch(e){/* Lernen ist nicht fatal */}
 }
 
 function renderInfoGrid(result){
@@ -1246,9 +1337,11 @@ function doImport(toImport, purchaseDate, doUpdate, dupIds) {
       ? Promise.resolve(item.match.id)
       : createNewProduct(item.name);
 
+    var resolvedPid = null;
     undoStep.then(function() {
       return getProduct;
     }).then(function(pid) {
+      resolvedPid = pid;
       var converted = toBaseUnit(item.quantity || 1, item.unit || 'Stueck');
       var convAmount = converted.amount;
       // Preis pro Basiseinheit korrekt berechnen:
@@ -1276,6 +1369,9 @@ function doImport(toImport, purchaseDate, doUpdate, dupIds) {
       var updateLabel = needsUndo ? ' (aktualisiert)' : '';
       card.innerHTML = '<div class="pc-head"><div class="pc-name">' + item.name + '</div>' +
         '<span class="badge matched">✓ ' + dispAmt + ' ' + converted.unit + updateLabel + '</span></div>';
+      // Alias lernen: Kassentext -> gebuchtes Produkt (auch bei neu angelegten Produkten,
+      // da resolvedPid dann die frische Produkt-ID trägt).
+      learnOneAlias(item, resolvedPid);
       results.push({name: item.name, ok: true});
       importNext(i + 1);
     }).catch(function(e) {
@@ -1307,6 +1403,10 @@ function finalizeAndImport(toImport, purchaseDate) {
     console.warn('Rechnung finalisieren fehlgeschlagen:', e);
   }).then(function() {
     if (btn) btn.textContent = 'Bestätigt – importieren';
+    // Bestehende Aliase laden, damit learnOneAlias während des Imports Upsert statt Duplikat macht.
+    return loadAliases();
+  }).then(function(aliases) {
+    aliasLearnCache = aliases || [];
     doImport(toImport, purchaseDate, false, []);
   });
 }
