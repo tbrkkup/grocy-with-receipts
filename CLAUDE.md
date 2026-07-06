@@ -219,6 +219,7 @@ Ergänzende Dokumentation des standalone HTML-Widgets zum PDF-Rechnungsimport (s
 - **Webroot:** `/var/www/grocy/public/`
 - **Widget-URL:** `https://grocy.offges.de/grocy-import.html`
 - **Deploy-Befehl:** `sudo cp grocy-import-vX.html /var/www/grocy/public/grocy-import.html`
+- **Ab v20 zusätzlich:** `sudo cp url-proxy.php /var/www/grocy/public/url-proxy.php` – serverseitiger Abruf-Proxy für den Produkt-Link-Import (wird von nginx+PHP-FPM direkt ausgeliefert, kein nginx-Umbau nötig). **Härtung (öffentlicher Server):** verlangt einen gültigen Grocy-API-Key (Header `GROCY-API-KEY`, geprüft gegen `data/grocy.db` → `api_keys`) → kein anonymer Zugriff; nur http/https + IPv4, blockt private/reservierte IPs, verfolgt Redirects manuell und prüft jeden Hop, pinnt die Verbindung an die geprüfte IP (SSRF-/DNS-Rebinding-Schutz), 15s-Timeout, max. 8 MB. Liegt die DB nicht unter `../data/grocy.db`, `GROCY_DB_PATH` in der Datei bzw. `GROCY_DB_FILE`-Env anpassen. Ohne diese Datei funktioniert nur der „Abrufen"-Teil des Neuanlegen-Dialogs nicht; der Rest des Widgets bleibt unberührt.
 
 **nginx-Konfiguration**
 - **Config:** `/etc/nginx/sites-enabled/grocy.offges.de`
@@ -449,11 +450,14 @@ Standard-Einheit für neue Produkte: **kg** (kg-ID wird beim Connect über `/obj
 | v17 | Rechnungsnummer: automatisch aus der PDF erkannt (Claude-Prompt), beim Anlegen der Rechnung gesetzt und beim Import per PUT synchronisiert; Banner zeigt die erkannte Nummer. Setzt die `invoice_number`-Spalte voraus (Migration 0260) |
 | v18 | Gescannte/fotografierte Kassenbons: Bild-Upload (JPG/PNG/…) zusätzlich zum PDF. Fotos werden per Claude **Vision** direkt gelesen (kein OCR), auf ~1600px herunterskaliert + als JPEG re-encodiert. Liefert dasselbe JSON-Schema wie der Text-Pfad → identischer Downstream; Foto wird als `receipt_file` angehängt. Entscheidung nach OCR-Spike (Tesseract: Namen auf Thermobons zu unzuverlässig). Siehe `docs/receipt-ocr-aliases-roadmap.md`. **Zwei-Felder-UI:** links „Digitale Rechnung" (PDF/Text), rechts „Gescannt/fotografiert" (PDF oder Bild/Vision; Scan-PDF wird seitenweise gerendert) |
 | v19 | Lern-Wörterbuch (`product_receipt_aliases`): Beim Import wird `Kassentext → gebuchtes Produkt` je Geschäft gelernt (`times_confirmed` hochgezählt), beim nächsten Import automatisch vorbelegt (Lookup vor Claude-Abgleich). Vision liefert zusätzlich `receipt_text` als stabilen Alias-Schlüssel. Ansehen/Löschen unter Stammdaten → „Rechnungs-Aliase" (`/receiptaliases`) |
+| v20 | Neues Produkt aus Link: Im Neuanlegen-Dialog kann ein Produkt-Link abgerufen werden – Claude zieht Name, Gewicht (→ Beschreibung) und Produktbild (→ Grocy-Produktbild) von der Seite. Abruf über neuen serverseitigen Proxy `public/url-proxy.php` (umgeht CORS, SSRF-Schutz). **Muss wie das Widget nach `/public/` deployt werden.** Bild-/Seitenabruf ist nicht fatal – schlägt er fehl, wird das Produkt trotzdem angelegt |
 
-**Aktuelle Widget-Version:** v19 (`public/grocy-import.html`)
+**Aktuelle Widget-Version:** v20 (`public/grocy-import.html`) + `public/url-proxy.php` (serverseitiger Abruf-Proxy)
 **Teststatus:**
 - v16 am 2026-07-05 erfolgreich gegen die Live-Receipts-Grocy-Instanz getestet – Rechnung anlegen, Banner mit Rückgängig/Wiederherstellen, `receipt_id`-Verknüpfung, PDF-Anhang und PUT-Sync funktionieren wie erwartet.
 - v17 am 2026-07-05 erfolgreich getestet – automatische Erkennung und Eintragung der Rechnungsnummer aus der PDF funktioniert (Voraussetzung: Migration 0260 `invoice_number` ist auf dem Server eingespielt).
 - v18 Verdrahtung headless getestet (`scratchpad/test-vision.js`: Bild → Vision-Zweig → Image-Block gesendet → JSON fließt in Review → Rechnung angelegt).
 - v18 am 2026-07-05 vom Nutzer **oberflächlich end-to-end getestet**: Foto/Scan hochgeladen, Rechnung angelegt, **alle Produkte konnten eingetragen werden**. Zwei-Felder-UI (digital/Scan) funktioniert.
+- v19 Lern-Wörterbuch headless getestet (`scratchpad/test-learn.js`: Alias-Schreiben, Vorbelegung ohne Claude-Match, Re-Import zählt hoch). End-to-End durch Nutzer offen.
+- v20 URL-Produktimport headless getestet (`scratchpad/test-url.js`: Proxy-Abruf → Claude-Extraktion → Vorbelegung Name/Gewicht → Produkt + Produktbild). **Voraussetzung/offen:** `url-proxy.php` muss deployt sein; End-to-End gegen echte Shops durch den Nutzer offen.
 - **NICHT getestet / noch offen:** Ob eine Assoziationstabelle (`product_receipt_aliases`) für einfacheres künftiges Zuordnen von Produkt (und Menge) befüllt wird. **Grund:** Der Lern-/Schreib-Schritt ist im Widget noch NICHT implementiert – das Widget schreibt aktuell nichts in `product_receipt_aliases`, die Tabelle bleibt leer. Nur Backend (Migration 0261 + `/api/objects`-Freigabe) existiert.

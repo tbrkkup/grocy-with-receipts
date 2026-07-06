@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grocy Rechnungsimport v19</title>
+<title>Grocy Rechnungsimport v20</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -125,7 +125,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h1>Grocy Rechnungsimport</h1>
-        <span class="vtag">v19 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v20 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Verbindungsdaten eingeben, dann Rechnung hochladen.</p>
       <div class="field">
@@ -155,7 +155,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Rechnung hochladen</h2>
-        <span class="vtag">v19 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v20 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Wähle links eine <b>digitale Rechnung</b> (PDF) oder rechts einen <b>gescannten/fotografierten</b> Kassenbon.</p>
       <div class="drop-row">
@@ -190,7 +190,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Produkte prüfen</h2>
-        <span class="vtag">v19 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v20 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Menge und Einheit sind direkt editierbar. Neue Produkte können vor dem Import bearbeitet werden.</p>
       <div id="receipt-banner" class="status" style="display:none"></div>
@@ -257,6 +257,15 @@ a { color: var(--accent); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 var CHANGELOG = [
+  {
+    version: 'v20', date: '2026-07',
+    items: [
+      'Neues Produkt aus Link: Im Neuanlegen-Dialog kann ein Produkt-Link abgerufen werden – Claude zieht Name, Gewicht und Produktbild von der Seite',
+      'Gewicht landet in der Produktbeschreibung, das Bild wird als Grocy-Produktbild angehängt',
+      'Abruf über serverseitigen Proxy public/url-proxy.php: verlangt einen gültigen Grocy-API-Key (kein offener Proxy), verfolgt Redirects nur geprüft und pinnt die IP (SSRF-/Rebinding-Schutz). Muss wie das Widget nach /public/ deployt werden',
+      'Bild-/Seitenabruf und Bild-Upload sind nicht fatal – schlägt etwas fehl, wird das Produkt trotzdem angelegt'
+    ]
+  },
   {
     version: 'v19', date: '2026-07',
     items: [
@@ -475,12 +484,54 @@ function showChangelog(){
 function promptNewProduct(suggestedName){
   return new Promise(function(resolve){
     var el=document.createElement('div');
+    var fetchedImageUrl=null;
+
+    // Produkt-Link (optional): Name/Gewicht/Bild automatisch abrufen
+    var f0=document.createElement('div');f0.className='field';
+    var l0=document.createElement('label');l0.textContent='Produkt-Link (optional)';
+    var urlRow=document.createElement('div');urlRow.className='new-group-row';
+    var urlInput=document.createElement('input');urlInput.type='url';urlInput.placeholder='https://… (Name, Gewicht, Bild werden geholt)';
+    var urlBtn=document.createElement('button');urlBtn.className='btn-accent';urlBtn.type='button';urlBtn.textContent='Abrufen';
+    urlRow.appendChild(urlInput);urlRow.appendChild(urlBtn);
+    var urlStatus=document.createElement('small');urlStatus.style.cssText='display:block;margin-top:4px;color:var(--text-3);';
+    var imgPreview=document.createElement('img');imgPreview.style.cssText='display:none;max-height:90px;margin-top:6px;border-radius:6px;border:1px solid var(--border);';
+    f0.appendChild(l0);f0.appendChild(urlRow);f0.appendChild(urlStatus);f0.appendChild(imgPreview);
 
     // Produktname
     var f1=document.createElement('div');f1.className='field';
     var l1=document.createElement('label');l1.textContent='Produktname';
     var inp=document.createElement('input');inp.type='text';inp.value=suggestedName||'';
     f1.appendChild(l1);f1.appendChild(inp);
+
+    // Beschreibung (z.B. Gewicht aus dem Link)
+    var fDesc=document.createElement('div');fDesc.className='field';
+    var lDesc=document.createElement('label');lDesc.textContent='Beschreibung (optional)';
+    var descInput=document.createElement('input');descInput.type='text';descInput.value='';
+    fDesc.appendChild(lDesc);fDesc.appendChild(descInput);
+
+    urlBtn.addEventListener('click',function(){
+      var u=urlInput.value.trim();
+      if(!u){urlStatus.textContent='Bitte eine URL eingeben.';return;}
+      urlStatus.style.color='var(--text-3)';urlStatus.textContent='Lade Produktseite…';urlBtn.disabled=true;
+      fetchProductFromUrl(u).then(function(info){
+        if(info.name)inp.value=info.name;
+        if(info.quantity&&info.unit){
+          var wStr='Gewicht: '+info.quantity+' '+info.unit;
+          descInput.value=descInput.value?(descInput.value+' · '+wStr):wStr;
+        }
+        if(info.image_url){
+          fetchedImageUrl=info.image_url;
+          // Vorschau über den Proxy laden (mit API-Key-Header) → ObjectURL, da <img src> keinen Header sendet.
+          proxyFetch(info.image_url).then(function(r){return r.ok?r.blob():null;}).then(function(b){
+            if(b){imgPreview.src=URL.createObjectURL(b);imgPreview.style.display='block';}
+          }).catch(function(){});
+        }
+        urlStatus.style.color='var(--success)';
+        urlStatus.textContent='Übernommen'+(info.image_url?' (inkl. Bild)':'')+((info.quantity&&info.unit)?' · '+info.quantity+' '+info.unit:'');
+      }).catch(function(e){
+        urlStatus.style.color='var(--danger)';urlStatus.textContent='Fehler: '+e.message;
+      }).finally(function(){urlBtn.disabled=false;});
+    });
 
     // Produktgruppe
     var f2=document.createElement('div');f2.className='field';
@@ -539,18 +590,18 @@ function promptNewProduct(suggestedName){
     }
     f3.appendChild(l3);f3.appendChild(selLoc);
 
-    el.appendChild(f1);el.appendChild(f2);el.appendChild(f3);
+    el.appendChild(f0);el.appendChild(f1);el.appendChild(fDesc);el.appendChild(f2);el.appendChild(f3);
 
     showModal({
       title:'Neues Produkt anlegen',
-      sub:'Name, Gruppe und Standort prüfen, dann bestätigen.',
+      sub:'Optional einen Produkt-Link abrufen, dann Name, Gruppe und Standort prüfen.',
       content:el,
       buttons:[
         {label:'Anlegen',primary:true,resolve:function(){
           var finalName=inp.value.trim()||suggestedName;
           var groupId=selGroup.value&&selGroup.value!=='__new__'?parseInt(selGroup.value,10):null;
           var locationId=selLoc.value?parseInt(selLoc.value,10):null;
-          resolve({name:finalName,groupId:groupId,locationId:locationId});
+          resolve({name:finalName,groupId:groupId,locationId:locationId,description:descInput.value.trim(),imageUrl:fetchedImageUrl});
         }},
         {label:'Abbrechen',primary:false,resolve:function(){resolve(null);}}
       ]
@@ -1224,17 +1275,64 @@ function toggleSkip(idx){analysisData[idx].skip=!analysisData[idx].skip;renderRe
 function setNew(idx){analysisData[idx].match=null;renderReview();}
 function applyManual(idx){var sel=$('manual-'+idx);if(sel&&sel.value)changeMatch(idx,sel.value);}
 
+// Serverseitiger Abruf-Proxy (public/url-proxy.php) – umgeht CORS für fremde Seiten/Bilder.
+// Der Proxy verlangt einen gültigen Grocy-API-Key (kein offener Internet-Proxy).
+function urlProxy(u){return 'url-proxy.php?url='+encodeURIComponent(u);}
+function proxyFetch(u){return fetch(urlProxy(u),{headers:{'GROCY-API-KEY':grocyKey}});}
+
+// Holt eine Produktseite über den Proxy und lässt Claude Name/Gewicht/Bild extrahieren.
+function fetchProductFromUrl(pageUrl){
+  return proxyFetch(pageUrl).then(function(r){
+    if(!r.ok)throw new Error('Abruf HTTP '+r.status);
+    return r.text();
+  }).then(function(html){
+    var cleaned=html.replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ');
+    var snippet=cleaned.slice(0,15000);
+    var prompt=
+'Analysiere diese Produktseite und antworte NUR mit JSON, kein Markdown:\n'+
+'{"name":"kurzer Produktname","quantity":Zahl oder null,"unit":"g|kg|ml|l|Stueck oder null","image_url":"absolute Bild-URL oder null"}\n'+
+'- name: prägnanter Produktname.\n'+
+'- quantity/unit: Füll-/Nettogewicht bzw. -menge der Packung, falls erkennbar (Komma=Punkt).\n'+
+'- image_url: Haupt-Produktbild, bevorzugt og:image, ABSOLUTE URL.\n\n'+
+'Seiten-URL: '+pageUrl+'\n\nHTML:\n'+snippet;
+    return claudeProxy([{role:'user',content:prompt}],600).then(function(raw){
+      var info=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      if(info.image_url){try{info.image_url=new URL(info.image_url,pageUrl).href;}catch(e){}}
+      return info;
+    });
+  });
+}
+
+// Lädt ein Produktbild über den Proxy und hängt es als Grocy-Produktbild an.
+function uploadProductPicture(productId,imageUrl){
+  return proxyFetch(imageUrl).then(function(r){
+    if(!r.ok)throw new Error('Bild HTTP '+r.status);
+    return r.blob();
+  }).then(function(blob){
+    var ext=(blob.type&&blob.type.indexOf('png')!==-1)?'png':((blob.type&&blob.type.indexOf('webp')!==-1)?'webp':'jpg');
+    var fileName=randomString()+'product.'+ext;
+    return grocyUploadFile(blob,'productpictures',fileName).then(function(){
+      return grocyFetch('/objects/products/'+productId,'PUT',{picture_file_name:fileName});
+    });
+  });
+}
+
 function createNewProduct(suggestedName){
   return promptNewProduct(suggestedName).then(function(result){
     if(!result)throw new Error('Abgebrochen');
     // Standort: aus Dialog, fallback auf Keller-ID, fallback auf 1
     var locId=result.locationId||defaultLocationId||1;
-    var body={name:result.name,description:'',location_id:locId};
+    var body={name:result.name,description:result.description||'',location_id:locId};
     if(kgQuId){body.qu_id_stock=kgQuId;body.qu_id_purchase=kgQuId;}
     if(result.groupId)body.product_group_id=result.groupId;
     return grocyFetch('/objects/products','POST',body).then(function(r){
-      grocyProducts.push({id:r.created_object_id,name:result.name});
-      return r.created_object_id;
+      var pid=r.created_object_id;
+      grocyProducts.push({id:pid,name:result.name});
+      // Bild anhängen ist optional/nicht fatal – Produkt existiert bereits.
+      if(result.imageUrl){
+        return uploadProductPicture(pid,result.imageUrl).then(function(){return pid;}).catch(function(e){console.warn('Produktbild fehlgeschlagen:',e);return pid;});
+      }
+      return pid;
     });
   });
 }
