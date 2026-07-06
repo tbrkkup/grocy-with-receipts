@@ -33,7 +33,7 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
 
 | Heute (Widget) | Nativ (Ziel) |
 |---|---|
-| `/claude-proxy` (nginx), Key im Browser | **ZWEI getrennte Endpunkte** (konsistentes Verb, gemeinsames Antwort-JSON, unabhängig austauschbare Backends): `POST /api/receipts/analyze-invoice` (digital, Text) und `POST /api/receipts/analyze-scan` (Scan/Foto, Bild→Vision). Grocy-Controller ruft Anthropic via **Guzzle**; Key aus `GROCY_ANTHROPIC_API_KEY` (config.php/Env). Kein Key mehr im Browser. |
+| `/claude-proxy` (nginx), Key im Browser | **ZWEI getrennte Endpunkte** (konsistentes Verb `parse`, gemeinsames Antwort-JSON, unabhängig austauschbare Backends): `POST /api/receipts/parse-invoice` (digital, Text) und `POST /api/receipts/parse-scan` (Scan/Foto, Bild→Vision). Grocy-Controller ruft Anthropic via **Guzzle**; Key aus `GROCY_ANTHROPIC_API_KEY` (config.php/Env). Kein Key mehr im Browser. |
 | `url-proxy.php` (standalone) | **`GET /api/receipts/fetch-url`** – Controller mit denselben SSRF-Schutzmaßnahmen (IP-Pinning, Redirect-Prüfung), Auth über Grocy-Session/API-Key (statt eigener DB-Abfrage). |
 | Datei-Upload per `/api/files/receipts/...` | unverändert (Grocy-Files-API + `receipt_files`). |
 | Lagerzugang je Position via `/api/stock/products/{id}/add` | wahlweise so belassen **oder** dedizierter transaktionaler **`POST /api/receipts/{id}/import`** (Rechnung+Buchungen+Dateien+Alias-Lernen atomar). |
@@ -48,16 +48,20 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
   Feature-Flag `Setting('FEATURE_FLAG_RECEIPT_IMPORT', true)`.
 - Controller `ReceiptImportApiController` mit **zwei getrennten Analyse-Endpunkten**
   (bewusst getrennt, damit der digitale Pfad die KI später verlustfrei ersetzen kann):
-  - `POST /api/receipts/analyze-invoice` – **digital**. Body: `{ text, context }` (pdf.js-Text
+  - `POST /api/receipts/parse-invoice` – **digital**. Body: `{ text, context }` (pdf.js-Text
     aus dem Browser). Backend heute Anthropic (Text-Prompt); über
     `GROCY_RECEIPT_DIGITAL_BACKEND = 'anthropic' | 'parser'` (Default `anthropic`) später auf
     einen regelbasierten Parser umstellbar (z. B. ZUGFeRD/XRechnung-XML) – **ohne Frontend-/
-    Scan-Änderung**, dann sogar ohne Anthropic-Key. (Verb bewusst „analyze", nicht „parse":
-    der Name bleibt implementierungs-neutral, das Backend ist frei tauschbar.)
-  - `POST /api/receipts/analyze-scan` – **Scan/Foto**. Body: `{ images: [base64], context }` →
+    Scan-Änderung**, dann sogar ohne Anthropic-Key.
+  - `POST /api/receipts/parse-scan` – **Scan/Foto**. Body: `{ images: [base64], context }` →
     Anthropic **Vision**.
-  - Beide liefern **dasselbe Antwort-JSON**; gemeinsame Normalisierung (Geschäfts-Fallback,
-    Validierung) in einem internen Service, den beide nutzen.
+  - Beide liefern **dasselbe Antwort-JSON** inkl. `receipt_text` je Position und **füttern
+    gleichermaßen das Lern-Wörterbuch** (`product_receipt_aliases`): auch `parse-invoice`
+    liefert einen stabilen Alias-Schlüssel (exakter Rechnungs-/Zeilentext) und lernt beim
+    Import genauso wie `parse-scan` (Kassentext → Produkt, je Geschäft). So profitiert der
+    digitale Pfad ebenfalls von Vorbelegung/Lernen.
+  - Gemeinsame Normalisierung (Geschäfts-Fallback, Validierung, Alias-Schlüssel) in einem
+    internen Service, den beide nutzen.
   - `GET /api/receipts/fetch-url?url=` (SSRF-hardened, aus `url-proxy.php` portiert).
 - **Sofort-Nutzen:** das bestehende Widget kann optional schon auf diese Endpunkte
   umgestellt werden → **Anthropic-Key raus aus dem Browser**, `/claude-proxy` und
