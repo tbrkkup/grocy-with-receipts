@@ -134,8 +134,8 @@
 			<select class="custom-control custom-select"
 				id="location-filter">
 				<option value="all">{{ $__t('All') }}</option>
-				@foreach($locations as $location)
-				<option value="{{ $location->name }}">{{ $location->name }}</option>
+				@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+				<option value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
 				@endforeach
 			</select>
 		</div>
@@ -409,7 +409,7 @@
 					</td>
 					<td class="d-none">
 						@foreach(FindAllObjectsInArrayByPropertyValue($currentStockLocations, 'product_id', $currentStockEntry->product_id) as $locationsForProduct)
-						xx{{ FindObjectInArrayByPropertyValue($locations, 'id', $locationsForProduct->location_id)->name }}xx
+						@foreach(($locationAncestorIds[$locationsForProduct->location_id] ?? []) as $locationAncestorId)xx{{ $locationAncestorId }}xx @endforeach
 						@endforeach
 					</td>
 					<td class="d-none">
