@@ -374,7 +374,7 @@
 				@php
 				$masterDataViews = [
 				'products', 'locations', 'locationoverview', 'shoppinglocations', 'quantityunits',
-				'productgroups', 'receiptaliases', 'chores', 'batteries', 'taskcategories',
+				'productgroups', 'receiptaliases', 'receiptimportsettings', 'chores', 'batteries', 'taskcategories',
 				'userfields', 'userentities'
 				]
 				@endphp
@@ -437,6 +437,12 @@
 							<a class="nav-link discrete-link"
 								href="{{ $U('/receiptaliases') }}">
 								<span class="nav-link-text">{{ $__t('Receipt aliases') }}</span>
+							</a>
+						</li>
+						<li class="@if($viewName == 'receiptimportsettings') active-page @endif">
+							<a class="nav-link discrete-link"
+								href="{{ $U('/receiptimportsettings') }}">
+								<span class="nav-link-text">{{ $__t('Receipt import settings') }}</span>
 							</a>
 						</li>
 						@if(GROCY_FEATURE_FLAG_CHORES)

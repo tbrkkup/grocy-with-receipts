@@ -2901,3 +2901,39 @@ msgstr "Alle Geschäfte"
 
 msgid "Are you sure you want to delete the receipt alias \"%s\"?"
 msgstr "Möchtest du den Rechnungs-Alias „%s“ wirklich löschen?"
+
+msgid "Receipt import settings"
+msgstr "Beleg-Import-Einstellungen"
+
+msgid "The Anthropic API key is stored on the server (not in the browser) and is used to analyze receipts for the bulk purchase. It is required for scanned/photographed receipts."
+msgstr "Der Anthropic-API-Key wird auf dem Server gespeichert (nicht im Browser) und dient der Beleg-Analyse für den Sammeleinkauf. Für gescannte/fotografierte Belege ist er erforderlich."
+
+msgid "Anthropic API key"
+msgstr "Anthropic-API-Key"
+
+msgid "Configured – leave empty to keep unchanged"
+msgstr "Konfiguriert – leer lassen, um ihn beizubehalten"
+
+msgid "Not configured"
+msgstr "Nicht konfiguriert"
+
+msgid "A key is currently configured"
+msgstr "Aktuell ist ein Key konfiguriert"
+
+msgid "No key configured yet"
+msgstr "Noch kein Key konfiguriert"
+
+msgid "Analysis backend for digital invoices"
+msgstr "Analyse-Backend für digitale Rechnungen"
+
+msgid "Anthropic (AI)"
+msgstr "Anthropic (KI)"
+
+msgid "Rule-based parser (not implemented yet)"
+msgstr "Regelbasierter Parser (noch nicht implementiert)"
+
+msgid "Scanned/photographed receipts always use Anthropic (vision)."
+msgstr "Gescannte/fotografierte Belege nutzen immer Anthropic (Vision)."
+
+msgid "Settings saved"
+msgstr "Einstellungen gespeichert"
