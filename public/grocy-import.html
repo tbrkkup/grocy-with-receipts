@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grocy Rechnungsimport v20</title>
+<title>Grocy Rechnungsimport v21</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -125,7 +125,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h1>Grocy Rechnungsimport</h1>
-        <span class="vtag">v20 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v21 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Verbindungsdaten eingeben, dann Rechnung hochladen.</p>
       <div class="field">
@@ -155,7 +155,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Rechnung hochladen</h2>
-        <span class="vtag">v20 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v21 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Wähle links eine <b>digitale Rechnung</b> (PDF) oder rechts einen <b>gescannten/fotografierten</b> Kassenbon.</p>
       <div class="drop-row">
@@ -190,7 +190,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Produkte prüfen</h2>
-        <span class="vtag">v20 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v21 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Menge und Einheit sind direkt editierbar. Neue Produkte können vor dem Import bearbeitet werden.</p>
       <div id="receipt-banner" class="status" style="display:none"></div>
@@ -257,6 +257,15 @@ a { color: var(--accent); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 var CHANGELOG = [
+  {
+    version: 'v21', date: '2026-07',
+    items: [
+      'Rabatte werden in den Produktpreis eingerechnet statt als eigener Posten gebucht',
+      'Eine Rabattzeile (z.B. „Rabatt 30 % -1,86“) wird dem Produkt in der Zeile darüber (gelegentlich darunter) zugeordnet → Nettopreis in Grocy',
+      'Extraktions-Prompt (Vision + PDF) angewiesen; zusätzlich clientseitiges Sicherheitsnetz, das übrig gebliebene Rabattzeilen einrechnet',
+      'Beispiel Aldi Süd: F&G Rind Hack 6,19 mit Rabatt -1,86 → 4,33 gebucht'
+    ]
+  },
   {
     version: 'v20', date: '2026-07',
     items: [
@@ -937,6 +946,7 @@ $('btn-analyze').addEventListener('click',function(){
   }
   analyzePromise.then(function(result){
     setProgress(70,'Produkte werden zugeordnet…');
+    result.products=foldDiscounts(result.products||[]);
     renderInfoGrid(result);
     return matchWithAliases(result.products);
   }).then(function(matched){
@@ -994,6 +1004,8 @@ function claudeAnalyzeAll(text){
 '- Beispiele: "Thymian 300g"→300/g | "Anis 1kg"→1/kg | "Olivenöl 500ml"→500/ml | "Äpfel 2,5kg"→2.5/kg\n'+
 '- Komma als Dezimaltrennzeichen: "2,5"=2.5\n'+
 '- Nur ohne Mengenangabe: quantity:1, unit:"Stueck"\n\n'+
+'RABATTE/NACHLÄSSE:\n'+
+'- "Rabatt"/"Nachlass"/negative Beträge sind KEINE eigenen Produkte. Ziehe sie vom Produkt in der Zeile darüber (gelegentlich darunter) ab und gib dessen NETTO-price_total zurück. Rabatte NIE als eigenen Eintrag ausgeben.\n\n'+
 'GESCHÄFT:\n'+
 '- Gesperrte Schreibweise: "B O D E N A T U R K O S T"="Bodenaturkost"\n'+
 '- Firmenzusätze ignorieren: GmbH, KG, AG, eG, e.K.\n'+
@@ -1062,6 +1074,11 @@ multiHint+
 '- Stückware ("n Stk x Einzelpreis"): quantity=n, unit=Stueck, price_per_unit=Einzelpreis.\n'+
 '- Ohne Mengenangabe: quantity=1, unit="Stueck".\n'+
 '- price_total = rechts gedruckter Zeilenbetrag; Komma ist Dezimaltrennzeichen ("1,39"=1.39).\n\n'+
+'RABATTE/NACHLÄSSE (WICHTIG):\n'+
+'- Zeilen wie "Rabatt", "Nachlass", "-30 %" oder ein negativer Betrag (z.B. "-1,86") sind KEINE eigenen Produkte.\n'+
+'- Sie gehören zum Produkt in der Zeile DIREKT DARÜBER (gelegentlich darunter). Ziehe den Rabattbetrag von dessen Betrag ab und gib für dieses Produkt den NETTO-price_total zurück (z.B. 6,19 mit "Rabatt -1,86" → price_total 4.33).\n'+
+'- Ist nur ein Prozentsatz angegeben, rechne ihn vom Betrag ab.\n'+
+'- Gib Rabatte NIEMALS als eigenen Eintrag in products aus.\n\n'+
 'GESCHÄFT:\n'+
 '- Kopfzeile lesen (z.B. "REWE ..."). Firmenzusätze ignorieren: GmbH, KG, AG, oHG, eG, e.K.\n'+
 '- Grocy-Geschäfte: '+shopListJson+'\n'+
@@ -1129,6 +1146,43 @@ function findAliasMatch(aliases,product){
     else if((parseInt(a.times_confirmed,10)||0)>(parseInt(best.times_confirmed,10)||0))best=a;
   });
   return best;
+}
+// Sicherheitsnetz: Rabatt-/Nachlasszeilen, die Claude doch als eigenen Posten geliefert hat,
+// in das benachbarte Produkt einrechnen (Nettopreis) statt separat zu buchen.
+// Erwartung: Rabatt gehört zum Produkt DARÜBER (Aldi/REWE); fehlt eins, dann zum nächsten.
+function isDiscountItem(p){
+  if(!p)return false;
+  var txt=((p.name||'')+' '+(p.receipt_text||''));
+  var neg=(p.price_total!=null&&p.price_total<0);
+  var word=/\b(rabatt|nachlass|discount|coupon|aktionsrabatt|treuerabatt)\b/i.test(txt);
+  return neg||word;
+}
+function foldDiscounts(products){
+  var out=[];
+  (products||[]).forEach(function(p){
+    if(isDiscountItem(p)){
+      var disc=(p.price_total!=null)?Number(p.price_total):0;
+      if(disc>0)disc=-disc; // als Abzug behandeln
+      var target=null;
+      for(var k=out.length-1;k>=0;k--){if(!isDiscountItem(out[k])){target=out[k];break;}}
+      if(target&&target.price_total!=null){
+        target.price_total=Math.round((Number(target.price_total)+disc)*100)/100;
+        if(target.price_total<0)target.price_total=0;
+        return; // Rabatt nicht als eigenen Posten übernehmen
+      }
+      // kein Produkt davor → Rabatt vormerken, wird auf das nächste Produkt angewandt
+      out.push({__pendingDiscount:disc});
+      return;
+    }
+    // ausstehenden Rabatt (stand über dem Produkt) jetzt anwenden
+    if(out.length&&out[out.length-1].__pendingDiscount!=null){
+      var pend=out.pop().__pendingDiscount;
+      if(p.price_total!=null){p.price_total=Math.round((Number(p.price_total)+pend)*100)/100;if(p.price_total<0)p.price_total=0;}
+    }
+    out.push(p);
+  });
+  // übrig gebliebene vorgemerkte Rabatte (kein Produkt) verwerfen
+  return out.filter(function(x){return x.__pendingDiscount==null;});
 }
 // Wörterbuch-Lookup zuerst; nur unbekannte Positionen gehen an Claude (spart Tokens, nutzt Gelerntes).
 function matchWithAliases(products){
