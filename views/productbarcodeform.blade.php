@@ -74,10 +74,10 @@
 					id="shopping_location_id"
 					name="shopping_location_id">
 					<option></option>
-					@foreach($shoppinglocations as $store)
+					@foreach(SortLocationsAsTree($shoppinglocations, 'parent_shopping_location_id') as $store)
 					<option @if($mode=='edit'
 						&&
-						$store->id == $barcode->shopping_location_id) selected="selected" @endif value="{{ $store->id }}">{{ $store->name }}</option>
+						$store['id'] == $barcode->shopping_location_id) selected="selected" @endif value="{{ $store['id'] }}">{{ $store['path'] }}</option>
 					@endforeach
 				</select>
 			</div>

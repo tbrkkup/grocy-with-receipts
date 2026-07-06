@@ -648,18 +648,48 @@ class StockController extends BaseController
 
 	public function ShoppingLocationEditForm(Request $request, Response $response, array $args)
 	{
+		// Mögliche übergeordnete Geschäfte (Ketten) als Baum (Pfad-Reihenfolge)
+		$parentOptions = $this->DB->shopping_locations_resolved()->orderBy('path');
+
 		if ($args['shoppingLocationId'] == 'new')
 		{
 			return $this->RenderPage($response, 'shoppinglocationform', [
 				'mode' => 'create',
+				'parentOptions' => $parentOptions,
+				'excludedParentIds' => [],
 				'userfields' => UserfieldsService::GetInstance()->GetFields('shopping_locations')
 			]);
 		}
 		else
 		{
+			// Zyklen verhindern: das Geschäft selbst und alle seine Nachfahren
+			// dürfen nicht als übergeordnetes Geschäft gewählt werden.
+			$childrenByParent = [];
+			foreach ($this->DB->shopping_locations() as $sloc)
+			{
+				$childrenByParent[$sloc->parent_shopping_location_id][] = $sloc->id;
+			}
+
+			$excludedParentIds = [];
+			$stack = [intval($args['shoppingLocationId'])];
+			while (!empty($stack))
+			{
+				$current = array_pop($stack);
+				$excludedParentIds[] = $current;
+				if (isset($childrenByParent[$current]))
+				{
+					foreach ($childrenByParent[$current] as $childId)
+					{
+						$stack[] = $childId;
+					}
+				}
+			}
+
 			return $this->RenderPage($response, 'shoppinglocationform', [
 				'shoppingLocation' => $this->DB->shopping_locations($args['shoppingLocationId']),
 				'mode' => 'edit',
+				'parentOptions' => $parentOptions,
+				'excludedParentIds' => $excludedParentIds,
 				'userfields' => UserfieldsService::GetInstance()->GetFields('shopping_locations')
 			]);
 		}
@@ -667,17 +697,61 @@ class StockController extends BaseController
 
 	public function ShoppingLocationsList(Request $request, Response $response, array $args)
 	{
-		if (isset($request->getQueryParams()['include_disabled']))
+		$showDisabled = isset($request->getQueryParams()['include_disabled']);
+
+		$shoppingLocationsById = [];
+		$childrenByParent = [];
+		foreach ($this->DB->shopping_locations() as $sloc)
 		{
-			$shoppingLocations = $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE');
+			$shoppingLocationsById[$sloc->id] = $sloc;
+			$childrenByParent[$sloc->parent_shopping_location_id][] = $sloc->id;
 		}
-		else
+
+		// Tree-Reihenfolge (nach Pfad) + Meta (Ebene, Kettenname, hat Filialen)
+		$orderedShoppingLocations = [];
+		$shoppingLocationMeta = [];
+		foreach ($this->DB->shopping_locations_resolved()->orderBy('path') as $resolved)
 		{
-			$shoppingLocations = $this->DB->shopping_locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE');
+			if (!isset($shoppingLocationsById[$resolved->id]))
+			{
+				continue;
+			}
+
+			$sloc = $shoppingLocationsById[$resolved->id];
+			if (!$showDisabled && $sloc->active == 0)
+			{
+				continue;
+			}
+
+			$orderedShoppingLocations[] = $sloc;
+			$shoppingLocationMeta[$resolved->id] = [
+				'level' => $resolved->level,
+				'parent_name' => ($resolved->parent_shopping_location_id !== null && isset($shoppingLocationsById[$resolved->parent_shopping_location_id])) ? $shoppingLocationsById[$resolved->parent_shopping_location_id]->name : '',
+				'has_children' => isset($childrenByParent[$resolved->id])
+			];
+		}
+
+		// Sicherheitsnetz: Geschäfte mit verwaistem parent_shopping_location_id
+		// (Verweis auf nicht (mehr) existierendes Geschäft) sind im Baum nicht
+		// erreichbar und würden sonst aus der Liste verschwinden – als Wurzel anhängen.
+		foreach ($shoppingLocationsById as $sloc)
+		{
+			if (isset($shoppingLocationMeta[$sloc->id]) || (!$showDisabled && $sloc->active == 0))
+			{
+				continue;
+			}
+
+			$orderedShoppingLocations[] = $sloc;
+			$shoppingLocationMeta[$sloc->id] = [
+				'level' => 0,
+				'parent_name' => '',
+				'has_children' => isset($childrenByParent[$sloc->id])
+			];
 		}
 
 		return $this->RenderPage($response, 'shoppinglocations', [
-			'shoppinglocations' => $shoppingLocations,
+			'shoppinglocations' => $orderedShoppingLocations,
+			'shoppingLocationMeta' => $shoppingLocationMeta,
 			'userfields' => UserfieldsService::GetInstance()->GetFields('shopping_locations'),
 			'userfieldValues' => UserfieldsService::GetInstance()->GetAllValues('shopping_locations')
 		]);

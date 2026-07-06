@@ -2513,3 +2513,9 @@ msgstr ""
 
 msgid "Are you sure you want to delete the receipt alias \"%s\"?"
 msgstr ""
+
+msgid "Parent store"
+msgstr ""
+
+msgid "This store has branches. Please move or delete them first."
+msgstr ""

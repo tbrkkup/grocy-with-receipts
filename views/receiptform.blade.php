@@ -59,9 +59,9 @@
 					id="shopping_location_id"
 					name="shopping_location_id">
 					<option value=""></option>
-					@foreach($shoppingLocations as $shoppingLocation)
-					<option @if($mode == 'edit' && $shoppingLocation->id == $receipt->shopping_location_id) selected="selected" @endif
-						value="{{ $shoppingLocation->id }}">{{ $shoppingLocation->name }}</option>
+					@foreach(SortLocationsAsTree($shoppingLocations, 'parent_shopping_location_id') as $shoppingLocationTreeItem)
+					<option @if($mode == 'edit' && $shoppingLocationTreeItem['id'] == $receipt->shopping_location_id) selected="selected" @endif
+						value="{{ $shoppingLocationTreeItem['id'] }}">{{ $shoppingLocationTreeItem['path'] }}</option>
 					@endforeach
 				</select>
 			</div>

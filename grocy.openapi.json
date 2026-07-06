@@ -4694,6 +4694,11 @@
 					"description": {
 						"type": "string"
 					},
+					"parent_shopping_location_id": {
+						"type": "integer",
+						"nullable": true,
+						"description": "Optional parent store id for hierarchical stores (chain → branch); null = top-level"
+					},
 					"row_created_timestamp": {
 						"type": "string",
 						"format": "date-time"

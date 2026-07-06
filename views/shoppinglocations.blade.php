@@ -104,6 +104,7 @@
 							href="#"><i class="fa-solid fa-eye"></i></a>
 					</th>
 					<th>{{ $__t('Name') }}</th>
+					<th>{{ $__t('Parent store') }}</th>
 					<th>{{ $__t('Description') }}</th>
 
 					@include('components.userfields_thead', array(
@@ -131,13 +132,17 @@
 							href="#"
 							data-shoppinglocation-id="{{ $shoppinglocation->id }}"
 							data-shoppinglocation-name="{{ $shoppinglocation->name }}"
+							data-has-children="{{ $shoppingLocationMeta[$shoppinglocation->id]['has_children'] ? '1' : '0' }}"
 							data-toggle="tooltip"
 							title="{{ $__t('Delete this item') }}">
 							<i class="fa-solid fa-trash"></i>
 						</a>
 					</td>
 					<td>
-						{{ $shoppinglocation->name }}
+						{!! str_repeat('&nbsp;&nbsp;&nbsp;', $shoppingLocationMeta[$shoppinglocation->id]['level']) !!}{{ $shoppinglocation->name }}
+					</td>
+					<td>
+						{{ $shoppingLocationMeta[$shoppinglocation->id]['parent_name'] }}
 					</td>
 					<td>
 						{{ $shoppinglocation->description }}

@@ -13,6 +13,10 @@
 	}
 
 	var jsonData = $('#shoppinglocation-form').serializeJSON();
+	// Leeres übergeordnetes Geschäft als NULL senden (nicht ""), damit
+	// Wurzel-Erkennung (parent_shopping_location_id IS NULL) und der
+	// Unique-Index korrekt greifen.
+	jsonData.parent_shopping_location_id = jsonData.parent_shopping_location_id || null;
 	Grocy.FrontendHelpers.BeginUiBusy("shoppinglocation-form");
 
 	if (Grocy.EditMode === 'create')

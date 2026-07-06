@@ -31,8 +31,8 @@
 		required
 		@endif>
 		<option value=""></option>
-		@foreach($shoppinglocations as $shoppinglocation)
-		<option value="{{ $shoppinglocation->id }}">{{ $shoppinglocation->name }}</option>
+		@foreach(SortLocationsAsTree($shoppinglocations, 'parent_shopping_location_id') as $shoppingLocationTreeItem)
+		<option value="{{ $shoppingLocationTreeItem['id'] }}">{{ $shoppingLocationTreeItem['path'] }}</option>
 		@endforeach
 	</select>
 	<div class="invalid-feedback">{{ $__t('You have to select a store') }}</div>

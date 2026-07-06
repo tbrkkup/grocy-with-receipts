@@ -2901,3 +2901,9 @@ msgstr "Alle Geschäfte"
 
 msgid "Are you sure you want to delete the receipt alias \"%s\"?"
 msgstr "Möchtest du den Rechnungs-Alias „%s“ wirklich löschen?"
+
+msgid "Parent store"
+msgstr "Übergeordnetes Geschäft (Kette)"
+
+msgid "This store has branches. Please move or delete them first."
+msgstr "Dieses Geschäft hat Filialen. Bitte verschiebe oder lösche diese zuerst."
