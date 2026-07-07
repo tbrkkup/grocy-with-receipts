@@ -84,7 +84,7 @@
 					</th>
 					<th>{{ $__t('Name') }}</th>
 					<th>{{ $__t('Location') }}</th>
-					<th>{{ $__t('Product group') }}</th>
+					<th>{{ $__t('Equipment group') }}</th>
 
 					@include('components.userfields_thead', array(
 					'userfields' => $userfields,
@@ -138,8 +138,8 @@
 						@if($equipmentItem->location_id && isset($equipmentLocationPaths[$equipmentItem->location_id])){{ CollapseLocationPath($equipmentLocationPaths[$equipmentItem->location_id]) }}@endif
 					</td>
 					<td>
-						@php $equipmentProductGroup = $equipmentItem->product_group_id ? FindObjectInArrayByPropertyValue($productgroups, 'id', $equipmentItem->product_group_id) : null; @endphp
-						@if($equipmentProductGroup != null){{ $equipmentProductGroup->name }}@endif
+						@php $equipmentGroup = $equipmentItem->equipment_group_id ? FindObjectInArrayByPropertyValue($equipmentgroups, 'id', $equipmentItem->equipment_group_id) : null; @endphp
+						@if($equipmentGroup != null){{ $equipmentGroup->name }}@endif
 					</td>
 
 					@include('components.userfields_tbody', array(

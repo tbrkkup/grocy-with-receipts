@@ -140,6 +140,8 @@ $app->group('', function (RouteCollectorProxy $group)
 
 	// Equipment routes
 	$group->get('/equipment', [EquipmentController::class, 'Overview']);
+	$group->get('/equipmentgroups', [EquipmentController::class, 'EquipmentGroupsList']);
+	$group->get('/equipmentgroup/{equipmentGroupId}', [EquipmentController::class, 'EquipmentGroupEditForm']);
 	$group->get('/equipment/{equipmentId}', [EquipmentController::class, 'EditForm']);
 
 	// Receipt routes
