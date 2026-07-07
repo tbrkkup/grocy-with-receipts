@@ -3060,3 +3060,21 @@ msgstr "%s Produkte importiert"
 
 msgid "%s failed"
 msgstr "%s fehlgeschlagen"
+
+msgid "Import from link"
+msgstr "Aus Link importieren"
+
+msgid "Fetch"
+msgstr "Abrufen"
+
+msgid "Fetching…"
+msgstr "Wird abgerufen…"
+
+msgid "Applied."
+msgstr "Übernommen."
+
+msgid "Could not fetch the link."
+msgstr "Link konnte nicht abgerufen werden."
+
+msgid "Fetches name, weight and picture from a product page."
+msgstr "Holt Name, Gewicht und Bild von einer Produktseite."

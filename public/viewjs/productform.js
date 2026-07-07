@@ -542,3 +542,64 @@ if (Grocy.EditMode == "edit")
 {
 	$(".save-product-button").toggleClass("default-submit-button");
 }
+
+// "Import from link" (Sammeleinkauf / Beleg-Import): holt Name, Gewicht und Bild
+// server-seitig (Anthropic-Key bleibt auf dem Server) und belegt das Formular vor.
+$("#product-from-link-btn").on("click", function()
+{
+	var url = ($("#product-from-link").val() || "").trim();
+	if (url === "") { return; }
+	var btn = $(this);
+	btn.prop("disabled", true);
+	$("#product-from-link-status").removeClass("text-danger text-success").text(__t("Fetching…"));
+	Grocy.Api.Post("receipts/product-from-url", { url: url },
+		function(info)
+		{
+			if (info.name) { $("#name").val(info.name); }
+			if (info.quantity && info.unit)
+			{
+				var weight = "Gewicht: " + info.quantity + " " + info.unit;
+				try
+				{
+					var cur = $("#description").summernote("code") || "";
+					$("#description").summernote("code", cur ? (cur + "<br>" + weight) : weight);
+				}
+				catch (e)
+				{
+					var d = $("#description");
+					d.val(d.val() ? (d.val() + " · " + weight) : weight);
+				}
+			}
+			var okMsg = __t("Applied.");
+			if (info.image_url)
+			{
+				fetch(U("/api/receipts/fetch-url?url=" + encodeURIComponent(info.image_url)), { credentials: "same-origin" })
+					.then(function(r) { return r.ok ? r.blob() : null; })
+					.then(function(blob)
+					{
+						if (!blob) { return; }
+						var ext = (blob.type.indexOf("png") !== -1) ? "png" : ((blob.type.indexOf("webp") !== -1) ? "webp" : "jpg");
+						var file = new File([blob], "product." + ext, { type: blob.type || "image/jpeg" });
+						var dt = new DataTransfer();
+						dt.items.add(file);
+						var inp = $("#product-picture")[0];
+						if (inp) { inp.files = dt.files; $(inp).trigger("change"); }
+					})
+					.catch(function() { })
+					.then(function() { $("#product-from-link-status").addClass("text-success").text(okMsg); });
+			}
+			else
+			{
+				$("#product-from-link-status").addClass("text-success").text(okMsg);
+			}
+			btn.prop("disabled", false);
+		},
+		function(xhr)
+		{
+			var msg = __t("Could not fetch the link.");
+			try { var j = JSON.parse(xhr.response); if (j.error_message) { msg = j.error_message; } } catch (e) { }
+			$("#product-from-link-status").addClass("text-danger").text(msg);
+			btn.prop("disabled", false);
+		}
+	);
+});

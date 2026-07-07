@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grocy Rechnungsimport v22</title>
+<title>Grocy Rechnungsimport v23</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -121,11 +121,17 @@ a { color: var(--accent); }
 <body>
 <div class="outer">
 
+  <div style="max-width:900px;margin:0 auto 14px;padding:10px 14px;border:1px solid #f0c36d;background:#fdf6e3;border-radius:8px;font-size:13px;color:#665;">
+    ℹ️ <b>Hinweis:</b> Dieses eigenständige Werkzeug wird durch den <b>„Sammeleinkauf"</b> direkt in Grocy abgelöst
+    (Menü <b>Einkauf → Sammeleinkauf</b>). Dort läuft die Beleg-Analyse serverseitig (Anthropic-Key nicht mehr im Browser).
+    Das Widget bleibt vorerst nutzbar, bis der native Weg abschließend getestet ist.
+  </div>
+
   <div id="step-config" class="step active">
     <div class="card">
       <div class="header-row">
         <h1>Grocy Rechnungsimport</h1>
-        <span class="vtag">v22 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v23 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Verbindungsdaten eingeben, dann Rechnung hochladen.</p>
       <div class="field">
@@ -155,7 +161,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Rechnung hochladen</h2>
-        <span class="vtag">v22 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v23 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Wähle links eine <b>digitale Rechnung</b> (PDF) oder rechts einen <b>gescannten/fotografierten</b> Kassenbon.</p>
       <div class="drop-row">
@@ -190,7 +196,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Produkte prüfen</h2>
-        <span class="vtag">v22 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v23 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Menge und Einheit sind direkt editierbar. Neue Produkte können vor dem Import bearbeitet werden.</p>
       <div id="receipt-banner" class="status" style="display:none"></div>
@@ -257,6 +263,14 @@ a { color: var(--accent); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 var CHANGELOG = [
+  {
+    version: 'v23', date: '2026-07',
+    items: [
+      'Ablösungshinweis: Dieses Widget wird durch den nativen „Sammeleinkauf" in Grocy ersetzt (Menü Einkauf → Sammeleinkauf)',
+      'Der native Weg ruft Claude serverseitig (Anthropic-Key nicht mehr im Browser) und deckt Upload, Analyse, Review und Buchung ab',
+      'Das Widget bleibt vorerst nutzbar, bis der native Weg abschließend getestet ist'
+    ]
+  },
   {
     version: 'v22', date: '2026-07',
     items: [

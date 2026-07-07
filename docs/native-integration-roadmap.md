@@ -138,13 +138,21 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
 - **Offen/später:** Duplikaterkennung (wie im Widget) und Datei-Anhang-Feinschliff; der echte
   Claude-Parse/Match braucht den Server-Key (Nutzer-Test).
 
-### Phase 5 – „Produkt aus Link" nativ
-- Im **Grocy-Produktformular** (`productform`) ein Feld „aus Link importieren", das
-  `GET /api/receipts/fetch-url` + Analyse nutzt (Name/Gewicht/Bild).
+### Phase 5 – „Produkt aus Link" nativ ✅ (2026-07-07)
+- Im **Grocy-Produktformular** (`productform`) ein Feld **„Aus Link importieren"**
+  (feature-flag-gated): ruft `POST /api/receipts/product-from-url` (Server holt die Seite
+  SSRF-gehärtet + Claude extrahiert Name/Gewicht/Bild-URL), belegt **Name** + **Beschreibung**
+  (Gewicht) vor und lädt das **Bild** über `GET /api/receipts/fetch-url` in das bestehende
+  `#product-picture`-Input → Grocys normaler Speicher-Flow hängt es als Produktbild an.
+- **SSRF-Abruflogik zentralisiert** im `ReceiptAnalysisService` (geteilt von `fetch-url` und
+  `product-from-url`), Controller delegiert. `POST /api/receipts/product-from-url` neu.
 
-### Phase 6 – Standalone-Widget ablösen
-- Wenn nativ vollständig: Widget als Legacy markieren/entfernen; `/claude-proxy` und
-  `url-proxy.php` (und die CDN-pdf.js-Abhängigkeit) entfallen.
+### Phase 6 – Standalone-Widget ablösen ✅ (markiert; Entfernen nach Live-Test)
+- `public/grocy-import.html` als **Legacy** markiert: Deprecation-Banner + Changelog v23,
+  verweist auf **Einkauf → Sammeleinkauf**.
+- **Bewusst NICHT gelöscht:** Widget, `url-proxy.php` und die `/claude-proxy`-nginx-Route
+  bleiben, bis der native Weg vom Nutzer mit echtem Anthropic-Key end-to-end bestätigt ist
+  (Löschen wäre vorher destruktiv). Danach: Dateien entfernen, nginx-`/claude-proxy` kann weg.
 
 ## 5. Entscheidungen (getroffen am 2026-07-06)
 1. **Anthropic-Key & Claude-Aufruf: SERVERSEITIG.** Der Key wird server-seitig gespeichert

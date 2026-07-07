@@ -2672,3 +2672,21 @@ msgstr ""
 
 msgid "%s failed"
 msgstr ""
+
+msgid "Import from link"
+msgstr ""
+
+msgid "Fetch"
+msgstr ""
+
+msgid "Fetching…"
+msgstr ""
+
+msgid "Applied."
+msgstr ""
+
+msgid "Could not fetch the link."
+msgstr ""
+
+msgid "Fetches name, weight and picture from a product page."
+msgstr ""

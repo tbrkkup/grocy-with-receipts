@@ -176,6 +176,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	$group->post('/receipts/parse-scan', [ReceiptImportApiController::class, 'ParseScan']);
 	$group->post('/receipts/match-products', [ReceiptImportApiController::class, 'MatchProducts']);
 	$group->get('/receipts/fetch-url', [ReceiptImportApiController::class, 'FetchUrl']);
+	$group->post('/receipts/product-from-url', [ReceiptImportApiController::class, 'ProductFromUrl']);
 	$group->post('/receipts/settings', [ReceiptImportApiController::class, 'SaveSettings']);
 
 	// Generic entity interaction
