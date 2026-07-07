@@ -174,6 +174,7 @@ $app->group('/api', function (RouteCollectorProxy $group)
 	// Receipt import (Sammeleinkauf) – serverseitige Beleg-Analyse
 	$group->post('/receipts/parse-invoice', [ReceiptImportApiController::class, 'ParseInvoice']);
 	$group->post('/receipts/parse-scan', [ReceiptImportApiController::class, 'ParseScan']);
+	$group->post('/receipts/match-products', [ReceiptImportApiController::class, 'MatchProducts']);
 	$group->get('/receipts/fetch-url', [ReceiptImportApiController::class, 'FetchUrl']);
 	$group->post('/receipts/settings', [ReceiptImportApiController::class, 'SaveSettings']);
 

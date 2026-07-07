@@ -2642,3 +2642,33 @@ msgstr ""
 
 msgid "%s products recognized"
 msgstr ""
+
+msgid "Create new"
+msgstr ""
+
+msgid "Learned"
+msgstr ""
+
+msgid "Import into stock"
+msgstr ""
+
+msgid "Import another receipt"
+msgstr ""
+
+msgid "Matching products…"
+msgstr ""
+
+msgid "Importing…"
+msgstr ""
+
+msgid "Nothing to import."
+msgstr ""
+
+msgid "Import failed"
+msgstr ""
+
+msgid "%s products imported"
+msgstr ""
+
+msgid "%s failed"
+msgstr ""

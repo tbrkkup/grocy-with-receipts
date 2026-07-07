@@ -71,20 +71,44 @@
 			<div class="progress-bar" id="bp-progress-bar" role="progressbar" style="width: 0%"></div>
 		</div>
 
-		<div id="bp-result" class="mt-4 d-none">
-			<h4 id="bp-result-head"></h4>
-			<table class="table table-sm table-striped w-100 mt-2">
-				<thead>
-					<tr>
-						<th>{{ $__t('Receipt text') }}</th>
-						<th>{{ $__t('Product') }}</th>
-						<th>{{ $__t('Amount') }}</th>
-						<th>{{ $__t('Price') }}</th>
-					</tr>
-				</thead>
-				<tbody id="bp-result-body"></tbody>
-			</table>
-			<p class="text-muted font-italic">{{ $__t('Next: review, correct and book these into stock (coming next).') }}</p>
+		<div id="bp-review" class="mt-4 d-none">
+			<h4 id="bp-review-head"></h4>
+			<div class="row mb-2">
+				<div class="col-md-4 col-12 mb-2">
+					<label for="bp-shop">{{ $__t('Store') }}</label>
+					<select class="custom-control custom-select" id="bp-shop"></select>
+				</div>
+				<div class="col-md-4 col-12 mb-2">
+					<label for="bp-date">{{ $__t('Purchased date') }}</label>
+					<input type="date" class="form-control" id="bp-date">
+				</div>
+				<div class="col-md-4 col-12 mb-2">
+					<label for="bp-invoice">{{ $__t('Invoice number') }}</label>
+					<input type="text" class="form-control" id="bp-invoice">
+				</div>
+			</div>
+			<div class="table-responsive">
+				<table class="table table-sm w-100">
+					<thead>
+						<tr>
+							<th>{{ $__t('Receipt text') }}</th>
+							<th style="min-width:220px">{{ $__t('Product') }}</th>
+							<th>{{ $__t('Amount') }}</th>
+							<th>{{ $__t('Unit') }}</th>
+							<th>{{ $__t('Price') }}</th>
+							<th>{{ $__t('Skip') }}</th>
+						</tr>
+					</thead>
+					<tbody id="bp-review-body"></tbody>
+				</table>
+			</div>
+			<button class="btn btn-success" id="bp-import">{{ $__t('Import into stock') }}</button>
+			<div id="bp-import-status" class="mt-2"></div>
+		</div>
+
+		<div id="bp-done" class="mt-4 d-none">
+			<div class="alert alert-success" id="bp-done-msg"></div>
+			<button class="btn btn-secondary" id="bp-restart">{{ $__t('Import another receipt') }}</button>
 		</div>
 
 	</div>

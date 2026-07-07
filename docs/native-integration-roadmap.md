@@ -118,15 +118,25 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
 
 > **Menü-Icon:** Nach Design-Vergleich `fa-cart-flatbed` gewählt (Transportwagen mit Kiste).
 
-### Phase 3 – Native Review-/Korrektur-Seite
-- Editierbare Positionen (Menge/Einheit/Produkt-Match), Geschäft-/Datum-Auswahl, Rechnungs-Banner.
-- Wörterbuch-Vorbelegung (Lookup vor Claude), unsichere Positionen markiert.
-- Wiederverwendung von Grocy-Produkt-Picker + Neuanlegen (idealerweise Grocys Produktformular
-  im Dialog statt eigenem Mini-Dialog).
+### Phase 3 – Native Review-/Korrektur-Seite ✅ (2026-07-07)
+- Editierbare Positionen direkt auf `/bulkpurchase`: Produkt-Auswahl (bestehende Produkte
+  oder „Neu anlegen: <Name>"), Menge, Einheit, Preis, „Überspringen"; Geschäft-/Datum-/
+  Rechnungsnummer-Auswahl (vorbelegt aus der Analyse).
+- **Wörterbuch-Vorbelegung** (Lookup `product_receipt_aliases` je Geschäft, „Gelernt"-Badge),
+  danach **server-seitiges Matching** über neuen Endpunkt `POST /api/receipts/match-products`
+  (Claude Call 2; degradiert sauber ohne Key → alles „Neu anlegen"/manuell wählbar).
+- Master-Daten (Produkte/Geschäfte/Einheiten/Standorte) via `Grocy.Api` (Session).
 
-### Phase 4 – Import & Verknüpfung
-- Transaktionaler Import-Endpoint (Rechnung anlegen/aktualisieren, Buchungen mit `receipt_id`,
-  Datei anhängen, Aliase lernen), Duplikaterkennung wie gehabt.
+### Phase 4 – Import & Verknüpfung ✅ (2026-07-07)
+- Import direkt aus dem Review (`bpImport`, clientseitig über die bestehende Grocy-REST-API):
+  Rechnung anlegen (Datum/Geschäft/Rechnungsnummer), hochgeladene Datei als `receipt_file`
+  anhängen, je Position Produkt auflösen (bzw. **neu anlegen** mit Einheiten-Fallback),
+  Lagerzugang buchen **mit `receipt_id`**, Alias lernen/hochzählen.
+- **Real gegen Grocy-API getestet** (Demo, `scratchpad/shot-phase34.js`): „2 products
+  imported", Rechnung mit Rechnungsnummer angelegt, neues Produkt erstellt, Alias gelernt,
+  Buchungen mit `receipt_id` verknüpft, keine JS-Fehler.
+- **Offen/später:** Duplikaterkennung (wie im Widget) und Datei-Anhang-Feinschliff; der echte
+  Claude-Parse/Match braucht den Server-Key (Nutzer-Test).
 
 ### Phase 5 – „Produkt aus Link" nativ
 - Im **Grocy-Produktformular** (`productform`) ein Feld „aus Link importieren", das

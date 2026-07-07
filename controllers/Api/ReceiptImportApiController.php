@@ -54,6 +54,25 @@ class ReceiptImportApiController extends BaseApiController
 		}
 	}
 
+	public function MatchProducts(Request $request, Response $response, array $args)
+	{
+		if (!$this->FeatureEnabled())
+		{
+			return $this->GenericErrorResponse($response, 'Receipt import feature is disabled', 404);
+		}
+		try
+		{
+			$body = $this->RawJsonBody($request);
+			$products = (isset($body['products']) && is_array($body['products'])) ? $body['products'] : [];
+			$result = ReceiptAnalysisService::GetInstance()->MatchProducts($products);
+			return $this->ApiResponse($response, $result);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
 	// Speichert die Beleg-Import-Einstellungen als settingoverrides-Dateien (instanzweit,
 	// vom Setting()-Mechanismus beim nächsten Request gelesen). Nur Admin.
 	public function SaveSettings(Request $request, Response $response, array $args)
