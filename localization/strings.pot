@@ -2523,9 +2523,6 @@ msgstr ""
 msgid "Times confirmed"
 msgstr ""
 
-msgid "Last used"
-msgstr ""
-
 msgid "Any store"
 msgstr ""
 
@@ -2707,4 +2704,19 @@ msgid "Could not fetch the link."
 msgstr ""
 
 msgid "Fetches name, weight and picture from a product page."
+msgstr ""
+
+msgid "selected"
+msgstr ""
+
+msgid "Receipts"
+msgstr ""
+
+msgid "Location overview"
+msgstr ""
+
+msgid "Calories"
+msgstr ""
+
+msgid "Receipt"
 msgstr ""
