@@ -2973,3 +2973,54 @@ msgstr "Alles wird mit einer Rechnung verknüpft und für das nächste Mal geler
 
 msgid "The upload and review interface is being built here natively. Until then, the standalone import tool remains available."
 msgstr "Die Upload- und Prüfen-Oberfläche wird hier gerade nativ gebaut. Bis dahin bleibt das eigenständige Import-Werkzeug verfügbar."
+
+msgid "Choose a digital invoice (PDF) on the left or a scanned/photographed receipt on the right."
+msgstr "Wähle links eine digitale Rechnung (PDF) oder rechts einen gescannten/fotografierten Beleg."
+
+msgid "Digital invoice"
+msgstr "Digitale Rechnung"
+
+msgid "Drop a PDF here or click"
+msgstr "PDF hier ablegen oder klicken"
+
+msgid "PDF only · text extraction"
+msgstr "Nur PDF · Textauslesung"
+
+msgid "Scanned / photographed"
+msgstr "Gescannt / fotografiert"
+
+msgid "Drop a PDF or image here or click"
+msgstr "PDF oder Bild hier ablegen oder klicken"
+
+msgid "PDF or image · Claude Vision"
+msgstr "PDF oder Bild · Claude Vision"
+
+msgid "Next: review, correct and book these into stock (coming next)."
+msgstr "Als Nächstes: prüfen, korrigieren und in den Bestand buchen (folgt)."
+
+msgid "For digital invoices please choose a PDF file."
+msgstr "Für digitale Rechnungen bitte eine PDF-Datei wählen."
+
+msgid "For scans please choose a PDF or image file."
+msgstr "Für Scans bitte eine PDF- oder Bilddatei wählen."
+
+msgid "Reading PDF…"
+msgstr "PDF wird gelesen…"
+
+msgid "Analyzing…"
+msgstr "Analysiere…"
+
+msgid "Preparing image…"
+msgstr "Bild wird vorbereitet…"
+
+msgid "Could not read the file."
+msgstr "Datei konnte nicht gelesen werden."
+
+msgid "Could not read image"
+msgstr "Bild konnte nicht gelesen werden"
+
+msgid "Analysis failed"
+msgstr "Analyse fehlgeschlagen"
+
+msgid "%s products recognized"
+msgstr "%s Produkte erkannt"

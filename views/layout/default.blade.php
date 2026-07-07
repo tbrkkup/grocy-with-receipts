@@ -292,11 +292,7 @@
 					title="{{ $__t('Bulk purchase') }}">
 					<a class="nav-link discrete-link"
 						href="{{ $U('/bulkpurchase') }}">
-						<span class="nav-bulk-icon fa-fw" aria-hidden="true">
-							<i class="fa-solid fa-cart-shopping cart"></i>
-							<i class="fa-solid fa-cubes cubes lower"></i>
-							<i class="fa-solid fa-cubes cubes upper"></i>
-						</span>
+						<i class="fa-solid fa-fw fa-cart-flatbed"></i>
 						<span class="nav-link-text">{{ $__t('Bulk purchase') }}</span>
 					</a>
 				</li>

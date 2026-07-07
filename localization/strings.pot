@@ -2585,3 +2585,54 @@ msgstr ""
 
 msgid "The upload and review interface is being built here natively. Until then, the standalone import tool remains available."
 msgstr ""
+
+msgid "Choose a digital invoice (PDF) on the left or a scanned/photographed receipt on the right."
+msgstr ""
+
+msgid "Digital invoice"
+msgstr ""
+
+msgid "Drop a PDF here or click"
+msgstr ""
+
+msgid "PDF only · text extraction"
+msgstr ""
+
+msgid "Scanned / photographed"
+msgstr ""
+
+msgid "Drop a PDF or image here or click"
+msgstr ""
+
+msgid "PDF or image · Claude Vision"
+msgstr ""
+
+msgid "Next: review, correct and book these into stock (coming next)."
+msgstr ""
+
+msgid "For digital invoices please choose a PDF file."
+msgstr ""
+
+msgid "For scans please choose a PDF or image file."
+msgstr ""
+
+msgid "Reading PDF…"
+msgstr ""
+
+msgid "Analyzing…"
+msgstr ""
+
+msgid "Preparing image…"
+msgstr ""
+
+msgid "Could not read the file."
+msgstr ""
+
+msgid "Could not read image"
+msgstr ""
+
+msgid "Analysis failed"
+msgstr ""
+
+msgid "%s products recognized"
+msgstr ""

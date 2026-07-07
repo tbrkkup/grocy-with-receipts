@@ -101,10 +101,22 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
 - Mit Playwright verifiziert: Sidebar zeigt „Single purchase"+„Bulk purchase", `/bulkpurchase`
   rendert (HTTP 200, aktiver Menüpunkt).
 
-### Phase 2 – Native Upload-/Analyse-Seite („Sammeleinkauf")
+### Phase 2 – Native Upload-/Analyse-Seite („Sammeleinkauf") ✅ (2026-07-07)
 - `GET /bulkpurchase` → Blade-View + `viewjs/bulkpurchase.js`.
-- Zwei Felder wie im Widget (digital = PDF/Text, Scan/Foto = Vision), Grocy-Fortschrittsanzeige.
-- pdf.js **clientseitig** (gebundelt), ruft `POST /api/receipts/analyze`.
+- Zwei Felder (digital = PDF/Text, Scan/Foto = PDF/Bild → Vision), exklusive Auswahl,
+  Fortschrittsanzeige, Ergebnis-Tabelle (Kassentext, Produkt, Menge, Preis).
+- **pdf.js clientseitig gebundelt** (`public/packages/pdfjs/`, nicht mehr CDN): Digital →
+  Text extrahieren → `parse-invoice`; Scan-Bild → Canvas-Downscale → `parse-scan`;
+  Scan-PDF → Seiten zu Bildern rendern → `parse-scan`.
+- Ruft die Phase-0-Endpunkte per `Grocy.Api.Post` (Session-Auth), zeigt Fehler (z. B.
+  „Key not configured") sauber an.
+- Mit Playwright verifiziert: Seite rendert, pdf.js lädt, Bild-Upload → `parse-scan` →
+  Fehler/Ergebnis im UI. Menü-Icon `fa-cart-flatbed`.
+- **Offen (Phase 3/4):** Produkt-Matching (Wörterbuch + Claude), editierbarer Review,
+  Rechnung anlegen + Buchen mit `receipt_id` + Alias-Lernen. Aktuell zeigt die Seite die
+  extrahierten Positionen read-only an.
+
+> **Menü-Icon:** Nach Design-Vergleich `fa-cart-flatbed` gewählt (Transportwagen mit Kiste).
 
 ### Phase 3 – Native Review-/Korrektur-Seite
 - Editierbare Positionen (Menge/Einheit/Produkt-Match), Geschäft-/Datum-Auswahl, Rechnungs-Banner.
