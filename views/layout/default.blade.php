@@ -278,13 +278,25 @@
 				<li class="nav-item nav-item-sidebar permission-STOCK_PURCHASE @if($viewName == 'purchase') active-page @endif"
 					data-toggle="tooltip"
 					data-placement="right"
-					title="{{ $__t('Purchase') }}">
+					title="{{ $__t('Single purchase') }}">
 					<a class="nav-link discrete-link"
 						href="{{ $U('/purchase') }}">
 						<i class="fa-solid fa-fw fa-cart-plus"></i>
-						<span class="nav-link-text">{{ $__t('Purchase') }}</span>
+						<span class="nav-link-text">{{ $__t('Single purchase') }}</span>
 					</a>
 				</li>
+				@if(GROCY_FEATURE_FLAG_RECEIPT_IMPORT)
+				<li class="nav-item nav-item-sidebar permission-STOCK_PURCHASE @if($viewName == 'bulkpurchase') active-page @endif"
+					data-toggle="tooltip"
+					data-placement="right"
+					title="{{ $__t('Bulk purchase') }}">
+					<a class="nav-link discrete-link"
+						href="{{ $U('/bulkpurchase') }}">
+						<i class="fa-solid fa-fw fa-cart-arrow-down"></i>
+						<span class="nav-link-text">{{ $__t('Bulk purchase') }}</span>
+					</a>
+				</li>
+				@endif
 				<li class="nav-item nav-item-sidebar @if($viewName == 'receipts') active-page @endif"
 					data-toggle="tooltip"
 					data-placement="right"
