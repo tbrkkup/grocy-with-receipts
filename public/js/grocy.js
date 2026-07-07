@@ -773,6 +773,26 @@ $(window).on("message", function (e)
 		// <select> eintragen und auswählen – ohne Reload. Läuft in jedem Fenster (per
 		// BroadcastMessage verteilt); nur das Fenster mit passendem Select reagiert.
 		var mocPayload = data.Payload || {};
+
+		// Die neue Option in ALLE Selects derselben Entität eintragen – mehrere Felder listen
+		// oft dieselben Stammdaten (z.B. die vier Mengeneinheiten-Felder im Produktformular),
+		// sodass die neue Einheit überall wählbar ist. Ausgewählt wird sie nur im auslösenden
+		// Feld (unten). Kandidaten sind über data-createnew-entity markiert.
+		if (mocPayload.entity && window.jQuery)
+		{
+			jQuery('select[data-createnew-entity="' + mocPayload.entity + '"]').each(function ()
+			{
+				if (!this.querySelector('option[value="' + mocPayload.id + '"]'))
+				{
+					var o = document.createElement("option");
+					o.value = mocPayload.id;
+					o.textContent = mocPayload.name;
+					this.appendChild(o);
+				}
+				if (jQuery(this).data("combobox")) { jQuery(this).data("combobox").refresh(); }
+			});
+		}
+
 		var mocSelect = document.getElementById(mocPayload.target);
 		if (mocSelect && mocSelect.tagName == "SELECT")
 		{

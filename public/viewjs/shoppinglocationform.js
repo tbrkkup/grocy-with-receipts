@@ -27,6 +27,11 @@
 				Grocy.EditObjectId = result.created_object_id;
 				Grocy.Components.UserfieldsForm.Save(function()
 				{
+					// Aus einem Auswahlfeld heraus angelegt? Dann id/Name zurückmelden (ohne Reload).
+					if (Grocy.PostCreatedObject('shopping_locations', result.created_object_id, jsonData.name))
+					{
+						return;
+					}
 					if (GetUriParam("embedded") !== undefined)
 					{
 						window.parent.postMessage(WindowMessageBag("Reload"), Grocy.BaseUrl);

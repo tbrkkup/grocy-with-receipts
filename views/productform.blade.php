@@ -137,18 +137,28 @@
 			@if(GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING)
 			<div class="form-group">
 				<label for="location_id">{{ $__t('Default location') }}</label>
-				<select required
-					class="custom-control custom-select"
-					id="location_id"
-					name="location_id">
-					<option></option>
-					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
-					<option @if($mode=='edit'
-						&&
-						$locationTreeItem['id'] == $product->location_id) selected="selected" @endif value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
-					@endforeach
-				</select>
-				<div class="invalid-feedback">{{ $__t('A location is required') }}</div>
+				<div class="input-group">
+					<select required
+						class="custom-control custom-select"
+						id="location_id"
+						name="location_id"
+						data-createnew-entity="locations">
+						<option></option>
+						@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+						<option @if($mode=='edit'
+							&&
+							$locationTreeItem['id'] == $product->location_id) selected="selected" @endif value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
+						@endforeach
+					</select>
+					<div class="input-group-append">
+						<button class="btn btn-outline-secondary create-new-picker-button"
+							type="button"
+							data-newform-url="/location/new"
+							data-target-select="location_id"
+							title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+					</div>
+					<div class="invalid-feedback">{{ $__t('A location is required') }}</div>
+				</div>
 			</div>
 			<div class="form-group">
 				<label for="default_consume_location_id">
@@ -158,16 +168,26 @@
 						data-trigger="hover click"
 						title="{{ $__t('Stock entries at this location will be consumed first') }}"></i>
 				</label>
-				<select class="custom-control custom-select"
-					id="default_consume_location_id"
-					name="default_consume_location_id">
-					<option></option>
-					@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
-					<option @if($mode=='edit'
-						&&
-						$locationTreeItem['id'] == $product->default_consume_location_id) selected="selected" @endif value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
-					@endforeach
-				</select>
+				<div class="input-group">
+					<select class="custom-control custom-select"
+						id="default_consume_location_id"
+						name="default_consume_location_id"
+						data-createnew-entity="locations">
+						<option></option>
+						@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+						<option @if($mode=='edit'
+							&&
+							$locationTreeItem['id'] == $product->default_consume_location_id) selected="selected" @endif value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
+						@endforeach
+					</select>
+					<div class="input-group-append">
+						<button class="btn btn-outline-secondary create-new-picker-button"
+							type="button"
+							data-newform-url="/location/new"
+							data-target-select="default_consume_location_id"
+							title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+					</div>
+				</div>
 
 				@if(GROCY_FEATURE_FLAG_STOCK_PRODUCT_OPENED_TRACKING)
 				<div class="custom-control custom-checkbox">
@@ -200,7 +220,8 @@
 			@include('components.shoppinglocationpicker', array(
 			'label' => 'Default store',
 			'prefillById' => $prefillById,
-			'shoppinglocations' => $shoppinglocations
+			'shoppinglocations' => $shoppinglocations,
+			'createNew' => true
 			))
 			@else
 			<input type="hidden"
@@ -404,18 +425,28 @@
 					data-toggle="tooltip"
 					data-trigger="hover click"
 					title="{{ $__t('After this product was once in stock and when the desired quantity unit cannot be selected here, first create a corresponding unit conversion') }}"></i>
-				<select required
-					class="custom-control custom-select input-group-qu"
-					id="qu_id_stock"
-					name="qu_id_stock">
-					<option></option>
-					@foreach($quantityunitsReferenced as $qu)
-					<option @if($mode=='edit'
-						&&
-						$qu->id == $product->qu_id_stock) selected="selected" @endif value="{{ $qu->id }}" data-plural-form="{{ $qu->name_plural }}">{{ $qu->name }}</option>
-					@endforeach
-				</select>
-				<div class="invalid-feedback">{{ $__t('A quantity unit is required') }}</div>
+				<div class="input-group">
+					<select required
+						class="custom-control custom-select input-group-qu"
+						id="qu_id_stock"
+						name="qu_id_stock"
+						data-createnew-entity="quantity_units">
+						<option></option>
+						@foreach($quantityunitsReferenced as $qu)
+						<option @if($mode=='edit'
+							&&
+							$qu->id == $product->qu_id_stock) selected="selected" @endif value="{{ $qu->id }}" data-plural-form="{{ $qu->name_plural }}">{{ $qu->name }}</option>
+						@endforeach
+					</select>
+					<div class="input-group-append">
+						<button class="btn btn-outline-secondary create-new-picker-button"
+							type="button"
+							data-newform-url="/quantityunit/new"
+							data-target-select="qu_id_stock"
+							title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+					</div>
+					<div class="invalid-feedback">{{ $__t('A quantity unit is required') }}</div>
+				</div>
 			</div>
 
 			<div class="form-group">
@@ -424,18 +455,28 @@
 					data-toggle="tooltip"
 					data-trigger="hover click"
 					title="{{ $__t('This is the default quantity unit used on purchase and when adding this product to the shopping list') }}"></i>
-				<select required
-					class="custom-control custom-select input-group-qu"
-					id="qu_id_purchase"
-					name="qu_id_purchase">
-					<option></option>
-					@foreach($quantityunitsReferenced as $qu)
-					<option @if($mode=='edit'
-						&&
-						$qu->id == $product->qu_id_purchase) selected="selected" @endif value="{{ $qu->id }}">{{ $qu->name }}</option>
-					@endforeach
-				</select>
-				<div class="invalid-feedback">{{ $__t('A quantity unit is required') }}</div>
+				<div class="input-group">
+					<select required
+						class="custom-control custom-select input-group-qu"
+						id="qu_id_purchase"
+						name="qu_id_purchase"
+						data-createnew-entity="quantity_units">
+						<option></option>
+						@foreach($quantityunitsReferenced as $qu)
+						<option @if($mode=='edit'
+							&&
+							$qu->id == $product->qu_id_purchase) selected="selected" @endif value="{{ $qu->id }}">{{ $qu->name }}</option>
+						@endforeach
+					</select>
+					<div class="input-group-append">
+						<button class="btn btn-outline-secondary create-new-picker-button"
+							type="button"
+							data-newform-url="/quantityunit/new"
+							data-target-select="qu_id_purchase"
+							title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+					</div>
+					<div class="invalid-feedback">{{ $__t('A quantity unit is required') }}</div>
+				</div>
 			</div>
 
 			<div class="form-group">
@@ -444,18 +485,28 @@
 					data-toggle="tooltip"
 					data-trigger="hover click"
 					title="{{ $__t('This is the default quantity unit used when consuming this product') }}"></i>
-				<select required
-					class="custom-control custom-select input-group-qu"
-					id="qu_id_consume"
-					name="qu_id_consume">
-					<option></option>
-					@foreach($quantityunitsReferenced as $qu)
-					<option @if($mode=='edit'
-						&&
-						$qu->id == $product->qu_id_consume) selected="selected" @endif value="{{ $qu->id }}">{{ $qu->name }}</option>
-					@endforeach
-				</select>
-				<div class="invalid-feedback">{{ $__t('A quantity unit is required') }}</div>
+				<div class="input-group">
+					<select required
+						class="custom-control custom-select input-group-qu"
+						id="qu_id_consume"
+						name="qu_id_consume"
+						data-createnew-entity="quantity_units">
+						<option></option>
+						@foreach($quantityunitsReferenced as $qu)
+						<option @if($mode=='edit'
+							&&
+							$qu->id == $product->qu_id_consume) selected="selected" @endif value="{{ $qu->id }}">{{ $qu->name }}</option>
+						@endforeach
+					</select>
+					<div class="input-group-append">
+						<button class="btn btn-outline-secondary create-new-picker-button"
+							type="button"
+							data-newform-url="/quantityunit/new"
+							data-target-select="qu_id_consume"
+							title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+					</div>
+					<div class="invalid-feedback">{{ $__t('A quantity unit is required') }}</div>
+				</div>
 			</div>
 
 			<div class="form-group">
@@ -464,18 +515,28 @@
 					data-toggle="tooltip"
 					data-trigger="hover click"
 					title="{{ $__t('When displaying prices for this product, they will be related to this quantity unit') }}"></i>
-				<select required
-					class="custom-control custom-select input-group-qu"
-					id="qu_id_price"
-					name="qu_id_price">
-					<option></option>
-					@foreach($quantityunitsReferenced as $qu)
-					<option @if($mode=='edit'
-						&&
-						$qu->id == $product->qu_id_price) selected="selected" @endif value="{{ $qu->id }}">{{ $qu->name }}</option>
-					@endforeach
-				</select>
-				<div class="invalid-feedback">{{ $__t('A quantity unit is required') }}</div>
+				<div class="input-group">
+					<select required
+						class="custom-control custom-select input-group-qu"
+						id="qu_id_price"
+						name="qu_id_price"
+						data-createnew-entity="quantity_units">
+						<option></option>
+						@foreach($quantityunitsReferenced as $qu)
+						<option @if($mode=='edit'
+							&&
+							$qu->id == $product->qu_id_price) selected="selected" @endif value="{{ $qu->id }}">{{ $qu->name }}</option>
+						@endforeach
+					</select>
+					<div class="input-group-append">
+						<button class="btn btn-outline-secondary create-new-picker-button"
+							type="button"
+							data-newform-url="/quantityunit/new"
+							data-target-select="qu_id_price"
+							title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+					</div>
+					<div class="invalid-feedback">{{ $__t('A quantity unit is required') }}</div>
+				</div>
 			</div>
 
 			<div class="form-group mb-1">

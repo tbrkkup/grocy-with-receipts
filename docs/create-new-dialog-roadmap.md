@@ -137,5 +137,23 @@ eingegebene Zustand geht verloren. Es fehlt:
   Anlege-Dialog stapelt sich über dem Formular → Namen eingeben → speichern → Dialog schließt,
   neue Gruppe ist im `<select>` eingetragen **und ausgewählt**, der Produktname im
   darunterliegenden Formular bleibt erhalten (**kein Reload**). Screenshots in `scratchpad/`.
-- **⏳ Phase C/D:** `locationform`/`quantityunitform`/`shoppinglocationform` umrüsten +
-  „+"-Buttons an Standort/Einheiten/Geschäft (Produktformular), danach weitere Formulare.
+- **✅ Phase C – Anlege-Formulare umgerüstet (2026-07-07):** `locationform.js`,
+  `quantityunitform.js`, `shoppinglocationform.js` rufen im create-Zweig
+  `Grocy.PostCreatedObject(entity, id, name)` auf und short-circuiten (return), sonst
+  bisheriges Reload/Redirect (abwärtskompatibel ohne `createnewfor`).
+- **✅ Phase D (Produktformular) – „+"-Buttons ergänzt (2026-07-07):**
+  - **Standort:** `location_id` + `default_consume_location_id` (beide `data-createnew-entity="locations"`).
+  - **Mengeneinheit:** alle vier Felder (`qu_id_stock/purchase/consume/price`,
+    `data-createnew-entity="quantity_units"`) → neue Einheit erscheint in **allen vier** Selects.
+  - **Geschäft:** `shopping_location_id` über die geteilte Komponente
+    `components/shoppinglocationpicker.blade.php` (neuer optionaler Parameter `createNew`,
+    default aus → alle anderen Verwendungen unverändert; combobox-Pfad).
+  - **Mechanik-Erweiterung** in `grocy.js`: `MasterObjectCreated` trägt die neue Option in
+    **alle** Selects mit passendem `data-createnew-entity` ein (nur im auslösenden Feld
+    ausgewählt) – nötig, weil mehrere Felder dieselben Stammdaten listen.
+  - **Playwright bestanden (`scratchpad/test-createnew-more.js`):** je Feld „+" → Dialog
+    gestapelt → anlegen → Option eingetragen + ausgewählt, kein Reload; für Mengeneinheit
+    zusätzlich in allen vier Feldern verfügbar; für Geschäft combobox-Textfeld aktualisiert.
+    Siehe `docs/qa/create-new-dialog.md`.
+- **⏳ Phase E/D-Rollout:** dieselben „+"-Buttons in Einkauf/Verbrauch/Inventur/Umlagerung/
+  Bestandseintrag/Einkaufsliste; Sonderfall `productpicker` (Produkt neu anlegen).
