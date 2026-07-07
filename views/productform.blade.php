@@ -64,6 +64,26 @@
 			class="has-sticky-form-footer"
 			novalidate>
 
+			@if(GROCY_FEATURE_FLAG_RECEIPT_IMPORT)
+			<div class="form-group"
+				id="product-from-link-group">
+				<label for="product-from-link">{{ $__t('Import from link') }}</label>
+				<div class="input-group">
+					<input type="url"
+						class="form-control"
+						id="product-from-link"
+						placeholder="https://…">
+					<div class="input-group-append">
+						<button class="btn btn-outline-secondary"
+							type="button"
+							id="product-from-link-btn">{{ $__t('Fetch') }}</button>
+					</div>
+				</div>
+				<small class="form-text text-muted"
+					id="product-from-link-status">{{ $__t('Fetches name, weight and picture from a product page.') }}</small>
+			</div>
+			@endif
+
 			<div class="form-group">
 				<label for="name">{{ $__t('Name') }}</label>
 				<input type="text"

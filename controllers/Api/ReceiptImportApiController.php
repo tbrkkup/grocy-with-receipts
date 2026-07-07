@@ -9,10 +9,8 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 /**
  * Serverseitige Beleg-Analyse für den „Sammeleinkauf".
- * Zwei getrennte Endpunkte mit gemeinsamem Antwort-Schema:
- *  - POST /api/receipts/parse-invoice  (digitale Rechnung, Body { text })
- *  - POST /api/receipts/parse-scan     (Scan/Foto, Body { images: [base64,...] })
- * Der Anthropic-Key liegt serverseitig (GROCY_ANTHROPIC_API_KEY).
+ * Endpunkte (gemeinsames Antwort-Schema): parse-invoice, parse-scan, match-products,
+ * fetch-url, product-from-url, settings. Der Anthropic-Key liegt serverseitig.
  */
 class ReceiptImportApiController extends BaseApiController
 {
@@ -107,9 +105,8 @@ class ReceiptImportApiController extends BaseApiController
 		}
 	}
 
-	// Holt eine externe http(s)-Ressource serverseitig (umgeht Browser-CORS für „Produkt aus Link").
-	// Auth über die Grocy-API (dieser /api-Endpunkt ist bereits geschützt). SSRF-gehärtet:
-	// nur öffentliche IPv4, Redirects pro Hop geprüft, Verbindung an die geprüfte IP gepinnt.
+	// Holt eine externe http(s)-Ressource serverseitig (umgeht Browser-CORS für „Produkt aus Link"
+	// und Bild-Download). SSRF-Härtung liegt zentral im ReceiptAnalysisService.
 	public function FetchUrl(Request $request, Response $response, array $args)
 	{
 		if (!$this->FeatureEnabled())
@@ -121,175 +118,41 @@ class ReceiptImportApiController extends BaseApiController
 		{
 			return $this->GenericErrorResponse($response, 'Missing url parameter', 400);
 		}
-
-		$maxBytes = 8 * 1024 * 1024;
-		$contentType = 'application/octet-stream';
-		$httpCode = 200;
-		$bodyData = false;
-
-		for ($hop = 0; $hop <= 4; $hop++)
+		try
 		{
-			$parts = $this->ValidateUrlParts($url);
-			if ($parts === false)
-			{
-				return $this->GenericErrorResponse($response, 'Only absolute http(s) URLs are allowed', 400);
-			}
-			$host = $parts['host'];
-			$scheme = strtolower($parts['scheme']);
-			$port = isset($parts['port']) ? (int) $parts['port'] : ($scheme === 'https' ? 443 : 80);
-			$pinIp = $this->ResolvePinnedIp($host);
-			if ($pinIp === false)
-			{
-				return $this->GenericErrorResponse($response, 'Target host is not allowed', 403);
-			}
-
-			$redirectLocation = null;
-			$ch = curl_init($url);
-			curl_setopt_array($ch, [
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_FOLLOWLOCATION => false,
-				CURLOPT_CONNECTTIMEOUT => 8,
-				CURLOPT_TIMEOUT => 15,
-				CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; GrocyImportBot/1.0)',
-				CURLOPT_SSL_VERIFYPEER => true,
-				CURLOPT_SSL_VERIFYHOST => 2,
-				CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
-				CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
-				CURLOPT_RESOLVE => [$host . ':' . $port . ':' . $pinIp],
-				CURLOPT_NOPROGRESS => false,
-				CURLOPT_BUFFERSIZE => 65536,
-				CURLOPT_PROGRESSFUNCTION => function ($c, $dt, $dn) use ($maxBytes)
-				{
-					return ($dn > $maxBytes) ? 1 : 0;
-				},
-				CURLOPT_HEADERFUNCTION => function ($c, $header) use (&$redirectLocation)
-				{
-					$p = strpos($header, ':');
-					if ($p !== false && strtolower(trim(substr($header, 0, $p))) === 'location')
-					{
-						$redirectLocation = trim(substr($header, $p + 1));
-					}
-					return strlen($header);
-				},
-			]);
-			$bodyData = curl_exec($ch);
-			if ($bodyData === false)
-			{
-				$err = curl_error($ch);
-				curl_close($ch);
-				return $this->GenericErrorResponse($response, 'Fetch failed: ' . $err, 502);
-			}
-			$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-			$contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: 'application/octet-stream';
-			curl_close($ch);
-
-			if ($httpCode >= 300 && $httpCode < 400 && $redirectLocation)
-			{
-				$url = $this->ResolveRelativeUrl($url, $redirectLocation);
-				if ($url === false)
-				{
-					return $this->GenericErrorResponse($response, 'Invalid redirect target', 502);
-				}
-				continue;
-			}
-			break;
+			$data = ReceiptAnalysisService::GetInstance()->FetchUrl($url);
+			$response->getBody()->write($data['body']);
+			return $response->withStatus($data['status'])->withHeader('Content-Type', $data['content_type']);
 		}
-
-		if (strlen($bodyData) > $maxBytes)
+		catch (\Exception $ex)
 		{
-			return $this->GenericErrorResponse($response, 'Response too large', 413);
+			$code = $ex->getCode();
+			return $this->GenericErrorResponse($response, $ex->getMessage(), ($code >= 400 && $code < 600) ? $code : 400);
 		}
-		$response->getBody()->write($bodyData);
-		return $response->withStatus($httpCode ?: 200)->withHeader('Content-Type', $contentType);
 	}
 
-	private function ValidateUrlParts($url)
+	// „Produkt aus Link": Seite serverseitig holen + Claude extrahiert Name/Gewicht/Bild-URL.
+	public function ProductFromUrl(Request $request, Response $response, array $args)
 	{
-		$parts = parse_url($url);
-		if ($parts === false || empty($parts['scheme']) || empty($parts['host']) ||
-			!in_array(strtolower($parts['scheme']), ['http', 'https'], true))
+		if (!$this->FeatureEnabled())
 		{
-			return false;
+			return $this->GenericErrorResponse($response, 'Receipt import feature is disabled', 404);
 		}
-		return $parts;
-	}
-
-	private function IpAllowed($ip)
-	{
-		return (bool) filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
-	}
-
-	private function ResolvePinnedIp($host)
-	{
-		if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))
+		try
 		{
-			return false;
-		}
-		if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))
-		{
-			return $this->IpAllowed($host) ? $host : false;
-		}
-		$ips = [];
-		$recs = @dns_get_record($host, DNS_A);
-		if (is_array($recs) && count($recs) > 0)
-		{
-			foreach ($recs as $r)
+			$body = $this->RawJsonBody($request);
+			$url = trim(isset($body['url']) ? (string) $body['url'] : '');
+			if ($url === '')
 			{
-				if (!empty($r['ip']))
-				{
-					$ips[] = $r['ip'];
-				}
+				return $this->GenericErrorResponse($response, 'Missing url', 400);
 			}
+			$info = ReceiptAnalysisService::GetInstance()->ProductFromUrl($url);
+			return $this->ApiResponse($response, $info);
 		}
-		else
+		catch (\Exception $ex)
 		{
-			$byName = @gethostbynamel($host);
-			if (is_array($byName))
-			{
-				$ips = $byName;
-			}
+			return $this->GenericErrorResponse($response, $ex->getMessage());
 		}
-		if (empty($ips))
-		{
-			return false;
-		}
-		$pin = null;
-		foreach ($ips as $ip)
-		{
-			if (!$this->IpAllowed($ip))
-			{
-				return false;
-			}
-			if ($pin === null)
-			{
-				$pin = $ip;
-			}
-		}
-		return $pin;
-	}
-
-	private function ResolveRelativeUrl($base, $rel)
-	{
-		if (parse_url($rel, PHP_URL_SCHEME) !== null)
-		{
-			return $rel;
-		}
-		$b = parse_url($base);
-		if ($b === false || empty($b['scheme']) || empty($b['host']))
-		{
-			return false;
-		}
-		$port = isset($b['port']) ? ':' . $b['port'] : '';
-		if (strlen($rel) > 0 && $rel[0] === '/')
-		{
-			$path = $rel;
-		}
-		else
-		{
-			$basePath = isset($b['path']) ? $b['path'] : '/';
-			$path = substr($basePath, 0, strrpos($basePath, '/') + 1) . $rel;
-		}
-		return $b['scheme'] . '://' . $b['host'] . $port . $path;
 	}
 
 	private function FeatureEnabled()

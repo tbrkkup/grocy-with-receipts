@@ -108,6 +108,173 @@ class ReceiptAnalysisService extends BaseService
 		return is_array($matches) ? $matches : [];
 	}
 
+	// ---- Serverseitiger, SSRF-gehärteter Abruf (geteilt von fetch-url und ProductFromUrl) ----
+	// Gibt ['body'=>..., 'content_type'=>..., 'status'=>...] zurück oder wirft \Exception($msg, $httpStatus).
+	public function FetchUrl($url, $maxBytes = 8388608)
+	{
+		$contentType = 'application/octet-stream';
+		$httpCode = 200;
+		$bodyData = false;
+		for ($hop = 0; $hop <= 4; $hop++)
+		{
+			$parts = $this->ValidateUrlParts($url);
+			if ($parts === false)
+			{
+				throw new \Exception('Only absolute http(s) URLs are allowed', 400);
+			}
+			$host = $parts['host'];
+			$scheme = strtolower($parts['scheme']);
+			$port = isset($parts['port']) ? (int) $parts['port'] : ($scheme === 'https' ? 443 : 80);
+			$pinIp = $this->ResolvePinnedIp($host);
+			if ($pinIp === false)
+			{
+				throw new \Exception('Target host is not allowed', 403);
+			}
+			$redirectLocation = null;
+			$ch = curl_init($url);
+			curl_setopt_array($ch, [
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_FOLLOWLOCATION => false,
+				CURLOPT_CONNECTTIMEOUT => 8,
+				CURLOPT_TIMEOUT => 15,
+				CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; GrocyImportBot/1.0)',
+				CURLOPT_SSL_VERIFYPEER => true,
+				CURLOPT_SSL_VERIFYHOST => 2,
+				CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+				CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+				CURLOPT_RESOLVE => [$host . ':' . $port . ':' . $pinIp],
+				CURLOPT_NOPROGRESS => false,
+				CURLOPT_BUFFERSIZE => 65536,
+				CURLOPT_PROGRESSFUNCTION => function ($c, $dt, $dn) use ($maxBytes) { return ($dn > $maxBytes) ? 1 : 0; },
+				CURLOPT_HEADERFUNCTION => function ($c, $header) use (&$redirectLocation)
+				{
+					$p = strpos($header, ':');
+					if ($p !== false && strtolower(trim(substr($header, 0, $p))) === 'location')
+					{
+						$redirectLocation = trim(substr($header, $p + 1));
+					}
+					return strlen($header);
+				},
+			]);
+			$bodyData = curl_exec($ch);
+			if ($bodyData === false)
+			{
+				$err = curl_error($ch);
+				curl_close($ch);
+				throw new \Exception('Fetch failed: ' . $err, 502);
+			}
+			$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			$contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: 'application/octet-stream';
+			curl_close($ch);
+			if ($httpCode >= 300 && $httpCode < 400 && $redirectLocation)
+			{
+				$url = $this->ResolveRelativeUrl($url, $redirectLocation);
+				if ($url === false)
+				{
+					throw new \Exception('Invalid redirect target', 502);
+				}
+				continue;
+			}
+			break;
+		}
+		if (strlen($bodyData) > $maxBytes)
+		{
+			throw new \Exception('Response too large', 413);
+		}
+		return ['body' => $bodyData, 'content_type' => $contentType, 'status' => ($httpCode ?: 200)];
+	}
+
+	// „Produkt aus Link": Seite serverseitig holen + Claude extrahiert Name/Gewicht/Bild.
+	public function ProductFromUrl($url)
+	{
+		$data = $this->FetchUrl($url);
+		$html = (string) $data['body'];
+		$cleaned = preg_replace('#<script[\s\S]*?</script>#i', ' ', $html);
+		$cleaned = preg_replace('#<style[\s\S]*?</style>#i', ' ', $cleaned);
+		$snippet = mb_substr($cleaned, 0, 15000);
+		$prompt =
+			"Analysiere diese Produktseite und antworte NUR mit JSON, kein Markdown:\n" .
+			'{"name":"kurzer Produktname","quantity":Zahl oder null,"unit":"g|kg|ml|l|Stueck oder null","image_url":"absolute Bild-URL oder null"}' . "\n" .
+			"- name: prägnanter Produktname.\n" .
+			"- quantity/unit: Füll-/Nettogewicht bzw. -menge der Packung, falls erkennbar (Komma=Punkt).\n" .
+			"- image_url: Haupt-Produktbild, bevorzugt og:image, ABSOLUTE URL.\n\n" .
+			"Seiten-URL: " . $url . "\n\nHTML:\n" . $snippet;
+		$raw = $this->CallAnthropic([['role' => 'user', 'content' => $prompt]], 600);
+		$info = json_decode(trim(str_replace(['```json', '```'], '', $raw)), true);
+		if (!is_array($info))
+		{
+			throw new \Exception('Could not parse product info');
+		}
+		if (!empty($info['image_url']))
+		{
+			$abs = $this->ResolveRelativeUrl($url, $info['image_url']);
+			if ($abs !== false)
+			{
+				$info['image_url'] = $abs;
+			}
+		}
+		return $info;
+	}
+
+	private function ValidateUrlParts($url)
+	{
+		$parts = parse_url($url);
+		if ($parts === false || empty($parts['scheme']) || empty($parts['host']) ||
+			!in_array(strtolower($parts['scheme']), ['http', 'https'], true))
+		{
+			return false;
+		}
+		return $parts;
+	}
+	private function IpAllowed($ip)
+	{
+		return (bool) filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+	}
+	private function ResolvePinnedIp($host)
+	{
+		if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))
+		{
+			return false;
+		}
+		if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))
+		{
+			return $this->IpAllowed($host) ? $host : false;
+		}
+		$ips = [];
+		$recs = @dns_get_record($host, DNS_A);
+		if (is_array($recs) && count($recs) > 0)
+		{
+			foreach ($recs as $r) { if (!empty($r['ip'])) { $ips[] = $r['ip']; } }
+		}
+		else
+		{
+			$byName = @gethostbynamel($host);
+			if (is_array($byName)) { $ips = $byName; }
+		}
+		if (empty($ips)) { return false; }
+		$pin = null;
+		foreach ($ips as $ip)
+		{
+			if (!$this->IpAllowed($ip)) { return false; }
+			if ($pin === null) { $pin = $ip; }
+		}
+		return $pin;
+	}
+	private function ResolveRelativeUrl($base, $rel)
+	{
+		if (parse_url($rel, PHP_URL_SCHEME) !== null) { return $rel; }
+		$b = parse_url($base);
+		if ($b === false || empty($b['scheme']) || empty($b['host'])) { return false; }
+		$port = isset($b['port']) ? ':' . $b['port'] : '';
+		if (strlen($rel) > 0 && $rel[0] === '/') { $path = $rel; }
+		else
+		{
+			$basePath = isset($b['path']) ? $b['path'] : '/';
+			$path = substr($basePath, 0, strrpos($basePath, '/') + 1) . $rel;
+		}
+		return $b['scheme'] . '://' . $b['host'] . $port . $path;
+	}
+
 	// ---- Anthropic-Aufruf ----
 	private function CallAnthropic(array $messages, int $maxTokens)
 	{

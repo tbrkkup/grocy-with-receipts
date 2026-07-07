@@ -454,7 +454,9 @@ Standard-Einheit für neue Produkte: **kg** (kg-ID wird beim Connect über `/obj
 | v21 | Rabatte werden in den Produktpreis eingerechnet statt als eigener Posten gebucht: Eine Rabattzeile (z.B. „Rabatt 30 % -1,86") wird dem Produkt in der Zeile darüber (gelegentlich darunter) zugeordnet → Nettopreis in Grocy. Umgesetzt im Extraktions-Prompt (Vision + PDF) plus clientseitiges Sicherheitsnetz `foldDiscounts`. Getestet gegen Aldi-Süd-Beleg (Summe 22,61) |
 | v22 | dm-Belege: Ziffer hinter dem Preis (1/2) ist der MwSt-Satz-Indikator, nicht die Menge (analog REWEs A/B). Menge nur aus „Nx Einzelpreis" am Zeilenanfang oder kg/l; Zahlen im Namen (z.B. „8x220") sind keine Menge. Zahlungszeilen wie „dm-Geschenkkarte" (negativer Betrag) werden nicht mehr als Rabatt in ein Produkt eingerechnet |
 
-**Aktuelle Widget-Version:** v22 (`public/grocy-import.html`) + `public/url-proxy.php` (serverseitiger Abruf-Proxy)
+| v23 | **Ablösungshinweis (Legacy):** Deprecation-Banner + Changelog – das Widget wird durch den **nativen „Sammeleinkauf"** in Grocy ersetzt (Menü Einkauf → Sammeleinkauf; Analyse serverseitig, Key nicht mehr im Browser). Widget + `url-proxy.php` + `/claude-proxy` bleiben nutzbar, bis der native Weg mit echtem Key end-to-end getestet ist |
+
+**Aktuelle Widget-Version:** v23 (Legacy, `public/grocy-import.html`) – abgelöst durch den nativen **Sammeleinkauf** (`/bulkpurchase`, Phasen 0–5 der nativen Integration, siehe `docs/native-integration-roadmap.md`). Server-Endpunkte: `/api/receipts/parse-invoice|parse-scan|match-products|fetch-url|product-from-url|settings`.
 **Teststatus:**
 - v16 am 2026-07-05 erfolgreich gegen die Live-Receipts-Grocy-Instanz getestet – Rechnung anlegen, Banner mit Rückgängig/Wiederherstellen, `receipt_id`-Verknüpfung, PDF-Anhang und PUT-Sync funktionieren wie erwartet.
 - v17 am 2026-07-05 erfolgreich getestet – automatische Erkennung und Eintragung der Rechnungsnummer aus der PDF funktioniert (Voraussetzung: Migration 0260 `invoice_number` ist auf dem Server eingespielt).
