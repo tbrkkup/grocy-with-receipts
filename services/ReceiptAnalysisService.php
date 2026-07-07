@@ -75,6 +75,39 @@ class ReceiptAnalysisService extends BaseService
 		return $this->NormalizeResult($raw);
 	}
 
+	// Semantisches Produkt-Matching (Claude Call 2): ordnet erkannte Positionen den
+	// vorhandenen Grocy-Produkten zu. Gibt [{index, matched_id}] zurück.
+	public function MatchProducts(array $products)
+	{
+		$products = array_values($products);
+		if (count($products) === 0)
+		{
+			return [];
+		}
+		$productList = [];
+		foreach ($this->DB->products() as $p)
+		{
+			$productList[] = ['id' => $p->id, 'name' => $p->name];
+		}
+		$extracted = [];
+		foreach ($products as $i => $p)
+		{
+			$extracted[] = ['index' => $i, 'name' => isset($p['name']) ? $p['name'] : ''];
+		}
+		$prompt =
+			"Ordne jedes erkannte Produkt dem semantisch besten passenden Grocy-Produkt zu.\n" .
+			"Berücksichtige: andere Wortstellung, Synonyme, Abkürzungen, bio-Zusätze.\n" .
+			"Beispiele: \"Reis rot bio\"→\"Roter Reis\" | \"Oliven grün Kalamata entsteint\"→\"Oliven, grün, Kalamata\"\n" .
+			"Antworte NUR mit JSON-Array:\n[{\"index\":0,\"matched_id\":123},...]\n" .
+			"matched_id ist null wenn kein passendes Produkt existiert.\n\n" .
+			"Erkannte Produkte:\n" . json_encode($extracted, JSON_UNESCAPED_UNICODE) . "\n\n" .
+			"Grocy-Produkte:\n" . json_encode($productList, JSON_UNESCAPED_UNICODE);
+		$raw = $this->CallAnthropic([['role' => 'user', 'content' => $prompt]], 1200);
+		$clean = trim(str_replace(['```json', '```'], '', $raw));
+		$matches = json_decode($clean, true);
+		return is_array($matches) ? $matches : [];
+	}
+
 	// ---- Anthropic-Aufruf ----
 	private function CallAnthropic(array $messages, int $maxTokens)
 	{

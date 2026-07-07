@@ -144,31 +144,238 @@ function bpApiPost(path, data)
 	});
 }
 
-function bpRenderResult(result)
+// ---- Master data (products/shops/units/locations) ----
+var bpMaster = { products: [], shops: [], units: [], kgUnitId: null, defaultQuId: null, defaultLocationId: null };
+function bpApiGet(path)
 {
-	var products = (result && result.products) || [];
-	var shopName = result.shop_detected_name || '–';
-	var date = result.date_iso || '–';
-	var inv = result.invoice_number ? (' · ' + __t('Invoice number') + ': ' + result.invoice_number) : '';
-	$('#bp-result-head').text(__t('%s products recognized', products.length) + ' · ' + shopName + ' · ' + date + inv);
-	var rows = products.map(function(p)
-	{
-		var amount = (p.quantity != null ? p.quantity : '') + ' ' + (p.unit || '');
-		var price = (p.price_total != null) ? (parseFloat(p.price_total).toFixed(2)) : '';
-		return '<tr><td>' + $('<div>').text(p.receipt_text || '').html() + '</td>' +
-			'<td>' + $('<div>').text(p.name || '').html() + '</td>' +
-			'<td>' + $('<div>').text(amount).html() + '</td>' +
-			'<td>' + $('<div>').text(price).html() + '</td></tr>';
-	}).join('');
-	$('#bp-result-body').html(rows);
-	$('#bp-result').removeClass('d-none');
+	return new Promise(function(resolve, reject) { Grocy.Api.Get(path, function(r) { resolve(r); }, function(x) { reject(x); }); });
 }
+var bpMasterReady = Promise.all([
+	bpApiGet('objects/products'), bpApiGet('objects/shopping_locations'),
+	bpApiGet('objects/quantity_units'), bpApiGet('objects/locations')
+]).then(function(res)
+{
+	bpMaster.products = res[0] || []; bpMaster.shops = res[1] || []; bpMaster.units = res[2] || [];
+	var locs = res[3] || [];
+	bpMaster.units.forEach(function(u) { if (u.name && u.name.toLowerCase() === 'kg') { bpMaster.kgUnitId = u.id; } });
+	bpMaster.defaultQuId = bpMaster.kgUnitId || (bpMaster.units[0] && bpMaster.units[0].id) || null;
+	var keller = null; locs.forEach(function(l) { if (l.name && l.name.toLowerCase() === 'keller') { keller = l.id; } });
+	bpMaster.defaultLocationId = keller || (locs[0] && locs[0].id) || null;
+}).catch(function() { });
+
+var BP_UNITS = ['kg', 'g', 'l', 'ml', 'Stueck', 'Packung'];
+var bpData = [];
+
+function bpNormAlias(s) { return s ? String(s).toUpperCase().replace(/\s+/g, ' ').trim() : ''; }
+function bpEsc(s) { return $('<div>').text(s == null ? '' : s).html(); }
+
+// ---- Phase 3: matching + review ----
+function bpBuildReview(result)
+{
+	var products = result.products || [];
+	bpFillReviewMeta(result);
+	return bpApiGet('objects/product_receipt_aliases').catch(function() { return []; }).then(function(aliases)
+	{
+		aliases = Array.isArray(aliases) ? aliases : [];
+		var shopId = $('#bp-shop').val();
+		bpData = products.map(function(p)
+		{
+			var key = bpNormAlias(p.receipt_text || p.name);
+			var hit = bpFindAlias(aliases, key, shopId);
+			return {
+				receipt_text: p.receipt_text || '', name: p.name || '',
+				quantity: (p.quantity != null ? p.quantity : 1), unit: p.unit || 'Stueck',
+				price_total: (p.price_total != null ? p.price_total : null),
+				matchId: hit ? hit.product_id : null, fromAlias: !!hit, skip: false
+			};
+		});
+		var toMatch = [], idx = [];
+		bpData.forEach(function(r, i) { if (r.matchId == null) { toMatch.push({ name: r.name }); idx.push(i); } });
+		if (toMatch.length === 0) { return; }
+		return bpApiPost('receipts/match-products', { products: toMatch }).then(function(matches)
+		{
+			(matches || []).forEach(function(m) { var i = idx[m.index]; if (i != null && m.matched_id) { bpData[i].matchId = m.matched_id; } });
+		}).catch(function() { /* matching optional (e.g. no key) */ });
+	}).then(function() { bpRenderReview(); });
+}
+
+function bpFindAlias(aliases, key, shopId)
+{
+	var best = null;
+	aliases.forEach(function(a)
+	{
+		if (bpNormAlias(a.alias) !== key) { return; }
+		var ok = (a.shopping_location_id == null) || (shopId && String(a.shopping_location_id) === String(shopId));
+		if (!ok) { return; }
+		if (!best) { best = a; return; }
+		var aS = a.shopping_location_id != null ? 1 : 0, bS = best.shopping_location_id != null ? 1 : 0;
+		if (aS !== bS) { if (aS > bS) { best = a; } }
+		else if ((parseInt(a.times_confirmed, 10) || 0) > (parseInt(best.times_confirmed, 10) || 0)) { best = a; }
+	});
+	return best;
+}
+
+function bpFillReviewMeta(result)
+{
+	var opts = '<option value="">' + __t('None') + '</option>';
+	bpMaster.shops.forEach(function(s) { opts += '<option value="' + s.id + '">' + bpEsc(s.name) + '</option>'; });
+	$('#bp-shop').html(opts);
+	if (result.shop_matched_id) { $('#bp-shop').val(result.shop_matched_id); }
+	$('#bp-date').val(result.date_iso || new Date().toISOString().slice(0, 10));
+	$('#bp-invoice').val(result.invoice_number || '');
+}
+
+function bpProductOptions(matchId, suggestedName)
+{
+	var o = '<option value="__new__">' + __t('Create new') + (suggestedName ? (': ' + bpEsc(suggestedName)) : '') + '</option>';
+	bpMaster.products.forEach(function(p) { o += '<option value="' + p.id + '"' + (String(matchId) === String(p.id) ? ' selected' : '') + '>' + bpEsc(p.name) + '</option>'; });
+	return o;
+}
+function bpUnitOptions(cur) { return BP_UNITS.map(function(u) { return '<option value="' + u + '"' + (u === cur ? ' selected' : '') + '>' + u + '</option>'; }).join(''); }
+
+function bpRenderReview()
+{
+	$('#bp-review-head').text(__t('%s products recognized', bpData.length));
+	var rows = bpData.map(function(r, i)
+	{
+		return '<tr data-i="' + i + '">' +
+			'<td>' + bpEsc(r.receipt_text || r.name) + (r.fromAlias ? ' <span class="badge badge-info">' + __t('Learned') + '</span>' : '') + '</td>' +
+			'<td><select class="custom-control custom-select bp-prod" data-i="' + i + '">' + bpProductOptions(r.matchId, r.name) + '</select></td>' +
+			'<td><input type="number" step="any" min="0" class="form-control bp-qty" data-i="' + i + '" value="' + r.quantity + '" style="min-width:80px"></td>' +
+			'<td><select class="custom-control custom-select bp-unit" data-i="' + i + '">' + bpUnitOptions(r.unit) + '</select></td>' +
+			'<td><input type="number" step="any" min="0" class="form-control bp-price" data-i="' + i + '" value="' + (r.price_total != null ? r.price_total : '') + '" style="min-width:90px"></td>' +
+			'<td class="text-center align-middle"><input type="checkbox" class="bp-skip" data-i="' + i + '"></td>' +
+			'</tr>';
+	}).join('');
+	$('#bp-review-body').html(rows);
+	$('#bp-review').removeClass('d-none');
+}
+
+// ---- Phase 4: import ----
+function bpCollectReview()
+{
+	$('.bp-prod').each(function() { var i = $(this).data('i'); var v = $(this).val(); bpData[i].matchId = (v === '__new__') ? null : parseInt(v, 10); });
+	$('.bp-qty').each(function() { var i = $(this).data('i'); var v = parseFloat($(this).val()); if (!isNaN(v) && v > 0) { bpData[i].quantity = v; } });
+	$('.bp-unit').each(function() { var i = $(this).data('i'); bpData[i].unit = $(this).val(); });
+	$('.bp-price').each(function() { var i = $(this).data('i'); var v = parseFloat($(this).val()); bpData[i].price_total = isNaN(v) ? null : v; });
+	$('.bp-skip').each(function() { var i = $(this).data('i'); bpData[i].skip = $(this).prop('checked'); });
+}
+function bpToBase(qty, unit) { if (unit === 'g') { return { amount: qty / 1000, unit: 'kg' }; } if (unit === 'ml') { return { amount: qty / 1000, unit: 'l' }; } return { amount: qty, unit: unit }; }
+function bpNowTs() { return new Date().toISOString().slice(0, 19).replace('T', ' '); }
+function bpRandom() { var s = '', c = 'abcdefghijklmnopqrstuvwxyz0123456789'; for (var i = 0; i < 8; i++) { s += c.charAt(Math.floor(Math.random() * c.length)); } return s + '_'; }
+function bpCleanName(n) { return (n || 'beleg').replace(/[^a-zA-Z0-9._-]/g, '_'); }
+
+function bpResolveProduct(item)
+{
+	if (item.matchId) { return Promise.resolve(item.matchId); }
+	var body = { name: item.name || 'Neu', description: '', location_id: bpMaster.defaultLocationId || 1 };
+	var quId = bpMaster.kgUnitId || bpMaster.defaultQuId;
+	if (quId) { body.qu_id_stock = quId; body.qu_id_purchase = quId; }
+	return bpApiPost('objects/products', body).then(function(r) { var pid = r.created_object_id; bpMaster.products.push({ id: pid, name: body.name }); return pid; });
+}
+
+function bpLearnAlias(item, productId, shopId, cache)
+{
+	try
+	{
+		var key = bpNormAlias(item.receipt_text || item.name);
+		if (!key || !productId) { return; }
+		var sid = shopId ? parseInt(shopId, 10) : null;
+		var ts = bpNowTs();
+		var existing = cache.find(function(a) { return bpNormAlias(a.alias) === key && String(a.shopping_location_id == null ? '' : a.shopping_location_id) === String(sid == null ? '' : sid); });
+		if (existing)
+		{
+			var changed = String(existing.product_id) !== String(productId);
+			var b = changed ? { product_id: productId, times_confirmed: 1, last_used_timestamp: ts } : { times_confirmed: (parseInt(existing.times_confirmed, 10) || 1) + 1, last_used_timestamp: ts };
+			existing.product_id = productId; existing.times_confirmed = b.times_confirmed;
+			Grocy.Api.Put('objects/product_receipt_aliases/' + existing.id, b, function() { }, function() { });
+		}
+		else
+		{
+			var post = { product_id: productId, alias: key, times_confirmed: 1, last_used_timestamp: ts };
+			if (sid != null) { post.shopping_location_id = sid; }
+			var row = { product_id: productId, alias: key, shopping_location_id: sid, times_confirmed: 1 };
+			cache.push(row);
+			Grocy.Api.Post('objects/product_receipt_aliases', post, function(r) { row.id = r && r.created_object_id; }, function() { });
+		}
+	}
+	catch (e) { /* learning is non-fatal */ }
+}
+
+function bpUploadFileToReceipt(receiptId)
+{
+	if (!bpFile || !receiptId) { return Promise.resolve(); }
+	var fileName = bpRandom() + bpCleanName(bpFile.name);
+	var url = U('/api/files/receipts/' + btoa(fileName));
+	return fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/octet-stream' }, body: bpFile, credentials: 'same-origin' })
+		.then(function(r) { if (!r.ok) { throw new Error('upload'); } return bpApiPost('objects/receipt_files', { receipt_id: receiptId, file_name: fileName }); });
+}
+
+function bpImport()
+{
+	bpCollectReview();
+	var shopId = $('#bp-shop').val() || null;
+	var date = $('#bp-date').val() || new Date().toISOString().slice(0, 10);
+	var invoice = ($('#bp-invoice').val() || '').trim();
+	var toImport = bpData.filter(function(r) { return !r.skip; });
+	if (toImport.length === 0) { $('#bp-import-status').html('<div class="alert alert-warning">' + __t('Nothing to import.') + '</div>'); return; }
+	$('#bp-import').prop('disabled', true);
+	$('#bp-import-status').html('<div class="text-muted">' + __t('Importing…') + '</div>');
+
+	var receiptId = null, aliasesCache = [];
+	var body = { date: date, status: 'paid' };
+	if (shopId) { body.shopping_location_id = parseInt(shopId, 10); }
+	if (invoice) { body.invoice_number = invoice; }
+	bpApiPost('objects/receipts', body).then(function(r) { receiptId = r.created_object_id; })
+		.then(function() { return bpUploadFileToReceipt(receiptId).catch(function() { }); })
+		.then(function() { return bpApiGet('objects/product_receipt_aliases').then(function(a) { aliasesCache = Array.isArray(a) ? a : []; }).catch(function() { aliasesCache = []; }); })
+		.then(function()
+		{
+			return toImport.reduce(function(chain, item)
+			{
+				return chain.then(function(results)
+				{
+					return bpResolveProduct(item).then(function(pid)
+					{
+						var conv = bpToBase(item.quantity || 1, item.unit || 'Stueck');
+						var priceTotal = item.price_total;
+						var convPpu = (priceTotal && conv.amount) ? priceTotal / conv.amount : 0;
+						var addBody = { amount: conv.amount, price: parseFloat(convPpu.toFixed(4)), best_before_date: '2999-12-31', purchased_date: date };
+						if (shopId) { addBody.shopping_location_id = parseInt(shopId, 10); }
+						if (receiptId) { addBody.receipt_id = receiptId; }
+						return bpApiPost('stock/products/' + pid + '/add', addBody).then(function()
+						{
+							bpLearnAlias(item, pid, shopId, aliasesCache);
+							results.push({ ok: true }); return results;
+						});
+					}).catch(function(e) { results.push({ ok: false }); return results; });
+				});
+			}, Promise.resolve([]));
+		}).then(function(results)
+		{
+			var ok = results.filter(function(r) { return r.ok; }).length;
+			var fail = results.length - ok;
+			$('#bp-review').addClass('d-none');
+			$('#bp-done-msg').text(__t('%s products imported', ok) + (fail ? (' · ' + __t('%s failed', fail)) : ''));
+			$('#bp-done').removeClass('d-none');
+		}).catch(function(e)
+		{
+			$('#bp-import').prop('disabled', false);
+			var msg = (e && e.response) || (e && e.message) || __t('Import failed');
+			try { var j = JSON.parse(e.response); if (j.error_message) { msg = j.error_message; } } catch (x) { }
+			$('#bp-import-status').html('<div class="alert alert-danger">' + msg + '</div>');
+		});
+}
+
+$('#bp-import').on('click', bpImport);
+$('#bp-restart').on('click', function() { window.location.reload(); });
 
 $('#bp-analyze').on('click', function()
 {
 	if (!bpFile) { return; }
 	$('#bp-analyze').prop('disabled', true);
-	$('#bp-result').addClass('d-none');
+	$('#bp-review').addClass('d-none');
+	$('#bp-done').addClass('d-none');
 	var work;
 	if (bpMode === 'text')
 	{
@@ -192,10 +399,13 @@ $('#bp-analyze').on('click', function()
 	}
 	work.then(function(result)
 	{
+		bpSetProgress(75, __t('Matching products…'));
+		return bpMasterReady.then(function() { return bpBuildReview(result); });
+	}).then(function()
+	{
 		bpSetProgress(100, '');
 		$('#bp-progress').addClass('d-none');
 		$('#bp-status').html('');
-		bpRenderResult(result);
 		$('#bp-analyze').prop('disabled', false);
 	}).catch(function(err)
 	{

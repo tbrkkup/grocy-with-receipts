@@ -3024,3 +3024,33 @@ msgstr "Analyse fehlgeschlagen"
 
 msgid "%s products recognized"
 msgstr "%s Produkte erkannt"
+
+msgid "Create new"
+msgstr "Neu anlegen"
+
+msgid "Learned"
+msgstr "Gelernt"
+
+msgid "Import into stock"
+msgstr "In den Bestand buchen"
+
+msgid "Import another receipt"
+msgstr "Weiteren Beleg importieren"
+
+msgid "Matching products…"
+msgstr "Produkte werden zugeordnet…"
+
+msgid "Importing…"
+msgstr "Wird importiert…"
+
+msgid "Nothing to import."
+msgstr "Nichts zu importieren."
+
+msgid "Import failed"
+msgstr "Import fehlgeschlagen"
+
+msgid "%s products imported"
+msgstr "%s Produkte importiert"
+
+msgid "%s failed"
+msgstr "%s fehlgeschlagen"
