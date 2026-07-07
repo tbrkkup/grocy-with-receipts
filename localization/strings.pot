@@ -2519,3 +2519,126 @@ msgstr ""
 
 msgid "This store has branches. Please move or delete them first."
 msgstr ""
+
+msgid "Receipt import settings"
+msgstr ""
+
+msgid "The Anthropic API key is stored on the server (not in the browser) and is used to analyze receipts for the bulk purchase. It is required for scanned/photographed receipts."
+msgstr ""
+
+msgid "Anthropic API key"
+msgstr ""
+
+msgid "Configured – leave empty to keep unchanged"
+msgstr ""
+
+msgid "Not configured"
+msgstr ""
+
+msgid "A key is currently configured"
+msgstr ""
+
+msgid "No key configured yet"
+msgstr ""
+
+msgid "Analysis backend for digital invoices"
+msgstr ""
+
+msgid "Anthropic (AI)"
+msgstr ""
+
+msgid "Rule-based parser (not implemented yet)"
+msgstr ""
+
+msgid "Scanned/photographed receipts always use Anthropic (vision)."
+msgstr ""
+
+msgid "Settings saved"
+msgstr ""
+
+msgid "Single purchase"
+msgstr ""
+
+msgid "Bulk purchase"
+msgstr ""
+
+msgid "Import a whole receipt at once: upload a digital invoice (PDF) or a scan/photo, let it be analyzed, review the products and book them into stock – all linked to one receipt."
+msgstr ""
+
+msgid "No Anthropic API key is configured yet. It is required to analyze receipts."
+msgstr ""
+
+msgid "Open settings"
+msgstr ""
+
+msgid "Ready: an Anthropic API key is configured."
+msgstr ""
+
+msgid "How it works"
+msgstr ""
+
+msgid "Upload a digital invoice (PDF) or a scanned/photographed receipt"
+msgstr ""
+
+msgid "The receipt is analyzed (products, quantities, prices, store, date)"
+msgstr ""
+
+msgid "Review and correct the products, then book them into stock"
+msgstr ""
+
+msgid "Everything is linked to one receipt and learned for next time"
+msgstr ""
+
+msgid "The upload and review interface is being built here natively. Until then, the standalone import tool remains available."
+msgstr ""
+
+msgid "Choose a digital invoice (PDF) on the left or a scanned/photographed receipt on the right."
+msgstr ""
+
+msgid "Digital invoice"
+msgstr ""
+
+msgid "Drop a PDF here or click"
+msgstr ""
+
+msgid "PDF only · text extraction"
+msgstr ""
+
+msgid "Scanned / photographed"
+msgstr ""
+
+msgid "Drop a PDF or image here or click"
+msgstr ""
+
+msgid "PDF or image · Claude Vision"
+msgstr ""
+
+msgid "Next: review, correct and book these into stock (coming next)."
+msgstr ""
+
+msgid "For digital invoices please choose a PDF file."
+msgstr ""
+
+msgid "For scans please choose a PDF or image file."
+msgstr ""
+
+msgid "Reading PDF…"
+msgstr ""
+
+msgid "Analyzing…"
+msgstr ""
+
+msgid "Preparing image…"
+msgstr ""
+
+msgid "Could not read the file."
+msgstr ""
+
+msgid "Could not read image"
+msgstr ""
+
+msgid "Analysis failed"
+msgstr ""
+
+msgid "%s products recognized"
+msgstr ""

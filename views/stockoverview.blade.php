@@ -134,8 +134,8 @@
 			<select class="custom-control custom-select"
 				id="location-filter">
 				<option value="all">{{ $__t('All') }}</option>
-				@foreach($locations as $location)
-				<option value="{{ $location->name }}">{{ $location->name }}</option>
+				@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+				<option value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
 				@endforeach
 			</select>
 		</div>
@@ -409,7 +409,7 @@
 					</td>
 					<td class="d-none">
 						@foreach(FindAllObjectsInArrayByPropertyValue($currentStockLocations, 'product_id', $currentStockEntry->product_id) as $locationsForProduct)
-						xx{{ FindObjectInArrayByPropertyValue($locations, 'id', $locationsForProduct->location_id)->name }}xx
+						@foreach(($locationAncestorIds[$locationsForProduct->location_id] ?? []) as $locationAncestorId)xx{{ $locationAncestorId }}xx @endforeach
 						@endforeach
 					</td>
 					<td class="d-none">
@@ -468,7 +468,12 @@
 						{{ $currentStockEntry->parent_product_name }}
 					</td>
 					<td>
+						@php $defaultLocationId = $productDefaultLocationId[$currentStockEntry->product_id] ?? null; @endphp
+						@if($defaultLocationId !== null && isset($locationFullPathById[$defaultLocationId]))
+						{{ CollapseLocationPath($locationFullPathById[$defaultLocationId]) }}
+						@else
 						{{ $currentStockEntry->product_default_location_name }}
+						@endif
 					</td>
 					<td>
 						@if(!empty($currentStockEntry->product_picture_file_name))

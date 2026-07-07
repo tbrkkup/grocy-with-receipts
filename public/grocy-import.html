@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grocy Rechnungsimport v21</title>
+<title>Grocy Rechnungsimport v22</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -125,7 +125,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h1>Grocy Rechnungsimport</h1>
-        <span class="vtag">v21 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v22 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Verbindungsdaten eingeben, dann Rechnung hochladen.</p>
       <div class="field">
@@ -155,7 +155,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Rechnung hochladen</h2>
-        <span class="vtag">v21 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v22 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Wähle links eine <b>digitale Rechnung</b> (PDF) oder rechts einen <b>gescannten/fotografierten</b> Kassenbon.</p>
       <div class="drop-row">
@@ -190,7 +190,7 @@ a { color: var(--accent); }
     <div class="card">
       <div class="header-row">
         <h2>Produkte prüfen</h2>
-        <span class="vtag">v21 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
+        <span class="vtag">v22 · <button class="btn-ghost" onclick="showChangelog()">Changelog</button></span>
       </div>
       <p class="sub">Menge und Einheit sind direkt editierbar. Neue Produkte können vor dem Import bearbeitet werden.</p>
       <div id="receipt-banner" class="status" style="display:none"></div>
@@ -257,6 +257,14 @@ a { color: var(--accent); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 var CHANGELOG = [
+  {
+    version: 'v22', date: '2026-07',
+    items: [
+      'dm-Belege: die Ziffer hinter dem Preis (1/2) ist der MwSt-Satz-Indikator, nicht die Menge – wird nicht mehr als Multiplikator gewertet',
+      'Menge nur noch aus einem "Nx Einzelpreis" am Zeilenanfang (z.B. "6x 1,85") oder aus kg/l-Angaben; Zahlen im Namen (z.B. "8x220", "190g") sind keine Menge',
+      'Zahlungszeilen wie „dm-Geschenkkarte" (negativer Betrag) werden nicht mehr fälschlich als Rabatt in ein Produkt eingerechnet'
+    ]
+  },
   {
     version: 'v21', date: '2026-07',
     items: [
@@ -1003,7 +1011,9 @@ function claudeAnalyzeAll(text){
 '- Wenn Gewichts-/Volumenangabe vorhanden: IMMER als quantity+unit, NIE als "1 Stueck"\n'+
 '- Beispiele: "Thymian 300g"→300/g | "Anis 1kg"→1/kg | "Olivenöl 500ml"→500/ml | "Äpfel 2,5kg"→2.5/kg\n'+
 '- Komma als Dezimaltrennzeichen: "2,5"=2.5\n'+
-'- Nur ohne Mengenangabe: quantity:1, unit:"Stueck"\n\n'+
+'- Nur ohne Mengenangabe: quantity:1, unit:"Stueck"\n'+
+'- STEUERKENNZEICHEN am Zeilenende (Buchstabe A/B ODER Ziffer 1/2, Verweis auf "MwSt-Satz" wie "1=19,00%") ist KEINE Menge/kein Multiplikator – ignorieren.\n'+
+'- Mengen-Multiplikator steht am ZeilenANFANG als "Nx Einzelpreis" ("6x 1,85 …") → quantity=N, price_total=Zeilenbetrag. Zahlen im Namen (z.B. "8x220", "190g") sind KEINE Menge.\n\n'+
 'RABATTE/NACHLÄSSE:\n'+
 '- "Rabatt"/"Nachlass"/negative Beträge sind KEINE eigenen Produkte. Ziehe sie vom Produkt in der Zeile darüber (gelegentlich darunter) ab und gib dessen NETTO-price_total zurück. Rabatte NIE als eigenen Eintrag ausgeben.\n\n'+
 'GESCHÄFT:\n'+
@@ -1066,8 +1076,9 @@ multiHint+
 'receipt_text = der Produkttext GENAU wie auf dem Bon gedruckt (inkl. Kürzel/Abkürzungen, z.B. "EXC FUS 85SELPP"). name = daraus abgeleiteter, lesbarer Produktname.\n\n'+
 'BON-LAYOUT (wichtig):\n'+
 '- Produktname und ggf. eine Mengenzeile ("0,854 kg x 1,39 EUR/kg" oder "6 Stk x 0,99") stehen oft in getrennten Zeilen; der Betrag steht rechts, meist auf Höhe der Mengenzeile.\n'+
-'- Steuerkennzeichen (A/B) am Zeilenende gehören NICHT zum Namen.\n'+
-'- Nimm NUR echte Einkaufspositionen. Ignoriere SUMME, Geg./Auszahlung/Rückgeld, Zahlart, UID/Beleg-/Trace-Nr., Kopf-/Fußzeilen.\n\n'+
+'- STEUERKENNZEICHEN am Zeilenende können Buchstaben (A/B) ODER Ziffern (z.B. "1"/"2", Verweis auf die "MwSt-Satz"-Tabelle wie "1=19,00%", "2=7,00%") sein. Sie sind KEINE Menge und KEIN Multiplikator und gehören nicht zum Namen – ignoriere sie für quantity/price.\n'+
+'- MENGEN-MULTIPLIKATOR steht am ZeilenANFANG als "Nx Einzelpreis" (z.B. "6x 1,85 …") → quantity=N, unit=Stueck, price_total=der rechts gedruckte Zeilenbetrag (z.B. 11,10). Zahlen INNERHALB des Namens (Packungsgrößen wie "8x220", "190g") sind KEINE Menge.\n'+
+'- Nimm NUR echte Einkaufspositionen. Ignoriere SUMME/Zu zahlender Betrag, Zahlart (BAR/EC), Geschenkkarte/Gutschein-Zahlungen, Rückgeld/Auszahlung, PAYBACK, UID/Beleg-/TSE-/Trace-Nr., Kopf-/Fußzeilen.\n\n'+
 'MENGEN UND EINHEITEN:\n'+
 '- Erlaubte Einheiten: kg, g, l, ml, Stueck, Packung\n'+
 '- Gewichts-/Volumenware ("x,xxx kg x .. EUR/kg"): quantity=Gewicht, unit=kg (bzw. l).\n'+
@@ -1153,6 +1164,9 @@ function findAliasMatch(aliases,product){
 function isDiscountItem(p){
   if(!p)return false;
   var txt=((p.name||'')+' '+(p.receipt_text||''));
+  // Zahlungs-/Guthabenzeilen (z.B. dm-Geschenkkarte) sind KEINE Rabatte und dürfen
+  // nicht in ein Produkt eingerechnet werden – nie als Rabatt behandeln.
+  if(/(geschenkkarte|gutschein|guthaben|geg\.|bar\b|ec-cash|ec\s|rückgeld|ruckgeld|auszahlung|payback|zu zahlender|summe)/i.test(txt))return false;
   var neg=(p.price_total!=null&&p.price_total<0);
   var word=/\b(rabatt|nachlass|discount|coupon|aktionsrabatt|treuerabatt)\b/i.test(txt);
   return neg||word;

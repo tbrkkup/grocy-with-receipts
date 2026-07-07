@@ -80,6 +80,48 @@ function SortLocationsAsTree($locations, $parentProperty = 'parent_location_id')
 	return $result;
 }
 
+// Liefert je Location-id die Kette [eigene id, Elternteil, Großelternteil, ...]
+// (self + alle Vorfahren). Zyklen-sicher; stoppt bei Wurzel/verwaistem Verweis.
+function GetLocationAncestorIdMap($locations, $parentProperty = 'parent_location_id')
+{
+	$parentOf = [];
+	foreach ($locations as $location)
+	{
+		$parentOf[$location->id] = $location->{$parentProperty};
+	}
+
+	$map = [];
+	foreach ($locations as $location)
+	{
+		$chain = [];
+		$seen = [];
+		$current = $location->id;
+		while ($current !== null && $current !== '' && array_key_exists($current, $parentOf) && !isset($seen[$current]))
+		{
+			$seen[$current] = true;
+			$chain[] = $current;
+			$current = $parentOf[$current];
+		}
+		$map[$location->id] = $chain;
+	}
+
+	return $map;
+}
+
+// Kürzt einen Location-Pfad ab, sobald er mittlere Ebenen hat: "A › B › C › D"
+// wird zu "A › … › D" (oberste + unterste Ebene bleiben). Pfade mit höchstens
+// zwei Ebenen bleiben unverändert.
+function CollapseLocationPath($path, $separator = ' › ')
+{
+	$parts = explode($separator, $path);
+	if (count($parts) <= 2)
+	{
+		return $path;
+	}
+
+	return $parts[0] . $separator . '…' . $separator . $parts[count($parts) - 1];
+}
+
 function FindAllObjectsInArrayByPropertyValue($array, $propertyName, $propertyValue, $operator = '==')
 {
 	$returnArray = [];

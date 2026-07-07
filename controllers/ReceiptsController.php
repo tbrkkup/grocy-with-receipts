@@ -54,4 +54,22 @@ class ReceiptsController extends BaseController
 			'shoppingLocations' => $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE')->fetchAll(),
 		]);
 	}
+
+	public function ReceiptImportSettings(Request $request, Response $response, array $args)
+	{
+		$keyConfigured = defined('GROCY_ANTHROPIC_API_KEY') && trim((string) GROCY_ANTHROPIC_API_KEY) !== '';
+		return $this->RenderPage($response, 'receiptimportsettings', [
+			'keyConfigured' => $keyConfigured,
+			'model' => defined('GROCY_ANTHROPIC_MODEL') ? GROCY_ANTHROPIC_MODEL : 'claude-sonnet-4-6',
+			'digitalBackend' => defined('GROCY_RECEIPT_DIGITAL_BACKEND') ? GROCY_RECEIPT_DIGITAL_BACKEND : 'anthropic',
+		]);
+	}
+
+	public function BulkPurchase(Request $request, Response $response, array $args)
+	{
+		$keyConfigured = defined('GROCY_ANTHROPIC_API_KEY') && trim((string) GROCY_ANTHROPIC_API_KEY) !== '';
+		return $this->RenderPage($response, 'bulkpurchase', [
+			'keyConfigured' => $keyConfigured,
+		]);
+	}
 }

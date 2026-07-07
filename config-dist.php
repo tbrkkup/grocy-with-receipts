@@ -142,6 +142,16 @@ Setting('FEATURE_FLAG_BATTERIES', true);
 Setting('FEATURE_FLAG_EQUIPMENT', true);
 Setting('FEATURE_FLAG_CALENDAR', true);
 Setting('FEATURE_FLAG_LABEL_PRINTER', false);
+Setting('FEATURE_FLAG_RECEIPT_IMPORT', true); // "Sammeleinkauf": Belege (PDF/Foto) analysieren und importieren
+
+// Receipt import (Sammeleinkauf) – serverseitige Beleg-Analyse
+// Der Anthropic-API-Key wird serverseitig gespeichert (nicht mehr im Browser).
+// Kann hier, per Env (GROCY_ANTHROPIC_API_KEY) oder settingoverrides gesetzt werden;
+// eine UI-Einstellung folgt.
+Setting('ANTHROPIC_API_KEY', ''); // leer = Beleg-Analyse deaktiviert bis konfiguriert
+Setting('ANTHROPIC_MODEL', 'claude-sonnet-4-6');
+// Backend für die Analyse DIGITALER Rechnungen: 'anthropic' (KI) oder künftig 'parser' (regelbasiert)
+Setting('RECEIPT_DIGITAL_BACKEND', 'anthropic');
 
 // Sub feature flags
 Setting('FEATURE_FLAG_STOCK_PRICE_TRACKING', true);
