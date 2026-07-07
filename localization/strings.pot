@@ -727,6 +727,24 @@ msgstr ""
 msgid "Equipment"
 msgstr ""
 
+msgid "Equipment group"
+msgstr ""
+
+msgid "Equipment groups"
+msgstr ""
+
+msgid "Create equipment group"
+msgstr ""
+
+msgid "Edit equipment group"
+msgstr ""
+
+msgid "Are you sure you want to delete equipment group \"%s\"?"
+msgstr ""
+
+msgid "Equipment count"
+msgstr ""
+
 msgid "Instruction manual"
 msgstr ""
 

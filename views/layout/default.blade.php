@@ -374,7 +374,7 @@
 				@php
 				$masterDataViews = [
 				'products', 'locations', 'locationoverview', 'shoppinglocations', 'quantityunits',
-				'productgroups', 'chores', 'batteries', 'taskcategories',
+				'productgroups', 'equipmentgroups', 'chores', 'batteries', 'taskcategories',
 				'userfields', 'userentities'
 				]
 				@endphp
@@ -433,6 +433,14 @@
 								<span class="nav-link-text">{{ $__t('Product groups') }}</span>
 							</a>
 						</li>
+						@if(GROCY_FEATURE_FLAG_EQUIPMENT)
+						<li class="@if($viewName == 'equipmentgroups') active-page @endif">
+							<a class="nav-link discrete-link"
+								href="{{ $U('/equipmentgroups') }}">
+								<span class="nav-link-text">{{ $__t('Equipment groups') }}</span>
+							</a>
+						</li>
+						@endif
 						@if(GROCY_FEATURE_FLAG_CHORES)
 						<li class="@if($viewName == 'chores') active-page @endif">
 							<a class="nav-link discrete-link"

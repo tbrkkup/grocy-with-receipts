@@ -70,14 +70,14 @@
 			</div>
 
 			<div class="form-group">
-				<label for="product_group_id">{{ $__t('Product group') }}</label>
+				<label for="equipment_group_id">{{ $__t('Equipment group') }}</label>
 				<select class="custom-control custom-select"
-					id="product_group_id"
-					name="product_group_id">
+					id="equipment_group_id"
+					name="equipment_group_id">
 					<option value="">{{ $__t('None') }}</option>
-					@foreach($productgroups as $productgroup)
-					<option value="{{ $productgroup->id }}"
-						@if($mode == 'edit' && $equipment->product_group_id == $productgroup->id) selected="selected" @endif>{{ $productgroup->name }}</option>
+					@foreach($equipmentgroups as $equipmentgroup)
+					<option value="{{ $equipmentgroup->id }}"
+						@if($mode == 'edit' && $equipment->equipment_group_id == $equipmentgroup->id) selected="selected" @endif>{{ $equipmentgroup->name }}</option>
 					@endforeach
 				</select>
 			</div>

@@ -763,6 +763,24 @@ msgstr "Löschen nicht möglich"
 msgid "Equipment"
 msgstr "Ausstattung"
 
+msgid "Equipment group"
+msgstr "Ausstattungsgruppe"
+
+msgid "Equipment groups"
+msgstr "Ausstattungsgruppen"
+
+msgid "Create equipment group"
+msgstr "Ausstattungsgruppe erstellen"
+
+msgid "Edit equipment group"
+msgstr "Ausstattungsgruppe bearbeiten"
+
+msgid "Are you sure you want to delete equipment group \"%s\"?"
+msgstr "Ausstattungsgruppe \"%s\" wirklich löschen?"
+
+msgid "Equipment count"
+msgstr "Ausstattungsanzahl"
+
 msgid "Instruction manual"
 msgstr "Bedienungsanleitung"
 

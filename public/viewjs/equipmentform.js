@@ -15,7 +15,7 @@
 	var jsonData = $('#equipment-form').serializeJSON();
 	jsonData.receipt_id = jsonData.receipt_id || null;
 	jsonData.location_id = jsonData.location_id || null;
-	jsonData.product_group_id = jsonData.product_group_id || null;
+	jsonData.equipment_group_id = jsonData.equipment_group_id || null;
 	Grocy.FrontendHelpers.BeginUiBusy("equipment-form");
 
 	if ($("#instruction-manual")[0].files.length > 0)
