@@ -132,7 +132,8 @@
 			</div>
 			@include('components.shoppinglocationpicker', array(
 			'label' => 'Store',
-			'shoppinglocations' => $shoppinglocations
+			'shoppinglocations' => $shoppinglocations,
+			'createNew' => true
 			))
 			@else
 			<input type="hidden"
@@ -144,7 +145,8 @@
 			@if(GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING)
 			@include('components.locationpicker', array(
 			'locations' => $locations,
-			'isRequired' => false
+			'isRequired' => false,
+			'createNew' => true
 			))
 			@endif
 

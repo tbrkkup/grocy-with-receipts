@@ -93,6 +93,7 @@
 			'label' => 'Store',
 			'shoppinglocations' => $shoppinglocations,
 			'hint' => $__t('This will apply to added products'),
+			'createNew' => true
 			))
 			@else
 			<input type="hidden"
@@ -104,7 +105,8 @@
 			@if(GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING)
 			@include('components.locationpicker', array(
 			'locations' => $locations,
-			'hint' => $__t('This will apply to added products')
+			'hint' => $__t('This will apply to added products'),
+			'createNew' => true
 			))
 			@endif
 

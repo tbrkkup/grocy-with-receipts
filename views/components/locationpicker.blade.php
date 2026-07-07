@@ -11,6 +11,7 @@
 @php if(!isset($isRequired)) { $isRequired = true; } @endphp
 @php if(empty($hint)) { $hint = ''; } @endphp
 @php if(empty($nextInputSelector)) { $nextInputSelector = ''; } @endphp
+@php if(!isset($createNew)) { $createNew = false; } @endphp
 
 <div class="form-group"
 	data-next-input-selector="{{ $nextInputSelector }}"
@@ -24,16 +25,30 @@
 			title="{{ $hint }}"></i>
 		@endif
 	</label>
-	<select class="form-control location-combobox"
-		id="location_id"
-		name="location_id"
-		@if($isRequired)
-		required
-		@endif>
-		<option value=""></option>
-		@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
-		<option value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
-		@endforeach
-	</select>
-	<div class="invalid-feedback">{{ $__t('You have to select a location') }}</div>
+	<div class="input-group">
+		<select class="form-control location-combobox"
+			id="location_id"
+			name="location_id"
+			@if($createNew)
+			data-createnew-entity="locations"
+			@endif
+			@if($isRequired)
+			required
+			@endif>
+			<option value=""></option>
+			@foreach(SortLocationsAsTree($locations) as $locationTreeItem)
+			<option value="{{ $locationTreeItem['id'] }}">{{ $locationTreeItem['path'] }}</option>
+			@endforeach
+		</select>
+		@if($createNew)
+		<div class="input-group-append">
+			<button class="btn btn-outline-secondary create-new-picker-button"
+				type="button"
+				data-newform-url="/location/new"
+				data-target-select="location_id"
+				title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+		</div>
+		@endif
+		<div class="invalid-feedback">{{ $__t('You have to select a location') }}</div>
+	</div>
 </div>

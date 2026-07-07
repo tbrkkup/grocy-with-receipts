@@ -100,7 +100,8 @@
 			@include('components.shoppinglocationpicker', array(
 			'label' => 'Store',
 			'shoppinglocations' => $shoppinglocations,
-			'prefillById' => $stockEntry->shopping_location_id
+			'prefillById' => $stockEntry->shopping_location_id,
+			'createNew' => true
 			))
 			@else
 			<input type="hidden"
@@ -112,7 +113,8 @@
 			@if(GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING)
 			@include('components.locationpicker', array(
 			'locations' => $locations,
-			'prefillById' => $stockEntry->location_id
+			'prefillById' => $stockEntry->location_id,
+			'createNew' => true
 			))
 			@else
 			<input type="hidden"

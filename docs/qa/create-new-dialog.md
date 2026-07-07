@@ -44,6 +44,9 @@ Screenshots (im Session-Scratchpad erzeugt, nicht im Repo): `cn2-dialog-open.png
 (gestapelter Dialog über dem Formular), `cn2b-dialog-filled.png`, `cn3-after-save.png`
 (Dialog zu, neue Gruppe ausgewählt).
 
+**Vom Nutzer live bestätigt (2026-07-07):** „Produkt → Produktgruppe erstellen" im echten
+Deployment getestet und funktioniert.
+
 ## Phase C/D — weitere Felder im Produktformular
 
 Testtreiber: [`scratchpad/test-createnew-more.js`](../../scratchpad/test-createnew-more.js).
@@ -75,6 +78,27 @@ kein Reload. Zusatzchecks je Entität (siehe unten).
 Nebenbefund (nicht durch diese Änderung verursacht): auf `/product/new` loggt das
 bestehende `productform.js` einen `toString`-Fehler auf `Grocy.UserSettings.product_presets_*`,
 weil diese Presets im Demo-Datensatz nicht gesetzt sind. Ohne Auswirkung auf das Feature.
+
+## Phase E — Rollout Geschäft/Standort in weitere Formulare
+
+Testtreiber: [`scratchpad/test-createnew-forms.js`](../../scratchpad/test-createnew-forms.js).
+Je (Formular × Feld): „+" klicken, im gestapelten Dialog anlegen, prüfen: Option eingetragen
++ ausgewählt, combobox-Textfeld zeigt den Namen, **URL unverändert** (kein Navigieren/Reload),
+das jeweils andere Feld unberührt.
+
+### Ergebnis — 2026-07-07: **PASS**
+
+```
+Einkauf  (/purchase)  · Geschäft (#shopping_location_id)   PASS
+Einkauf  (/purchase)  · Standort (#location_id)            PASS
+Inventur (/inventory) · Geschäft (#shopping_location_id)   PASS
+Inventur (/inventory) · Standort (#location_id)            PASS
+=== RESULT: PASS ===
+```
+
+Beide Felder sind bootstrap-**comboboxen**; abgedeckt über den bestehenden
+`MasterObjectCreated`-Pfad (kein neuer JS-Code). Auch im **Bestandseintrag**
+(`stockentryform`) aktiviert (nicht separat automatisiert getestet – identische Komponente).
 
 ## Abgedeckt / noch offen
 
