@@ -1,7 +1,7 @@
 # Konzept: Filialen für Geschäfte (Kette → Filiale)
 
-Status: **abgestimmt, in Umsetzung** · Branch: `claude/location-branches-concept-3bdkzx`
-(basiert auf `test-deploy-01-branch`)
+Status: **umgesetzt & live getestet (2026-07-07, bestanden)** · Branch: `claude/location-branches-concept-3bdkzx`
+(gemerged in `test-deploy-01-branch`; Migrationen `0266`–`0268`)
 
 ## Ziel
 
