@@ -163,8 +163,10 @@ eingegebene Zustand geht verloren. Es fehlt:
   nötig. **Playwright bestanden** (`scratchpad/test-createnew-forms.js`): Geschäft + Standort
   in Einkauf und Inventur – Dialog gestapelt, Option eingetragen + ausgewählt, combobox-Text
   aktualisiert, URL unverändert (kein Reload/Navigieren), anderes Feld unberührt.
-- **⏳ Phase E – Sonderfall `productpicker` (offen):** Der Produkt-Picker hat bereits grocys
-  eingebauten „Name tippen → TAB/ENTER"-Workflow zum Anlegen neuer Produkte. Ein zusätzlicher
-  „+"-Button, der das **volle Produktformular** gestapelt öffnet und das neue Produkt inkl.
-  Barcode-Suchdaten in die combobox zurückspielt, ist größer/separat → Rücksprache mit Nutzer.
-- **⏳ Weitere Formulare:** Verbrauch/Umlagerung/Einkaufsliste analog, sobald gewünscht.
+- **✅ Phase E – Sonderfall `productpicker` (entschieden 2026-07-07):** **Kein zusätzlicher
+  „+"-Button.** Entscheidung des Nutzers: der Produkt-Picker behält grocys eingebauten
+  „Name tippen → TAB/ENTER"-Workflow als einzigen Weg, ein neues Produkt anzulegen. Damit
+  gilt „Neu erstellen aus Auswahlfeld" für die **Stammdaten-Felder** (Produktgruppe, Standort,
+  Mengeneinheit, Geschäft) als abgeschlossen.
+- **⏳ Optional/später:** dieselben „+"-Buttons für Geschäft/Standort auch in
+  Verbrauch/Umlagerung/Einkaufsliste, falls gewünscht (Mechanik steht, nur Includes aktivieren).
