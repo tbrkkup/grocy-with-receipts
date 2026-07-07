@@ -35,11 +35,11 @@ Muster der bereits existierenden Lagerort-Hierarchie (`locations`, Migrationen
 | d | Kettensummen / Auswertungen | **Später** – zusammen mit einer optionalen Übersichtsseite. Kein `/shoppinglocationoverview` im ersten Wurf. |
 | 4 | Tiefe | **Beliebige Tiefe** technisch offen (wie bei Lagerorten). |
 
-## Datenstruktur (Migrationen 0265–0267)
+## Datenstruktur (Migrationen 0266–0268)
 
 Spiegelbild der Lagerort-Migrationen 0262–0264.
 
-**`0265.sql` – Spalte + Eindeutigkeit + Views**
+**`0266.sql` – Spalte + Eindeutigkeit + Views**
 - `shopping_locations` bekommt `parent_shopping_location_id INTEGER`.
 - Die Basistabelle hat `name TEXT NOT NULL UNIQUE` (global eindeutig). Für gleiche
   Filialnamen unter verschiedenen Ketten muss die Eindeutigkeit **pro Ebene**
@@ -55,11 +55,11 @@ Spiegelbild der Lagerort-Migrationen 0262–0264.
   - `shopping_locations_descendants` → `ancestor_id, location_id`
     (Baustein für Ketten-Rollups und Alias-Wurzel-Normalisierung, Punkt b/d)
 
-**`0266.sql` – Löschschutz** (analog 0263): Trigger
+**`0267.sql` – Löschschutz** (analog 0263): Trigger
 `shopping_location_prevent_delete_with_children` – eine Kette mit Filialen kann
 nicht gelöscht werden (deckt Einzel-/Bulk-/API-Löschung ab).
 
-**`0267.sql` – Härtung** (analog 0264): verwaiste/leere
+**`0268.sql` – Härtung** (analog 0264): verwaiste/leere
 `parent_shopping_location_id` auf `NULL` normalisieren; `shopping_locations_resolved`
 gegen `''`-Wurzeln absichern.
 

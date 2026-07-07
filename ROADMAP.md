@@ -14,7 +14,7 @@
 
 ### Store hierarchy / branches (Kette → Filiale) — follow-ups
 Concept: `docs/shopping-location-branches-concept.md`. First wave (management, form,
-picker/dropdowns, migrations `0265`–`0267`) is on branch `claude/location-branches-concept-3bdkzx`.
+picker/dropdowns, migrations `0266`–`0268`) is on branch `claude/location-branches-concept-3bdkzx`.
 Deferred by design:
 - [ ] **Import widget / bulk-purchase** (`public/grocy-import.html` → future internal "bulk-purchase"): let the concrete **branch** be picked/detected when linking purchases. Alias lookup must normalize to the **chain (root)** via `shopping_locations_descendants` / `root_id`, so chain-wide learned aliases apply across all branches. Do this when the widget is integrated internally.
 - [ ] **Chain totals / store overview**: optional `/shoppinglocationoverview` (tree with "receipts/spend here" vs. "incl. branches") via `shopping_locations_descendants`. Pure reporting — the user explicitly did not want this in the first wave.
@@ -31,7 +31,7 @@ Deferred by design:
   - Phase 3 (`/locationoverview`): the new menu entry shows the location tree with "Products (directly here)" vs "Products (incl. sub-locations)" and the roll-up counts look right.
   - Known follow-ups (not blockers): stock-overview location filter is still name-based; location content sheet still shows plain names.
 
-- [ ] **Store hierarchy (Kette → Filiale) – AWAITING USER TEST on the live instance** (branch `claude/location-branches-concept-3bdkzx`, migrations `0265`–`0267`; DB parts validated against real SQLite, PHP lints clean). Test checklist:
+- [ ] **Store hierarchy (Kette → Filiale) – AWAITING USER TEST on the live instance** (branch `claude/location-branches-concept-3bdkzx`, migrations `0266`–`0268`; DB parts validated against real SQLite, PHP lints clean). Test checklist:
   - Management (`/shoppinglocations` + `/shoppinglocation/{id}`): create/nest stores via the "Parent store" picker; the list shows the tree (indentation + Parent column); editing a store does not offer itself or its descendants as parent (cycle protection); deleting a store that has branches is blocked with a hint, deleting a leaf works; a branch name may repeat under different chains but not twice under the same parent.
   - Dropdowns show the full path ("REWE › Hauptstraße"): receipt form (`/receipt/{id}`), purchase, product form (default store), stock-entry form, inventory, product barcode form.
   - Backward compatibility: existing stores (no parent) still appear as roots; existing receipts / stock log unaffected.
