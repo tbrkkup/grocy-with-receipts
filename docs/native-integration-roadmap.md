@@ -88,11 +88,18 @@ Der Anthropic-Key liegt dann in der Grocy-Config (nicht mehr im Browser).
   umgestellt werden → **Anthropic-Key raus aus dem Browser**, `/claude-proxy` und
   `url-proxy.php` werden perspektivisch überflüssig.
 
-### Phase 1 – Menü-Umbau & Einstiegspunkt (entschieden)
-- Bestehendes Einkauf-Menülabel → **„Einzeleinkauf"** (nur Anzeige; Route/Controller
-  bleiben `purchase`). Übersetzungen `Single purchase`/„Einzeleinkauf".
-- Neuer Menüpunkt **„Sammeleinkauf" („Bulk purchase")** direkt darunter → zeigt auf die
-  neue native Seite (`GET /bulkpurchase`). Kein Interim-Embed.
+### Phase 1 – Menü-Umbau & Einstiegspunkt ✅ (2026-07-07)
+- Einkauf-Menülabel → **„Einzeleinkauf"** (neuer String `Single purchase`; Route/Controller
+  bleiben `purchase` → abwärtskompatibel). Nur das Menü-Label, nicht die globale
+  „Purchase"-Übersetzung.
+- Neuer Menüpunkt **„Sammeleinkauf" („Bulk purchase")** direkt darunter (feature-flag- und
+  permission-gated) → native Seite `GET /bulkpurchase` (`ReceiptsController::BulkPurchase`,
+  `views/bulkpurchase.blade.php`): Landing mit Intro, Key-Status + Link zu den Einstellungen,
+  „So funktioniert's". Die Upload-/Review-UI folgt in Phase 2. Kein Interim-Embed.
+- `version.json` → `-receipts.17` gebumpt, damit Grocy beim Deploy den viewcache/Route-Cache
+  leert und die neuen Routen ohne manuelles Cache-Löschen greifen.
+- Mit Playwright verifiziert: Sidebar zeigt „Single purchase"+„Bulk purchase", `/bulkpurchase`
+  rendert (HTTP 200, aktiver Menüpunkt).
 
 ### Phase 2 – Native Upload-/Analyse-Seite („Sammeleinkauf")
 - `GET /bulkpurchase` → Blade-View + `viewjs/bulkpurchase.js`.

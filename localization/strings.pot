@@ -2549,3 +2549,39 @@ msgstr ""
 
 msgid "Settings saved"
 msgstr ""
+
+msgid "Single purchase"
+msgstr ""
+
+msgid "Bulk purchase"
+msgstr ""
+
+msgid "Import a whole receipt at once: upload a digital invoice (PDF) or a scan/photo, let it be analyzed, review the products and book them into stock – all linked to one receipt."
+msgstr ""
+
+msgid "No Anthropic API key is configured yet. It is required to analyze receipts."
+msgstr ""
+
+msgid "Open settings"
+msgstr ""
+
+msgid "Ready: an Anthropic API key is configured."
+msgstr ""
+
+msgid "How it works"
+msgstr ""
+
+msgid "Upload a digital invoice (PDF) or a scanned/photographed receipt"
+msgstr ""
+
+msgid "The receipt is analyzed (products, quantities, prices, store, date)"
+msgstr ""
+
+msgid "Review and correct the products, then book them into stock"
+msgstr ""
+
+msgid "Everything is linked to one receipt and learned for next time"
+msgstr ""
+
+msgid "The upload and review interface is being built here natively. Until then, the standalone import tool remains available."
+msgstr ""

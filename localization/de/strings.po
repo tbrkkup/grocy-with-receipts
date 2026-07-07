@@ -2937,3 +2937,39 @@ msgstr "Gescannte/fotografierte Belege nutzen immer Anthropic (Vision)."
 
 msgid "Settings saved"
 msgstr "Einstellungen gespeichert"
+
+msgid "Single purchase"
+msgstr "Einzeleinkauf"
+
+msgid "Bulk purchase"
+msgstr "Sammeleinkauf"
+
+msgid "Import a whole receipt at once: upload a digital invoice (PDF) or a scan/photo, let it be analyzed, review the products and book them into stock – all linked to one receipt."
+msgstr "Einen ganzen Beleg auf einmal importieren: digitale Rechnung (PDF) oder Scan/Foto hochladen, analysieren lassen, Produkte prüfen und in den Bestand buchen – alles mit einer Rechnung verknüpft."
+
+msgid "No Anthropic API key is configured yet. It is required to analyze receipts."
+msgstr "Es ist noch kein Anthropic-API-Key konfiguriert. Er wird für die Beleg-Analyse benötigt."
+
+msgid "Open settings"
+msgstr "Einstellungen öffnen"
+
+msgid "Ready: an Anthropic API key is configured."
+msgstr "Bereit: Ein Anthropic-API-Key ist konfiguriert."
+
+msgid "How it works"
+msgstr "So funktioniert's"
+
+msgid "Upload a digital invoice (PDF) or a scanned/photographed receipt"
+msgstr "Digitale Rechnung (PDF) oder gescannten/fotografierten Beleg hochladen"
+
+msgid "The receipt is analyzed (products, quantities, prices, store, date)"
+msgstr "Der Beleg wird analysiert (Produkte, Mengen, Preise, Geschäft, Datum)"
+
+msgid "Review and correct the products, then book them into stock"
+msgstr "Produkte prüfen und korrigieren, dann in den Bestand buchen"
+
+msgid "Everything is linked to one receipt and learned for next time"
+msgstr "Alles wird mit einer Rechnung verknüpft und für das nächste Mal gelernt"
+
+msgid "The upload and review interface is being built here natively. Until then, the standalone import tool remains available."
+msgstr "Die Upload- und Prüfen-Oberfläche wird hier gerade nativ gebaut. Bis dahin bleibt das eigenständige Import-Werkzeug verfügbar."

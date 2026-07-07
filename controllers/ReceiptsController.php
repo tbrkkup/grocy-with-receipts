@@ -64,4 +64,12 @@ class ReceiptsController extends BaseController
 			'digitalBackend' => defined('GROCY_RECEIPT_DIGITAL_BACKEND') ? GROCY_RECEIPT_DIGITAL_BACKEND : 'anthropic',
 		]);
 	}
+
+	public function BulkPurchase(Request $request, Response $response, array $args)
+	{
+		$keyConfigured = defined('GROCY_ANTHROPIC_API_KEY') && trim((string) GROCY_ANTHROPIC_API_KEY) !== '';
+		return $this->RenderPage($response, 'bulkpurchase', [
+			'keyConfigured' => $keyConfigured,
+		]);
+	}
 }
