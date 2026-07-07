@@ -767,6 +767,30 @@ $(window).on("message", function (e)
 	{
 		window.location.reload();
 	}
+	else if (data.Message == "MasterObjectCreated")
+	{
+		// Ein aus einem Auswahlfeld heraus angelegtes Objekt (id, name) in das zugehörige
+		// <select> eintragen und auswählen – ohne Reload. Läuft in jedem Fenster (per
+		// BroadcastMessage verteilt); nur das Fenster mit passendem Select reagiert.
+		var mocPayload = data.Payload || {};
+		var mocSelect = document.getElementById(mocPayload.target);
+		if (mocSelect && mocSelect.tagName == "SELECT")
+		{
+			if (!mocSelect.querySelector('option[value="' + mocPayload.id + '"]'))
+			{
+				var mocOption = document.createElement("option");
+				mocOption.value = mocPayload.id;
+				mocOption.textContent = mocPayload.name;
+				mocSelect.appendChild(mocOption);
+			}
+			mocSelect.value = mocPayload.id;
+			if (window.jQuery && jQuery(mocSelect).data("combobox"))
+			{
+				jQuery(mocSelect).data("combobox").refresh();
+			}
+			if (window.jQuery) { jQuery(mocSelect).trigger("change"); }
+		}
+	}
 	else if (data.Message == "BroadcastMessage")
 	{
 		// data.Payload is the original WindowMessageBag
@@ -832,6 +856,34 @@ $(document).on("click", ".show-as-dialog-link", function (e)
 		IframeModal(link, dialogType);
 	}
 });
+
+// "Neu erstellen" aus einem Auswahlfeld: öffnet das Anlege-Formular der Entität als Dialog
+// ÜBER dem aktuellen Formular. Das Formular meldet die neue id/den Namen via
+// Grocy.PostCreatedObject zurück (siehe unten), das dann ins Ziel-<select> eingetragen wird.
+$(document).on("click", ".create-new-picker-button", function (e)
+{
+	e.preventDefault();
+	var element = $(e.currentTarget);
+	var newFormUrl = element.attr("data-newform-url");
+	var targetSelect = element.attr("data-target-select");
+	if (!newFormUrl || !targetSelect) { return; }
+	var link = U(newFormUrl + "?embedded&createnewfor=" + encodeURIComponent(targetSelect));
+	Grocy.GetTopmostWindow().postMessage(WindowMessageBag("IframeModal", { "Link": link, "DialogType": "form" }), Grocy.BaseUrl);
+});
+
+// Wird von Anlege-Formularen im create-Zweig aufgerufen. Ist das Formular aus einem
+// Auswahlfeld heraus geöffnet worden (?createnewfor=<selectId>), meldet es das neue Objekt
+// (id, name) an das Ziel-<select> zurück (ohne Reload) und schließt den Dialog. Rückgabe:
+// true = übernommen (Formular soll seinen normalen Reload/Redirect NICHT ausführen).
+Grocy.PostCreatedObject = function (entity, id, name)
+{
+	var target = GetUriParam("createnewfor");
+	if (target === undefined || target === null || target === "") { return false; }
+	var payload = WindowMessageBag("MasterObjectCreated", { "target": target, "entity": entity, "id": id, "name": name });
+	Grocy.GetTopmostWindow().postMessage(WindowMessageBag("BroadcastMessage", payload), Grocy.BaseUrl);
+	window.parent.postMessage(WindowMessageBag("CloseLastModal"), Grocy.BaseUrl);
+	return true;
+};
 
 function IframeModal(link, dialogClass = "form")
 {

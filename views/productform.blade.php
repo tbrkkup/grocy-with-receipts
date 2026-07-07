@@ -377,16 +377,25 @@
 
 			<div class="form-group">
 				<label for="product_group_id">{{ $__t('Product group') }}</label>
-				<select class="custom-control custom-select"
-					id="product_group_id"
-					name="product_group_id">
-					<option></option>
-					@foreach($productgroups as $productgroup)
-					<option @if($mode=='edit'
-						&&
-						$productgroup->id == $product->product_group_id) selected="selected" @endif value="{{ $productgroup->id }}">{{ $productgroup->name }}</option>
-					@endforeach
-				</select>
+				<div class="input-group">
+					<select class="custom-control custom-select"
+						id="product_group_id"
+						name="product_group_id">
+						<option></option>
+						@foreach($productgroups as $productgroup)
+						<option @if($mode=='edit'
+							&&
+							$productgroup->id == $product->product_group_id) selected="selected" @endif value="{{ $productgroup->id }}">{{ $productgroup->name }}</option>
+						@endforeach
+					</select>
+					<div class="input-group-append">
+						<button class="btn btn-outline-secondary create-new-picker-button"
+							type="button"
+							data-newform-url="/productgroup/new"
+							data-target-select="product_group_id"
+							title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+					</div>
+				</div>
 			</div>
 
 			<div class="form-group">

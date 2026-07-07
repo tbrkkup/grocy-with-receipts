@@ -116,11 +116,26 @@ eingegebene Zustand geht verloren. Es fehlt:
   laufen, bevor die id zurückgemeldet wird.
 - **Produkt anlegen** ist der komplexeste Fall (großes Formular) – zuletzt und separat.
 
-## 8. Offene Entscheidungen (Rücksprache vor Umsetzung)
+## 8. Entscheidungen (getroffen 2026-07-07)
 
-1. **UI-Variante:** „＋ Neu erstellen …" als **Option im Select** (Klick/Enter öffnet Dialog)
-   **oder** ein **„+"-Button rechts** neben dem Feld? (Combobox-Kompatibilität spricht eher
-   für den Button.)
-2. **Umfang zuerst:** nur Kern-Stammdaten (Produktgruppe, Standort, Einheit, Geschäft) –
-   oder gleich inkl. **Produkt** (productpicker)?
-3. **Reihenfolge:** mit dem Produktformular starten (die meisten Selects an einem Ort)?
+1. **UI-Variante:** **„+"-Button rechts** neben dem Feld (`.create-new-picker-button`,
+   `input-group-append`). Robuster mit combobox.
+2. **Umfang zuerst:** **Kern-Stammdaten** (Produktgruppe, Standort, Mengeneinheit, Geschäft);
+   Produkt (productpicker) später.
+3. **Startpunkt:** **Produktformular** (Proof: Produktgruppe).
+
+## 9. Fortschritt
+
+- **✅ Phase A – Mechanik (2026-07-07):** `grocy.js` – Helfer `Grocy.PostCreatedObject(entity,
+  id, name)` (postet `MasterObjectCreated` via `BroadcastMessage` + `CloseLastModal`, wenn
+  `?createnewfor=<selectId>` gesetzt), `.create-new-picker-button`-Klickhandler (öffnet
+  `/<entity>/new?embedded&createnewfor=<selectId>` als Dialog), Message-Zweig
+  `MasterObjectCreated` (trägt Option ein, wählt aus, `combobox.refresh()`, ohne Reload).
+- **✅ Phase B – Proof (2026-07-07):** „+"-Button am **Produktgruppen**-Select im
+  Produktformular; `productgroupform.js` meldet beim Anlegen id/Name zurück.
+  **Playwright-Test bestanden (2026-07-07):** Produktformular öffnen → „+" an Produktgruppe →
+  Anlege-Dialog stapelt sich über dem Formular → Namen eingeben → speichern → Dialog schließt,
+  neue Gruppe ist im `<select>` eingetragen **und ausgewählt**, der Produktname im
+  darunterliegenden Formular bleibt erhalten (**kein Reload**). Screenshots in `scratchpad/`.
+- **⏳ Phase C/D:** `locationform`/`quantityunitform`/`shoppinglocationform` umrüsten +
+  „+"-Buttons an Standort/Einheiten/Geschäft (Produktformular), danach weitere Formulare.

@@ -23,7 +23,11 @@
 				Grocy.EditObjectId = result.created_object_id;
 				Grocy.Components.UserfieldsForm.Save(function()
 				{
-					window.parent.postMessage(WindowMessageBag("CloseLastModal"), Grocy.BaseUrl);
+					// Aus einem Auswahlfeld heraus angelegt? Dann id/Name zurückmelden (ohne Reload).
+					if (!Grocy.PostCreatedObject('product_groups', result.created_object_id, jsonData.name))
+					{
+						window.parent.postMessage(WindowMessageBag("CloseLastModal"), Grocy.BaseUrl);
+					}
 				});
 			},
 			function(xhr)
