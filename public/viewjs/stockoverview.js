@@ -38,7 +38,7 @@ var stockOverviewTable = $('#stock-overview-table').DataTable({
 $('#stock-overview-table tbody').removeClass("d-none");
 stockOverviewTable.columns.adjust().draw();
 
-$("#location-filter").on("change", function()
+$("#location-filter").on("change", function ()
 {
 	var value = $(this).val();
 	if (value === "all")
@@ -53,7 +53,7 @@ $("#location-filter").on("change", function()
 	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(7)).search(value).draw();
 });
 
-$("#product-group-filter").on("change", function()
+$("#product-group-filter").on("change", function ()
 {
 	var value = $(this).val();
 	if (value === "all")
@@ -68,7 +68,7 @@ $("#product-group-filter").on("change", function()
 	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(9)).search(value).draw();
 });
 
-$("#status-filter").on("change", function()
+$("#status-filter").on("change", function ()
 {
 	var value = $(this).val();
 	if (value === "all")
@@ -82,14 +82,14 @@ $("#status-filter").on("change", function()
 	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(8)).search(value).draw();
 });
 
-$(".status-filter-message").on("click", function()
+$(".status-filter-message").on("click", function ()
 {
 	var value = $(this).data("status-filter");
 	$("#status-filter").val(value);
 	$("#status-filter").trigger("change");
 });
 
-$("#clear-filter-button").on("click", function()
+$("#clear-filter-button").on("click", function ()
 {
 	$("#search").val("");
 	$("#status-filter").val("all");
@@ -106,7 +106,7 @@ $("#clear-filter-button").on("click", function()
 	}
 });
 
-$("#search").on("keyup", Delay(function()
+$("#search").on("keyup", Delay(function ()
 {
 	var value = $(this).val();
 	if (value === "all")
@@ -117,12 +117,12 @@ $("#search").on("keyup", Delay(function()
 	stockOverviewTable.search(value).draw();
 }, Grocy.FormFocusDelay));
 
-$(document).on('click', '.product-grocycode-label-print', function(e)
+$(document).on('click', '.product-grocycode-label-print', function (e)
 {
 	e.preventDefault();
 
 	var productId = $(e.currentTarget).attr('data-product-id');
-	Grocy.Api.Get('stock/products/' + productId + '/printlabel', function(labelData)
+	Grocy.Api.Get('stock/products/' + productId + '/printlabel', function (labelData)
 	{
 		if (Grocy.Webhooks.labelprinter !== undefined)
 		{
@@ -131,7 +131,7 @@ $(document).on('click', '.product-grocycode-label-print', function(e)
 	});
 });
 
-$(document).on('click', '.product-consume-button', function(e)
+$(document).on('click', '.product-consume-button', function (e)
 {
 	e.preventDefault();
 
@@ -143,10 +143,10 @@ $(document).on('click', '.product-consume-button', function(e)
 	var wasSpoiled = $(e.currentTarget).hasClass("product-consume-button-spoiled");
 
 	Grocy.Api.Post('stock/products/' + productId + '/consume', { 'amount': consumeAmount, 'spoiled': wasSpoiled, 'allow_subproduct_substitution': true },
-		function(bookingResponse)
+		function (bookingResponse)
 		{
 			Grocy.Api.Get('stock/products/' + productId,
-				function(result)
+				function (result)
 				{
 					if (result.product.enable_tare_weight_handling == 1)
 					{
@@ -167,14 +167,14 @@ $(document).on('click', '.product-consume-button', function(e)
 					RefreshStatistics();
 					RefreshProductRow(productId);
 				},
-				function(xhr)
+				function (xhr)
 				{
 					Grocy.FrontendHelpers.EndUiBusy();
 					console.error(xhr);
 				}
 			);
 		},
-		function(xhr)
+		function (xhr)
 		{
 			Grocy.FrontendHelpers.EndUiBusy();
 			console.error(xhr);
@@ -182,7 +182,7 @@ $(document).on('click', '.product-consume-button', function(e)
 	);
 });
 
-$(document).on('click', '.product-open-button', function(e)
+$(document).on('click', '.product-open-button', function (e)
 {
 	e.preventDefault();
 
@@ -195,16 +195,11 @@ $(document).on('click', '.product-open-button', function(e)
 	var button = $(e.currentTarget);
 
 	Grocy.Api.Post('stock/products/' + productId + '/open', { 'amount': amount, 'allow_subproduct_substitution': true },
-		function(bookingResponse)
+		function (bookingResponse)
 		{
 			Grocy.Api.Get('stock/products/' + productId,
-				function(result)
+				function (result)
 				{
-					if (result.stock_amount == result.stock_amount_opened)
-					{
-						button.addClass("disabled");
-					}
-
 					Grocy.FrontendHelpers.EndUiBusy();
 					toastr.success(__t('Marked %1$s of %2$s as opened', amount.toLocaleString({ minimumFractionDigits: 0, maximumFractionDigits: Grocy.UserSettings.stock_decimal_places_amounts }) + " " + productQuName, productName) + '<br><a class="btn btn-secondary btn-sm mt-2" href="#" onclick="UndoStockTransaction(\'' + bookingResponse[0].transaction_id + '\')"><i class="fa-solid fa-undo"></i> ' + __t("Undo") + '</a>');
 
@@ -216,14 +211,14 @@ $(document).on('click', '.product-open-button', function(e)
 					RefreshStatistics();
 					RefreshProductRow(productId);
 				},
-				function(xhr)
+				function (xhr)
 				{
 					Grocy.FrontendHelpers.EndUiBusy();
 					console.error(xhr);
 				}
 			);
 		},
-		function(xhr)
+		function (xhr)
 		{
 			Grocy.FrontendHelpers.EndUiBusy();
 			console.error(xhr);
@@ -234,7 +229,7 @@ $(document).on('click', '.product-open-button', function(e)
 function RefreshStatistics()
 {
 	Grocy.Api.Get('stock',
-		function(result)
+		function (result)
 		{
 			if (!Grocy.FeatureFlags.GROCY_FEATURE_FLAG_STOCK_PRICE_TRACKING)
 			{
@@ -251,7 +246,7 @@ function RefreshStatistics()
 				$("#info-current-stock").text(__n(result.filter(x => !BoolVal(x.product.hide_on_stock_overview)).length, '%s Product', '%s Products') + ", " + __t('%s total value', valueSum.toLocaleString(undefined, { style: "currency", currency: Grocy.Currency })));
 			}
 		},
-		function(xhr)
+		function (xhr)
 		{
 			console.error(xhr);
 		}
@@ -259,7 +254,7 @@ function RefreshStatistics()
 
 	var nextXDays = $("#info-duesoon-products").data("next-x-days");
 	Grocy.Api.Get('stock/volatile?due_soon_days=' + nextXDays,
-		function(result)
+		function (result)
 		{
 			var dueProducts = result.due_products.filter(x => !BoolVal(x.product.hide_on_stock_overview));
 			var overdueProducts = result.overdue_products.filter(x => !BoolVal(x.product.hide_on_stock_overview));
@@ -271,7 +266,7 @@ function RefreshStatistics()
 			$("#info-expired-products").html('<span class="d-block d-md-none">' + expiredProducts.length + ' <i class="fa-solid fa-times-circle"></i></span><span class="d-none d-md-block">' + __n(expiredProducts.length, '%s product is expired', '%s products are expired') + '</span>');
 			$("#info-missing-products").html('<span class="d-block d-md-none">' + missingProducts.length + ' <i class="fa-solid fa-exclamation-circle"></i></span><span class="d-none d-md-block">' + __n(missingProducts.length, '%s product is below defined min. stock amount', '%s products are below defined min. stock amount') + '</span>');
 		},
-		function(xhr)
+		function (xhr)
 		{
 			console.error(xhr);
 		}
@@ -284,7 +279,7 @@ function RefreshProductRow(productId)
 	productId = productId.toString();
 
 	Grocy.Api.Get('stock/products/' + productId,
-		function(result)
+		function (result)
 		{
 			// Also refresh the parent product, if any
 			if (result.product.parent_product_id)
@@ -330,7 +325,7 @@ function RefreshProductRow(productId)
 
 			if (!BoolVal(Grocy.UserSettings.stock_overview_show_all_out_of_stock_products) && result.stock_amount == 0 && result.stock_amount_aggregated == 0 && result.product.min_stock_amount == 0)
 			{
-				animateCSS("#product-" + productId + "-row", "fadeOut", function()
+				animateCSS("#product-" + productId + "-row", "fadeOut", function ()
 				{
 					$("#product-" + productId + "-row").addClass("d-none");
 				});
@@ -367,7 +362,7 @@ function RefreshProductRow(productId)
 					$(".product-open-button[data-product-id='" + productId + "']").removeClass("disabled");
 				}
 
-				if (result.product.disable_open == 1)
+				if (result.product.disable_open == 1 || result.stock_amount == result.stock_amount_opened)
 				{
 					$(".product-open-button[data-product-id='" + productId + "']").addClass("disabled");
 				}
@@ -400,13 +395,13 @@ function RefreshProductRow(productId)
 			}
 
 			// Needs to be delayed because of the animation above the date-text would be wrong if fired immediately...
-			setTimeout(function()
+			setTimeout(function ()
 			{
 				RefreshContextualTimeago("#product-" + productId + "-row");
 				RefreshLocaleNumberDisplay("#product-" + productId + "-row");
 			}, Grocy.FormFocusDelay);
 		},
-		function(xhr)
+		function (xhr)
 		{
 			Grocy.FrontendHelpers.EndUiBusy();
 			console.error(xhr);
@@ -499,7 +494,7 @@ $("#bulk-add-to-shoppinglist-button").on("click", function(e)
 	);
 });
 
-$(window).on("message", function(e)
+$(window).on("message", function (e)
 {
 	var data = e.originalEvent.data;
 
