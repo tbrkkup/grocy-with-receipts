@@ -67,6 +67,43 @@ class BatteriesApiController extends BaseApiController
 		}
 	}
 
+	public function BulkUndoChargeCycle(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_BATTERIES_UNDO_CHARGE_CYCLE);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('charge_cycle_ids', $requestBody) || !is_array($requestBody['charge_cycle_ids']) || count($requestBody['charge_cycle_ids']) === 0)
+			{
+				throw new \Exception('charge_cycle_ids is required and must be a non-empty array');
+			}
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['charge_cycle_ids'] as $chargeCycleId)
+				{
+					BatteriesService::GetInstance()->UndoChargeCycle($chargeCycleId);
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
 	public function BatteryPrintLabel(Request $request, Response $response, array $args)
 	{
 		try

@@ -907,6 +907,423 @@ class StockApiController extends BaseApiController
 		}
 	}
 
+	public function BulkConsumeProducts(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_STOCK_CONSUME);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('product_ids', $requestBody) || !is_array($requestBody['product_ids']) || count($requestBody['product_ids']) === 0)
+			{
+				throw new \Exception('product_ids is required and must be a non-empty array');
+			}
+
+			if (!array_key_exists('amount', $requestBody))
+			{
+				throw new \Exception('An amount is required');
+			}
+
+			$spoiled = false;
+			if (array_key_exists('spoiled', $requestBody))
+			{
+				$spoiled = $requestBody['spoiled'];
+			}
+
+			$this->DB->begin();
+			try
+			{
+				$transactionId = null;
+				foreach ($requestBody['product_ids'] as $productId)
+				{
+					StockService::GetInstance()->ConsumeProduct($productId, $requestBody['amount'], $spoiled, StockService::TRANSACTION_TYPE_CONSUME, 'default', null, null, $transactionId);
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkTransferProducts(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_STOCK_TRANSFER);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('product_ids', $requestBody) || !is_array($requestBody['product_ids']) || count($requestBody['product_ids']) === 0)
+			{
+				throw new \Exception('product_ids is required and must be a non-empty array');
+			}
+
+			if (!array_key_exists('amount', $requestBody))
+			{
+				throw new \Exception('An amount is required');
+			}
+
+			if (!array_key_exists('location_id_from', $requestBody))
+			{
+				throw new \Exception('A transfer from location is required');
+			}
+
+			if (!array_key_exists('location_id_to', $requestBody))
+			{
+				throw new \Exception('A transfer to location is required');
+			}
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['product_ids'] as $productId)
+				{
+					StockService::GetInstance()->TransferProduct($productId, $requestBody['amount'], $requestBody['location_id_from'], $requestBody['location_id_to'], 'default');
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkProductPrintLabel(Request $request, Response $response, array $args)
+	{
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('product_ids', $requestBody) || !is_array($requestBody['product_ids']) || count($requestBody['product_ids']) === 0)
+			{
+				throw new \Exception('product_ids is required and must be a non-empty array');
+			}
+
+			$webhookDataList = [];
+			foreach ($requestBody['product_ids'] as $productId)
+			{
+				$productDetails = (object)StockService::GetInstance()->GetProductDetails($productId);
+
+				$webhookData = array_merge([
+					'product' => $productDetails->product->name,
+					'grocycode' => (string)(new Grocycode(Grocycode::PRODUCT, $productDetails->product->id)),
+					'details' => $productDetails,
+				], GROCY_LABEL_PRINTER_PARAMS);
+
+				if (GROCY_LABEL_PRINTER_RUN_SERVER)
+				{
+					(new WebhookRunner())->run(GROCY_LABEL_PRINTER_WEBHOOK, $webhookData, GROCY_LABEL_PRINTER_HOOK_JSON);
+				}
+
+				$webhookDataList[] = $webhookData;
+			}
+
+			return $this->ApiResponse($response, $webhookDataList);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkChangeStockEntryLocation(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_STOCK_EDIT);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('entry_ids', $requestBody) || !is_array($requestBody['entry_ids']) || count($requestBody['entry_ids']) === 0)
+			{
+				throw new \Exception('entry_ids is required and must be a non-empty array');
+			}
+
+			if (!array_key_exists('location_id', $requestBody) || !is_numeric($requestBody['location_id']))
+			{
+				throw new \Exception('A location_id is required');
+			}
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['entry_ids'] as $entryId)
+				{
+					$stockEntry = $this->DB->stock()->where('id', $entryId)->fetch();
+					if ($stockEntry === null)
+					{
+						throw new \Exception('Stock entry ' . $entryId . ' does not exist');
+					}
+
+					StockService::GetInstance()->EditStockEntry($entryId, $stockEntry->amount, $stockEntry->best_before_date, $requestBody['location_id'], $stockEntry->shopping_location_id, $stockEntry->price, $stockEntry->open, $stockEntry->purchased_date, $stockEntry->note);
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkOpenStockEntries(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_STOCK_OPEN);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('entry_ids', $requestBody) || !is_array($requestBody['entry_ids']) || count($requestBody['entry_ids']) === 0)
+			{
+				throw new \Exception('entry_ids is required and must be a non-empty array');
+			}
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['entry_ids'] as $entryId)
+				{
+					$stockEntry = $this->DB->stock()->where('id', $entryId)->fetch();
+					if ($stockEntry === null)
+					{
+						throw new \Exception('Stock entry ' . $entryId . ' does not exist');
+					}
+
+					$transactionId = null;
+					StockService::GetInstance()->OpenProduct($stockEntry->product_id, $stockEntry->amount, $entryId, $transactionId);
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkConsumeStockEntries(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_STOCK_CONSUME);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('entry_ids', $requestBody) || !is_array($requestBody['entry_ids']) || count($requestBody['entry_ids']) === 0)
+			{
+				throw new \Exception('entry_ids is required and must be a non-empty array');
+			}
+
+			$spoiled = false;
+			if (array_key_exists('spoiled', $requestBody))
+			{
+				$spoiled = $requestBody['spoiled'];
+			}
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['entry_ids'] as $entryId)
+				{
+					$stockEntry = $this->DB->stock()->where('id', $entryId)->fetch();
+					if ($stockEntry === null)
+					{
+						throw new \Exception('Stock entry ' . $entryId . ' does not exist');
+					}
+
+					$transactionId = null;
+					StockService::GetInstance()->ConsumeProduct($stockEntry->product_id, $stockEntry->amount, $spoiled, StockService::TRANSACTION_TYPE_CONSUME, $entryId, null, null, $transactionId);
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkStockEntryPrintLabel(Request $request, Response $response, array $args)
+	{
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('entry_ids', $requestBody) || !is_array($requestBody['entry_ids']) || count($requestBody['entry_ids']) === 0)
+			{
+				throw new \Exception('entry_ids is required and must be a non-empty array');
+			}
+
+			$webhookDataList = [];
+			foreach ($requestBody['entry_ids'] as $entryId)
+			{
+				$stockEntry = $this->DB->stock()->where('id', $entryId)->fetch();
+				if ($stockEntry === null)
+				{
+					throw new \Exception('Stock entry ' . $entryId . ' does not exist');
+				}
+
+				$productDetails = (object)StockService::GetInstance()->GetProductDetails($stockEntry->product_id);
+
+				$webhookData = array_merge([
+					'product' => $productDetails->product->name,
+					'grocycode' => (string)(new Grocycode(Grocycode::PRODUCT, $stockEntry->product_id, [$stockEntry->stock_id])),
+					'details' => $productDetails,
+					'stock_entry' => $stockEntry,
+				], GROCY_LABEL_PRINTER_PARAMS);
+
+				if (GROCY_FEATURE_FLAG_STOCK_BEST_BEFORE_DATE_TRACKING)
+				{
+					$webhookData['due_date'] = LocalizationService::GetInstance()->__t('DD') . ': ' . $stockEntry->best_before_date;
+				}
+
+				if (GROCY_LABEL_PRINTER_RUN_SERVER)
+				{
+					(new WebhookRunner())->run(GROCY_LABEL_PRINTER_WEBHOOK, $webhookData, GROCY_LABEL_PRINTER_HOOK_JSON);
+				}
+
+				$webhookDataList[] = $webhookData;
+			}
+
+			return $this->ApiResponse($response, $webhookDataList);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkAddProductsToShoppingList(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_SHOPPINGLIST_ITEMS_ADD);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('product_ids', $requestBody) || !is_array($requestBody['product_ids']) || count($requestBody['product_ids']) === 0)
+			{
+				throw new \Exception('product_ids is required and must be a non-empty array');
+			}
+
+			$listId = 1;
+			if (array_key_exists('list_id', $requestBody) && !empty($requestBody['list_id']) && is_numeric($requestBody['list_id']))
+			{
+				$listId = $requestBody['list_id'];
+			}
+
+			$amount = 1;
+			if (array_key_exists('product_amount', $requestBody) && !empty($requestBody['product_amount']) && is_numeric($requestBody['product_amount']))
+			{
+				$amount = $requestBody['product_amount'];
+			}
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['product_ids'] as $productId)
+				{
+					StockService::GetInstance()->AddProductToShoppingList($productId, $amount, -1, null, $listId);
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
+	public function BulkUndoBooking(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_STOCK_EDIT);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('booking_ids', $requestBody) || !is_array($requestBody['booking_ids']) || count($requestBody['booking_ids']) === 0)
+			{
+				throw new \Exception('booking_ids is required and must be a non-empty array');
+			}
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['booking_ids'] as $bookingId)
+				{
+					StockService::GetInstance()->UndoBooking($bookingId);
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
 	public function MergeProducts(Request $request, Response $response, array $args)
 	{
 		User::CheckPermission($request, User::PERMISSION_STOCK_EDIT);

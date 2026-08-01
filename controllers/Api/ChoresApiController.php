@@ -116,6 +116,43 @@ class ChoresApiController extends BaseApiController
 		}
 	}
 
+	public function BulkUndoChoreExecution(Request $request, Response $response, array $args)
+	{
+		User::CheckPermission($request, User::PERMISSION_CHORE_UNDO_EXECUTION);
+
+		$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+		try
+		{
+			if ($requestBody === null || !array_key_exists('execution_ids', $requestBody) || !is_array($requestBody['execution_ids']) || count($requestBody['execution_ids']) === 0)
+			{
+				throw new \Exception('execution_ids is required and must be a non-empty array');
+			}
+
+			$this->DB->begin();
+			try
+			{
+				foreach ($requestBody['execution_ids'] as $executionId)
+				{
+					ChoresService::GetInstance()->UndoChoreExecution($executionId);
+				}
+
+				$this->DB->commit();
+			}
+			catch (\Exception $ex)
+			{
+				$this->DB->rollback();
+				throw $ex;
+			}
+
+			return $this->EmptyApiResponse($response);
+		}
+		catch (\Exception $ex)
+		{
+			return $this->GenericErrorResponse($response, $ex->getMessage());
+		}
+	}
+
 	public function ChorePrintLabel(Request $request, Response $response, array $args)
 	{
 		try
