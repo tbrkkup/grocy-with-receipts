@@ -154,7 +154,19 @@ class StockApiController extends BaseApiController
 				$receiptId = intval($requestBody['receipt_id']);
 			}
 
-			$transactionId = StockService::GetInstance()->AddProduct($args['productId'], $requestBody['amount'], $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId, $shoppingLocationId, $unusedTransactionId, $stockLabelType, false, $note, $receiptId);
+			$originCountryId = null;
+			if (array_key_exists('origin_country_id', $requestBody) && is_numeric($requestBody['origin_country_id']))
+			{
+				$originCountryId = $requestBody['origin_country_id'];
+			}
+
+			$qualityId = null;
+			if (array_key_exists('quality_id', $requestBody) && is_numeric($requestBody['quality_id']))
+			{
+				$qualityId = $requestBody['quality_id'];
+			}
+
+			$transactionId = StockService::GetInstance()->AddProduct($args['productId'], $requestBody['amount'], $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId, $shoppingLocationId, $unusedTransactionId, $stockLabelType, false, $note, $receiptId, $originCountryId, $qualityId);
 
 			$args['transactionId'] = $transactionId;
 			return $this->StockTransactions($request, $response, $args);
@@ -438,7 +450,19 @@ class StockApiController extends BaseApiController
 				$receiptId = is_numeric($requestBody['receipt_id']) ? intval($requestBody['receipt_id']) : null;
 			}
 
-			$transactionId = StockService::GetInstance()->EditStockEntry($args['entryId'], $requestBody['amount'], $bestBeforeDate, $locationId, $shoppingLocationId, $price, $requestBody['open'], $requestBody['purchased_date'], $note, $receiptId);
+			$originCountryId = null;
+			if (array_key_exists('origin_country_id', $requestBody) && is_numeric($requestBody['origin_country_id']))
+			{
+				$originCountryId = $requestBody['origin_country_id'];
+			}
+
+			$qualityId = null;
+			if (array_key_exists('quality_id', $requestBody) && is_numeric($requestBody['quality_id']))
+			{
+				$qualityId = $requestBody['quality_id'];
+			}
+
+			$transactionId = StockService::GetInstance()->EditStockEntry($args['entryId'], $requestBody['amount'], $bestBeforeDate, $locationId, $shoppingLocationId, $price, $requestBody['open'], $requestBody['purchased_date'], $note, $receiptId, $originCountryId, $qualityId);
 			$args['transactionId'] = $transactionId;
 			return $this->StockTransactions($request, $response, $args);
 		}

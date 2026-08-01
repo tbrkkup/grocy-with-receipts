@@ -1509,6 +1509,14 @@
 										"type": "string",
 										"format": "date",
 										"description": "The date when this stock entry was purchased"
+									},
+									"origin_country_id": {
+										"type": "integer",
+										"description": "Optional: The country this stock entry was purchased from"
+									},
+									"quality_id": {
+										"type": "integer",
+										"description": "Optional: The quality/grade of this stock entry (e.g. organic)"
 									}
 								},
 								"example": {
@@ -1915,6 +1923,14 @@
 									"note": {
 										"type": "string",
 										"description": "An optional note for the corresponding stock entry"
+									},
+									"origin_country_id": {
+										"type": "integer",
+										"description": "Optional: The country this product was purchased from"
+									},
+									"quality_id": {
+										"type": "integer",
+										"description": "Optional: The quality/grade of this purchase (e.g. organic)"
 									}
 								},
 								"example": {
@@ -4716,6 +4732,58 @@
 					"userfields": null
 				}
 			},
+			"Country": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"name": {
+						"type": "string"
+					},
+					"iso_code": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"row_created_timestamp": {
+						"type": "string",
+						"format": "date-time"
+					}
+				},
+				"example": {
+					"id": "1",
+					"name": "Deutschland",
+					"iso_code": "DE",
+					"description": null,
+					"row_created_timestamp": "2019-05-02 20:12:25"
+				}
+			},
+			"Quality": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"name": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"row_created_timestamp": {
+						"type": "string",
+						"format": "date-time"
+					}
+				},
+				"example": {
+					"id": "1",
+					"name": "Bio",
+					"description": null,
+					"row_created_timestamp": "2019-05-02 20:12:25"
+				}
+			},
 			"StockLocation": {
 				"type": "object",
 				"properties": {
@@ -4789,6 +4857,14 @@
 					"note": {
 						"type": "string"
 					},
+					"origin_country_id": {
+						"type": "integer",
+						"description": "Optional: The country this stock entry was purchased from"
+					},
+					"quality_id": {
+						"type": "integer",
+						"description": "Optional: The quality/grade of this stock entry (e.g. organic)"
+					},
 					"row_created_timestamp": {
 						"type": "string",
 						"format": "date-time"
@@ -4806,7 +4882,9 @@
 					"opened_date": null,
 					"row_created_timestamp": "2019-05-03 18:24:04",
 					"location_id": "4",
-					"shopping_location_id": null
+					"shopping_location_id": null,
+					"origin_country_id": null,
+					"quality_id": null
 				}
 			},
 			"RecipeFulfillmentResponse": {
@@ -5461,6 +5539,14 @@
 					"note": {
 						"type": "string"
 					},
+					"origin_country_id": {
+						"type": "integer",
+						"description": "Optional: The country this stock entry was purchased from"
+					},
+					"quality_id": {
+						"type": "integer",
+						"description": "Optional: The quality/grade of this stock entry (e.g. organic)"
+					},
 					"row_created_timestamp": {
 						"type": "string",
 						"format": "date-time"
@@ -5894,6 +5980,8 @@
 					"shopping_list",
 					"shopping_lists",
 					"shopping_locations",
+					"countries",
+					"qualities",
 					"recipes",
 					"recipes_pos",
 					"recipes_nestings",
