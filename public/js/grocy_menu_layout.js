@@ -19,6 +19,15 @@ $("#sidenavToggler").click(function(e)
 		window.localStorage.setItem("sidebar_state", "expanded");
 		$(".container-fluid").addClass("pl-md-3");
 	}
+
+	// Toggling the sidebar changes the available width, but with scrollX enabled DataTables
+	// renders header and body as separate tables and doesn't recalculate the column widths
+	// on its own - without this the header drifts away from the body (the more columns, the
+	// more visible it gets on the rightmost ones)
+	if ($.fn.dataTable !== undefined)
+	{
+		$.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+	}
 });
 
 $(".navbar-sidenav .nav-link-collapse").click(function(e)

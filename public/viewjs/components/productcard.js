@@ -145,11 +145,18 @@ Grocy.Components.ProductCard.Refresh = function(productId)
 							var chart = Grocy.Components.ProductCard.PriceHistoryChart.data;
 							priceHistoryDataPoints.forEach((dataPoint) =>
 							{
-								var key = __t("Unknown store");
-								if (dataPoint.shopping_location)
+								// One line per store/quality/origin country combination, so that only
+								// comparable purchases end up being compared with each other
+								var keyParts = [dataPoint.shopping_location ? dataPoint.shopping_location.name : __t("Unknown store")];
+								if (dataPoint.quality)
 								{
-									key = dataPoint.shopping_location.name
+									keyParts.push(dataPoint.quality.name);
 								}
+								if (dataPoint.origin_country)
+								{
+									keyParts.push(dataPoint.origin_country.name);
+								}
+								var key = keyParts.join(", ");
 
 								if (!datasets[key])
 								{

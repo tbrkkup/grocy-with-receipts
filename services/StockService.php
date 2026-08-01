@@ -865,6 +865,8 @@ class StockService extends BaseService
 
 		$returnData = [];
 		$shoppingLocations = $this->DB->shopping_locations();
+		$countries = $this->DB->countries();
+		$qualities = $this->DB->qualities();
 
 		$rows = $this->DB->products_price_history()->where('product_id = :1', $productId)->orderBy('purchased_date', 'DESC');
 		foreach ($rows as $row)
@@ -872,7 +874,9 @@ class StockService extends BaseService
 			$returnData[] = [
 				'date' => $row->purchased_date,
 				'price' => $row->price,
-				'shopping_location' => FindObjectInArrayByPropertyValue($shoppingLocations, 'id', $row->shopping_location_id)
+				'shopping_location' => FindObjectInArrayByPropertyValue($shoppingLocations, 'id', $row->shopping_location_id),
+				'origin_country' => FindObjectInArrayByPropertyValue($countries, 'id', $row->origin_country_id),
+				'quality' => FindObjectInArrayByPropertyValue($qualities, 'id', $row->quality_id)
 			];
 		}
 

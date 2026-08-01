@@ -7,64 +7,58 @@ einzelnen Einkauf. Für Eigenschaften, die sich von Einkauf zu Einkauf ändern, 
 nicht: dieselben „Roma-Tomaten" kommen mal aus Deutschland, mal aus Spanien, mal aus
 Italien, und mal in Bio-, mal in konventioneller Qualität.
 
-Wer das heute festhalten will, hat nur drei Möglichkeiten – alle drei unbefriedigend:
+Das ist keine Kosmetik. Wer 4 Bio-Tomaten aus Deutschland für 2,69 € und 6 konventionelle
+aus Ungarn für 1,49 € kauft, hat nicht „zweimal Tomaten zu unterschiedlichen Preisen"
+gekauft, sondern zwei verschiedene Dinge. Solange Grocy das nicht auseinanderhalten kann,
+sind Bestand und Preisvergleich für solche Produkte irreführend.
 
-1. **Ein Produkt je Kombination** anlegen („Roma-Tomaten (DE, Bio)",
-   „Roma-Tomaten (ES)", …). Das bläht die Produktliste auf, zersplittert Bestand,
-   Mindestbestand, Preishistorie und Verbrauchsstatistik, und beim Einkauf muss man
-   jedes Mal die richtige Variante finden.
-2. **Freitext im Notizfeld**. Nicht auswertbar, nicht filterbar, keine einheitliche
-   Schreibweise.
-3. **Benutzerfelder auf `stock`**. Kommt am nächsten heran, aber Benutzerfelder sind
-   Freitext bzw. eine manuell gepflegte Werteliste ohne eigene Stammdatenpflege, und
-   Einträge mit Benutzerfeldwerten werden von Grocy grundsätzlich nie kompaktiert –
-   auch dann nicht, wenn sie identisch sind.
+## Warum die bestehenden Möglichkeiten nicht reichen
+
+**Ein Produkt je Kombination** („Roma-Tomaten (DE, Bio)", „Roma-Tomaten (ES)", …) bläht
+die Produktliste auf und zersplittert genau das, was zusammengehört: Bestand,
+Mindestbestand, Preishistorie und Verbrauchsstatistik verteilen sich auf beliebig viele
+Varianten, und beim Einkauf muss man jedes Mal die richtige heraussuchen.
+
+**Freitext im Notizfeld** ist nicht auswertbar, nicht filterbar und hat keine
+einheitliche Schreibweise („bio" / „Bio" / „BIO").
+
+**Benutzerfelder auf `stock`** kommen am nächsten heran, sind aber Freitext bzw. eine
+manuell gepflegte Werteliste ohne eigene Stammdatenpflege. Zusätzlich schließt Grocy
+Einträge mit Benutzerfeldwerten grundsätzlich vom Zusammenfassen aus – auch dann, wenn
+sie identisch sind.
 
 ## Vorschlag
 
-Zwei neue, **optionale** Attribute am einzelnen Bestandseintrag (Einkauf):
+Zwei neue, **optionale** Attribute am einzelnen Bestandseintrag:
 
-- **Herkunftsland** (`origin_country_id`) – woher das Produkt kommt.
-- **Güte** (`quality_id`) – Qualitäts- bzw. Handelsklasse, z. B. „Bio", „Demeter",
-  „Handelsklasse I", „Konventionell".
+- **Herkunftsland** – woher das Produkt kommt.
+- **Güte** – Qualitäts- bzw. Handelsklasse, z. B. „Bio", „Demeter", „Handelsklasse I",
+  „Konventionell".
 
-Beide sind reine Kaufeigenschaften: dasselbe Produkt bleibt *ein* Produkt, mit einem
-Bestand, einer Preishistorie und einer Verbrauchsstatistik – aber jeder Einkauf weiß,
-woher er kam und welche Güte er hatte.
+Beide sind reine Kaufeigenschaften. Dasselbe Produkt bleibt *ein* Produkt mit einem
+Bestand und einer Verbrauchsstatistik – aber jeder einzelne Einkauf weiß, woher er kam
+und welche Güte er hatte.
 
-### Datenmodell
+Beide bekommen eine eigene Stammdatenverwaltung, damit die Werte auswählbar statt
+eintippbar sind. Die Länder sollten dabei vorbefüllt ausgeliefert werden (ISO 3166-1) –
+Länder tippt niemand freiwillig selbst ein. Da kaum ein Haushalt alle ~200 braucht, muss
+sich die Liste ausdünnen lassen, ohne bereits erfasste Einkäufe zu beschädigen.
 
-- Neue Stammdatentabelle `countries` (`name`, `iso_code`, `description`, `active`),
-  vorbefüllt mit den ISO-3166-1-Ländern (deutsche Namen + Alpha-2-Code).
-- Neue Stammdatentabelle `qualities` (`name`, `description`, `active`), bewusst **leer**
-  ausgeliefert – was eine „Güte" ist, entscheidet der Anwender.
-- `stock.origin_country_id` und `stock.quality_id`, analog auf `stock_log`, damit auch
-  das Bestandsjournal die Werte je Buchung kennt.
-- Die Hilfsview `stock_splits`, die entscheidet welche Bestandseinträge automatisch
-  zusammengefasst werden dürfen, muss um beide Spalten erweitert werden. Sonst würden
-  zwei Käufe, die sich *nur* in Herkunft oder Güte unterscheiden, stillschweigend zu
-  einem Eintrag verschmolzen – genau das, was das Feature verhindern soll.
+## Erwartetes Verhalten
 
-### Stammdatenpflege
-
-Zwei neue Seiten `/countries` und `/qualities` im Abschnitt „Stammdaten verwalten",
-aufgebaut wie die bestehenden Geschäfte-Stammdaten: Liste mit Suche, „Deaktivierte
-anzeigen", Benutzerfelder, Anlegen/Bearbeiten/Löschen.
-
-Das `active`-Flag ist hier besonders wichtig: die Länderliste hat rund 200 Einträge, von
-denen die meisten Haushalte eine Handvoll brauchen. Nicht benötigte Länder lassen sich
-deaktivieren – sie verschwinden aus der Auswahl beim Einkauf, bleiben aber an
-historischen Bestandseinträgen weiterhin lesbar.
-
-### Bedienung
-
-- Einkaufsmaske und „Bestandseintrag bearbeiten" bekommen je ein optionales
-  Auswahlfeld (durchsuchbare Combobox, wie Geschäft und Standort).
-- Bestandseinträge und Bestandsjournal bekommen je eine Spalte „Herkunftsland" und
-  „Güte" (gruppierbar, über die Tabellenoptionen ein-/ausblendbar).
-- Die API (`POST /stock/products/{productId}/add`, `PUT /stock/entry/{entryId}`) nimmt
-  beide Felder optional entgegen; `countries` und `qualities` werden als generische
-  Entitäten über `/objects/{entity}` exponiert.
+1. Beim Einkauf lassen sich Herkunftsland und Güte optional angeben; beide dürfen leer
+   bleiben.
+2. Zwei Käufe, die sich **nur** in Herkunft oder Güte unterscheiden, bleiben getrennte
+   Bestandseinträge. Käufe, die in allen Merkmalen übereinstimmen, werden weiterhin
+   zusammengefasst.
+3. Bestandseinträge und Bestandsjournal zeigen beide Werte an.
+4. Der Preisverlauf eines Produkts vergleicht nur Gleiches mit Gleichem. Er trennt heute
+   schon nach Geschäft; Herkunft und Güte verändern den Preis eines ansonsten identischen
+   Produkts mindestens genauso stark und gehören deshalb ebenfalls in die Aufteilung –
+   „Aldi, Bio, Deutschland" ist eine andere Reihe als „Aldi, Konventionell, Ungarn".
+5. Nicht benötigte Länder und Güten lassen sich deaktivieren: sie verschwinden aus der
+   Auswahl beim Einkauf, bleiben an bereits erfassten Einkäufen aber lesbar.
+6. Wer die Attribute nicht nutzt, merkt von der Änderung nichts.
 
 ## Bewusst nicht Teil des Vorschlags
 
@@ -72,8 +66,7 @@ historischen Bestandseinträgen weiterhin lesbar.
   Fälligkeitsdatum. Wer gezielt den Bio-Eintrag verbrauchen will, wählt ihn wie bisher
   über „Bestandseinträge" aus.
 - **Keine Aufschlüsselung in der Bestandsübersicht.** Die Übersicht aggregiert weiter
-  über alle Einkäufe eines Produkts – das ist der Sinn der Sache.
-- **Keine Pflichtfelder.** Wer die Attribute nicht nutzt, merkt von der Änderung nichts;
-  bestehende Bestandseinträge bleiben unverändert und werden weiterhin kompaktiert.
+  über alle Einkäufe eines Produkts – genau das ist ja der Zweck.
+- **Keine Pflichtfelder und keine Migration bestehender Daten.**
 - **Keine Vorbelegung aus dem letzten Einkauf.** Anders als beim Geschäft wäre das hier
   eher irreführend – die Herkunft wechselt ja gerade häufig.
