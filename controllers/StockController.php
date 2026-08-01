@@ -488,6 +488,8 @@ class StockController extends BaseController
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'quantityUnits' => $this->DB->quantity_units()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'quantityUnitConversionsResolved' => $this->DB->cache__quantity_unit_conversions_resolved(),
+			'countries' => $this->DB->countries()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
+			'qualities' => $this->DB->qualities()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'userfields' => UserfieldsService::GetInstance()->GetFields('stock'),
 			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 		]);
@@ -774,6 +776,80 @@ class StockController extends BaseController
 		]);
 	}
 
+	public function CountryEditForm(Request $request, Response $response, array $args)
+	{
+		if ($args['countryId'] == 'new')
+		{
+			return $this->RenderPage($response, 'countryform', [
+				'mode' => 'create',
+				'userfields' => UserfieldsService::GetInstance()->GetFields('countries')
+			]);
+		}
+		else
+		{
+			return $this->RenderPage($response, 'countryform', [
+				'country' => $this->DB->countries($args['countryId']),
+				'mode' => 'edit',
+				'userfields' => UserfieldsService::GetInstance()->GetFields('countries')
+			]);
+		}
+	}
+
+	public function CountriesList(Request $request, Response $response, array $args)
+	{
+		if (isset($request->getQueryParams()['include_disabled']))
+		{
+			$countries = $this->DB->countries()->orderBy('name', 'COLLATE NOCASE');
+		}
+		else
+		{
+			$countries = $this->DB->countries()->where('active = 1')->orderBy('name', 'COLLATE NOCASE');
+		}
+
+		return $this->RenderPage($response, 'countries', [
+			'countries' => $countries,
+			'userfields' => UserfieldsService::GetInstance()->GetFields('countries'),
+			'userfieldValues' => UserfieldsService::GetInstance()->GetAllValues('countries')
+		]);
+	}
+
+	public function QualityEditForm(Request $request, Response $response, array $args)
+	{
+		if ($args['qualityId'] == 'new')
+		{
+			return $this->RenderPage($response, 'qualityform', [
+				'mode' => 'create',
+				'userfields' => UserfieldsService::GetInstance()->GetFields('qualities')
+			]);
+		}
+		else
+		{
+			return $this->RenderPage($response, 'qualityform', [
+				'quality' => $this->DB->qualities($args['qualityId']),
+				'mode' => 'edit',
+				'userfields' => UserfieldsService::GetInstance()->GetFields('qualities')
+			]);
+		}
+	}
+
+	public function QualitiesList(Request $request, Response $response, array $args)
+	{
+		if (isset($request->getQueryParams()['include_disabled']))
+		{
+			$qualities = $this->DB->qualities()->orderBy('name', 'COLLATE NOCASE');
+		}
+		else
+		{
+			$qualities = $this->DB->qualities()->where('active = 1')->orderBy('name', 'COLLATE NOCASE');
+		}
+
+		return $this->RenderPage($response, 'qualities', [
+			'qualities' => $qualities,
+			'userfields' => UserfieldsService::GetInstance()->GetFields('qualities'),
+			'userfieldValues' => UserfieldsService::GetInstance()->GetAllValues('qualities')
+		]);
+	}
+
 	public function StockEntryEditForm(Request $request, Response $response, array $args)
 	{
 		return $this->RenderPage($response, 'stockentryform', [
@@ -782,6 +858,8 @@ class StockController extends BaseController
 			'shoppinglocations' => $this->DB->shopping_locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
+			'countries' => $this->DB->countries()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
+			'qualities' => $this->DB->qualities()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'userfields' => UserfieldsService::GetInstance()->GetFields('stock')
 		]);
 	}
@@ -830,6 +908,8 @@ class StockController extends BaseController
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'shoppinglocations' => $this->DB->shopping_locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
+			'countries' => $this->DB->countries()->orderBy('name', 'COLLATE NOCASE'),
+			'qualities' => $this->DB->qualities()->orderBy('name', 'COLLATE NOCASE'),
 			'stockEntries' => $this->DB->uihelper_stock_entries()->orderBy('product_id'),
 			'currentStockLocations' => StockService::GetInstance()->GetCurrentStockLocations(),
 			'nextXDays' => $nextXDays,

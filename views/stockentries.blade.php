@@ -123,6 +123,8 @@
 					<th>{{ $__t('Timestamp') }}</th>
 					<th>{{ $__t('Note') }}</th>
 					<th>{{ $__t('Receipt') }}</th>
+					<th class="allow-grouping">{{ $__t('Origin country') }}</th>
+					<th class="allow-grouping">{{ $__t('Quality') }}</th>
 
 					@include('components.userfields_thead', array(
 					'userfields' => $userfieldsProducts
@@ -360,6 +362,18 @@
 						<span class="custom-sort d-none">{{ $linkedReceipt->date }}</span>
 						<a class="show-as-dialog-link"
 							href="{{ $U('/receipt/' . $linkedReceipt->id . '?embedded') }}">{{ $receiptLabel }}</a>
+						@endif
+					</td>
+					<td id="stock-{{ $stockEntry->id }}-origin-country"
+						data-origin-country-id="{{ $stockEntry->origin_country_id }}">
+						@if (FindObjectInArrayByPropertyValue($countries, 'id', $stockEntry->origin_country_id) !== null)
+						{{ FindObjectInArrayByPropertyValue($countries, 'id', $stockEntry->origin_country_id)->name }}
+						@endif
+					</td>
+					<td id="stock-{{ $stockEntry->id }}-quality"
+						data-quality-id="{{ $stockEntry->quality_id }}">
+						@if (FindObjectInArrayByPropertyValue($qualities, 'id', $stockEntry->quality_id) !== null)
+						{{ FindObjectInArrayByPropertyValue($qualities, 'id', $stockEntry->quality_id)->name }}
 						@endif
 					</td>
 

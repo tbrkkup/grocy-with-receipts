@@ -76,6 +76,9 @@ $('#save-purchase-button').on('click', function (e)
 				jsonData.location_id = Grocy.Components.LocationPicker.GetValue();
 			}
 
+			jsonData.origin_country_id = Grocy.Components.CountryPicker.GetValue();
+			jsonData.quality_id = Grocy.Components.QualityPicker.GetValue();
+
 			Grocy.Api.Post('stock/products/' + jsonForm.product_id + '/add', jsonData,
 				function (result)
 				{
@@ -222,6 +225,8 @@ $('#save-purchase-button').on('click', function (e)
 							{
 								Grocy.Components.ShoppingLocationPicker.SetValue('');
 							}
+							Grocy.Components.CountryPicker.Clear();
+							Grocy.Components.QualityPicker.Clear();
 							Grocy.Components.ProductPicker.GetInputElement().focus();
 							Grocy.Components.ProductCard.Refresh(jsonForm.product_id);
 							if (Grocy.FeatureFlags.GROCY_FEATURE_FLAG_LABEL_PRINTER)

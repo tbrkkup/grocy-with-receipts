@@ -2877,6 +2877,48 @@ msgstr ""
 "Mengeneinheit hier nicht ausgewählt werden kann, erstelle zunächst eine "
 "entsprechende ME-Umrechnung"
 
+msgid "Countries"
+msgstr "Länder"
+
+msgid "Qualities"
+msgstr "Güten"
+
+msgid "Create country"
+msgstr "Land erstellen"
+
+msgid "Edit country"
+msgstr "Land bearbeiten"
+
+msgid "Create quality"
+msgstr "Güte erstellen"
+
+msgid "Edit quality"
+msgstr "Güte bearbeiten"
+
+msgid "ISO code"
+msgstr "ISO-Code"
+
+msgid "ISO 3166-1 alpha-2 country code, e.g. DE"
+msgstr "ISO-3166-1-Alpha-2-Ländercode, z. B. DE"
+
+msgid "Are you sure you want to delete country \"%s\"?"
+msgstr "Soll das Land \"%s\" wirklich gelöscht werden?"
+
+msgid "Are you sure you want to delete quality \"%s\"?"
+msgstr "Soll die Güte \"%s\" wirklich gelöscht werden?"
+
+msgid "Origin country"
+msgstr "Herkunftsland"
+
+msgid "Quality"
+msgstr "Güte"
+
+msgid "You have to select a country"
+msgstr "Es muss ein Land ausgewählt werden"
+
+msgid "You have to select a quality"
+msgstr "Es muss eine Güte ausgewählt werden"
+
 # Default / initially created location
 msgid "Fridge"
 msgstr "Kühlschrank"

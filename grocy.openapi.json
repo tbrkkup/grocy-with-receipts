@@ -4747,9 +4747,20 @@
 					"description": {
 						"type": "string"
 					},
+					"active": {
+						"type": "integer",
+						"enum": [
+							0,
+							1
+						]
+					},
 					"row_created_timestamp": {
 						"type": "string",
 						"format": "date-time"
+					},
+					"userfields": {
+						"type": "object",
+						"description": "Key/value pairs of userfields"
 					}
 				},
 				"example": {
@@ -4757,7 +4768,9 @@
 					"name": "Deutschland",
 					"iso_code": "DE",
 					"description": null,
-					"row_created_timestamp": "2019-05-02 20:12:25"
+					"active": 1,
+					"row_created_timestamp": "2019-05-02 20:12:25",
+					"userfields": null
 				}
 			},
 			"Quality": {
@@ -4772,16 +4785,29 @@
 					"description": {
 						"type": "string"
 					},
+					"active": {
+						"type": "integer",
+						"enum": [
+							0,
+							1
+						]
+					},
 					"row_created_timestamp": {
 						"type": "string",
 						"format": "date-time"
+					},
+					"userfields": {
+						"type": "object",
+						"description": "Key/value pairs of userfields"
 					}
 				},
 				"example": {
 					"id": "1",
 					"name": "Bio",
 					"description": null,
-					"row_created_timestamp": "2019-05-02 20:12:25"
+					"active": 1,
+					"row_created_timestamp": "2019-05-02 20:12:25",
+					"userfields": null
 				}
 			},
 			"StockLocation": {

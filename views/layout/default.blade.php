@@ -386,7 +386,8 @@
 				@php
 				$masterDataViews = [
 				'products', 'locations', 'locationoverview', 'shoppinglocations', 'quantityunits',
-				'productgroups', 'equipmentgroups', 'receiptaliases', 'receiptimportsettings', 'chores', 'batteries', 'taskcategories',
+				'productgroups', 'countries', 'qualities', 'equipmentgroups', 'receiptaliases',
+				'receiptimportsettings', 'chores', 'batteries', 'taskcategories',
 				'userfields', 'userentities'
 				]
 				@endphp
@@ -445,6 +446,20 @@
 								<span class="nav-link-text">{{ $__t('Product groups') }}</span>
 							</a>
 						</li>
+						@if(GROCY_FEATURE_FLAG_STOCK)
+						<li class="@if($viewName == 'countries') active-page @endif">
+							<a class="nav-link discrete-link"
+								href="{{ $U('/countries') }}">
+								<span class="nav-link-text">{{ $__t('Countries') }}</span>
+							</a>
+						</li>
+						<li class="@if($viewName == 'qualities') active-page @endif">
+							<a class="nav-link discrete-link"
+								href="{{ $U('/qualities') }}">
+								<span class="nav-link-text">{{ $__t('Qualities') }}</span>
+							</a>
+						</li>
+						@endif
 						@if(GROCY_FEATURE_FLAG_EQUIPMENT)
 						<li class="@if($viewName == 'equipmentgroups') active-page @endif">
 							<a class="nav-link discrete-link"

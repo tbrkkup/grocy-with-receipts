@@ -150,6 +150,14 @@
 			))
 			@endif
 
+			@include('components.countrypicker', array(
+			'countries' => $countries
+			))
+
+			@include('components.qualitypicker', array(
+			'qualities' => $qualities
+			))
+
 			@if(GROCY_FEATURE_FLAG_LABEL_PRINTER)
 			<div class="form-group">
 				<label for="stock_label_type">{{ $__t('Stock entry label') }}</label>

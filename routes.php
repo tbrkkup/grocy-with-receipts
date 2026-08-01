@@ -67,6 +67,10 @@ $app->group('', function (RouteCollectorProxy $group)
 	$group->get('/quantityunitconversion/{quConversionId}', [StockController::class, 'QuantityUnitConversionEditForm']);
 	$group->get('/productgroups', [StockController::class, 'ProductGroupsList']);
 	$group->get('/productgroup/{productGroupId}', [StockController::class, 'ProductGroupEditForm']);
+	$group->get('/countries', [StockController::class, 'CountriesList']);
+	$group->get('/country/{countryId}', [StockController::class, 'CountryEditForm']);
+	$group->get('/qualities', [StockController::class, 'QualitiesList']);
+	$group->get('/quality/{qualityId}', [StockController::class, 'QualityEditForm']);
 	$group->get('/product/{productId}/grocycode', [StockController::class, 'ProductGrocycodeImage']);
 
 	// Stock handling routes
