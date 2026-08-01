@@ -109,7 +109,7 @@ class StockService extends BaseService
 		}
 	}
 
-	public function AddProduct(int $productId, float $amount, $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId = null, $shoppingLocationId = null, &$transactionId = null, $stockLabelType = 0, $addExactAmount = false, $note = null)
+	public function AddProduct(int $productId, float $amount, $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId = null, $shoppingLocationId = null, &$transactionId = null, $stockLabelType = 0, $addExactAmount = false, $note = null, $originCountryId = null, $qualityId = null)
 	{
 		if (!$this->ProductExists($productId))
 		{
@@ -205,7 +205,9 @@ class StockService extends BaseService
 						'transaction_id' => $transactionId,
 						'shopping_location_id' => $shoppingLocationId,
 						'user_id' => GROCY_USER_ID,
-						'note' => $note
+						'note' => $note,
+						'origin_country_id' => $originCountryId,
+						'quality_id' => $qualityId
 					]);
 					$logRow->save();
 
@@ -218,7 +220,9 @@ class StockService extends BaseService
 						'price' => $price,
 						'location_id' => $locationId,
 						'shopping_location_id' => $shoppingLocationId,
-						'note' => $note
+						'note' => $note,
+						'origin_country_id' => $originCountryId,
+						'quality_id' => $qualityId
 					]);
 					$stockRow->save();
 
@@ -258,7 +262,9 @@ class StockService extends BaseService
 					'transaction_id' => $transactionId,
 					'shopping_location_id' => $shoppingLocationId,
 					'user_id' => GROCY_USER_ID,
-					'note' => $note
+					'note' => $note,
+					'origin_country_id' => $originCountryId,
+					'quality_id' => $qualityId
 				]);
 				$logRow->save();
 
@@ -271,7 +277,9 @@ class StockService extends BaseService
 					'price' => $price,
 					'location_id' => $locationId,
 					'shopping_location_id' => $shoppingLocationId,
-					'note' => $note
+					'note' => $note,
+					'origin_country_id' => $originCountryId,
+					'quality_id' => $qualityId
 				]);
 				$stockRow->save();
 
@@ -525,7 +533,7 @@ class StockService extends BaseService
 		}
 	}
 
-	public function EditStockEntry(int $stockRowId, float $amount, $bestBeforeDate, $locationId, $shoppingLocationId, $price, $open, $purchasedDate, $note = null)
+	public function EditStockEntry(int $stockRowId, float $amount, $bestBeforeDate, $locationId, $shoppingLocationId, $price, $open, $purchasedDate, $note = null, $originCountryId = null, $qualityId = null)
 	{
 		$stockRow = $this->DB->stock()->where('id = :1', $stockRowId)->fetch();
 		if ($stockRow === null)
@@ -550,7 +558,9 @@ class StockService extends BaseService
 			'transaction_id' => $transactionId,
 			'stock_row_id' => $stockRow->id,
 			'user_id' => GROCY_USER_ID,
-			'note' => $stockRow->note
+			'note' => $stockRow->note,
+			'origin_country_id' => $stockRow->origin_country_id,
+			'quality_id' => $stockRow->quality_id
 		]);
 		$logOldRowForStockUpdate->save();
 
@@ -573,7 +583,9 @@ class StockService extends BaseService
 			'opened_date' => $openedDate,
 			'open' => BoolToInt($open),
 			'purchased_date' => $purchasedDate,
-			'note' => $note
+			'note' => $note,
+			'origin_country_id' => $originCountryId,
+			'quality_id' => $qualityId
 		]);
 
 		$logNewRowForStockUpdate = $this->DB->stock_log()->createRow([
@@ -591,7 +603,9 @@ class StockService extends BaseService
 			'transaction_id' => $transactionId,
 			'stock_row_id' => $stockRow->id,
 			'user_id' => GROCY_USER_ID,
-			'note' => $stockRow->note
+			'note' => $stockRow->note,
+			'origin_country_id' => $originCountryId,
+			'quality_id' => $qualityId
 		]);
 		$logNewRowForStockUpdate->save();
 
