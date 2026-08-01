@@ -1,17 +1,17 @@
 ﻿
 
 var stockOverviewTable = $('#stock-overview-table').DataTable({
-	'order': [[5, 'asc']],
+	'order': [[6, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
+		{ 'orderable': false, 'targets': 1 },
 		{ 'searchable': false, "targets": 0 },
-		{ 'searchable': false, "targets": 0 },
-		{ 'visible': false, 'targets': 6 },
+		{ 'searchable': false, "targets": 1 },
 		{ 'visible': false, 'targets': 7 },
 		{ 'visible': false, 'targets': 8 },
-		{ 'visible': false, 'targets': 2 },
-		{ 'visible': false, 'targets': 4 },
 		{ 'visible': false, 'targets': 9 },
+		{ 'visible': false, 'targets': 3 },
+		{ 'visible': false, 'targets': 5 },
 		{ 'visible': false, 'targets': 10 },
 		{ 'visible': false, 'targets': 11 },
 		{ 'visible': false, 'targets': 12 },
@@ -22,15 +22,16 @@ var stockOverviewTable = $('#stock-overview-table').DataTable({
 		{ 'visible': false, 'targets': 17 },
 		{ 'visible': false, 'targets': 18 },
 		{ 'visible': false, 'targets': 19 },
-		{ "type": "custom-sort", "targets": 3 },
-		{ "type": "html-num-fmt", "targets": 9 },
-		{ "type": "html-num-fmt", "targets": 10 },
-		{ "type": "html", "targets": 5 },
-		{ "type": "html", "targets": 11 },
-		{ "type": "custom-sort", "targets": 12 },
-		{ "type": "html-num-fmt", "targets": 13 },
+		{ 'visible': false, 'targets': 20 },
 		{ "type": "custom-sort", "targets": 4 },
-		{ "type": "custom-sort", "targets": 18 }
+		{ "type": "html-num-fmt", "targets": 10 },
+		{ "type": "html-num-fmt", "targets": 11 },
+		{ "type": "html", "targets": 6 },
+		{ "type": "html", "targets": 12 },
+		{ "type": "custom-sort", "targets": 13 },
+		{ "type": "html-num-fmt", "targets": 14 },
+		{ "type": "custom-sort", "targets": 5 },
+		{ "type": "custom-sort", "targets": 19 }
 	].concat($.fn.dataTable.defaults.columnDefs)
 });
 
@@ -49,7 +50,7 @@ $("#location-filter").on("change", function ()
 		value = "xx" + value + "xx";
 	}
 
-	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(6)).search(value).draw();
+	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(7)).search(value).draw();
 });
 
 $("#product-group-filter").on("change", function ()
@@ -64,7 +65,7 @@ $("#product-group-filter").on("change", function ()
 		value = "xx" + value + "xx";
 	}
 
-	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(8)).search(value).draw();
+	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(9)).search(value).draw();
 });
 
 $("#status-filter").on("change", function ()
@@ -78,7 +79,7 @@ $("#status-filter").on("change", function ()
 	// Transfer CSS classes of selected element to dropdown element (for background)
 	$(this).attr("class", $("#" + $(this).attr("id") + " option[value='" + value + "']").attr("class") + " form-control");
 
-	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(7)).search(value).draw();
+	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(8)).search(value).draw();
 });
 
 $(".status-filter-message").on("click", function ()
@@ -94,10 +95,15 @@ $("#clear-filter-button").on("click", function ()
 	$("#status-filter").val("all");
 	$("#product-group-filter").val("all");
 	$("#location-filter").val("all");
-	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(6)).search("").draw();
 	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(7)).search("").draw();
 	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(8)).search("").draw();
+	stockOverviewTable.column(stockOverviewTable.colReorder.transpose(9)).search("").draw();
 	stockOverviewTable.search("").draw();
+
+	if (typeof stockOverviewBulkSelect !== "undefined")
+	{
+		stockOverviewBulkSelect.Reset();
+	}
 });
 
 $("#search").on("keyup", Delay(function ()
@@ -402,6 +408,91 @@ function RefreshProductRow(productId)
 		}
 	);
 }
+
+var stockOverviewBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#stock-overview-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-consume-button").on("click", function(e)
+{
+	var productIds = stockOverviewBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to consume all stock amount for %s product(s)?", productIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function(result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Post("stock/products/bulk/consume", { product_ids: productIds, spoiled: false },
+					function(result)
+					{
+						window.location.reload();
+					},
+					function(xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk consuming", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});
+
+$("#bulk-transfer-button").on("click", function(e)
+{
+	var productIds = stockOverviewBulkSelect.GetSelectedIds();
+
+	var options = $.map(Grocy.Locations, function(location)
+	{
+		return { text: location.name, value: location.id };
+	});
+
+	bootbox.prompt({
+		title: __t("Transfer"),
+		inputType: "select",
+		inputOptions: options,
+		callback: function(locationToId)
+		{
+			if (locationToId !== null)
+			{
+				Grocy.Api.Post("stock/products/bulk/transfer", { product_ids: productIds, location_id_to: locationToId },
+					function(result)
+					{
+						window.location.reload();
+					},
+					function(xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk transferring", xhr.response);
+					}
+				);
+			}
+		}
+	});
+});
+
+$("#bulk-add-to-shoppinglist-button").on("click", function(e)
+{
+	var productIds = stockOverviewBulkSelect.GetSelectedIds();
+
+	Grocy.Api.Post("stock/shoppinglist/bulk/add-products", { product_ids: productIds },
+		function(result)
+		{
+			toastr.success(__t("Added %s product(s) to shopping list", productIds.length));
+			stockOverviewBulkSelect.Reset();
+		},
+		function(xhr)
+		{
+			Grocy.FrontendHelpers.ShowGenericError("Error while bulk adding to shopping list", xhr.response);
+		}
+	);
+});
 
 $(window).on("message", function (e)
 {

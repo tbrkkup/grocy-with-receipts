@@ -1,8 +1,10 @@
 ﻿var userfieldsTable = $('#userfields-table').DataTable({
-	'order': [[1, 'asc']],
+	'order': [[2, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
-		{ 'searchable': false, "targets": 0 }
+		{ 'searchable': false, 'targets': 0 },
+		{ 'orderable': false, 'targets': 1 },
+		{ 'searchable': false, "targets": 1 }
 	].concat($.fn.dataTable.defaults.columnDefs)
 });
 $('#userfields-table tbody').removeClass("d-none");
@@ -27,7 +29,7 @@ $("#entity-filter").on("change", function()
 		value = "";
 	}
 
-	userfieldsTable.column(userfieldsTable.colReorder.transpose(1)).search(value).draw();
+	userfieldsTable.column(userfieldsTable.colReorder.transpose(2)).search(value).draw();
 	$("#new-userfield-button").attr("href", U("/userfield/new?embedded&entity=" + value));
 });
 
@@ -35,7 +37,7 @@ $("#clear-filter-button").on("click", function()
 {
 	$("#search").val("");
 	$("#entity-filter").val("all");
-	userfieldsTable.column(userfieldsTable.colReorder.transpose(1)).search("").draw();
+	userfieldsTable.column(userfieldsTable.colReorder.transpose(2)).search("").draw();
 	userfieldsTable.search("").draw();
 });
 
@@ -85,3 +87,33 @@ if (GetUriParam("entity"))
 		$("#name").focus();
 	}, Grocy.FormFocusDelay);
 }
+
+var XBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#userfields-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-edit-delete-button").on("click", function (e)
+{
+	var objectIds = XBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s item(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function (result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/userfields/bulk", { object_ids: objectIds },
+					function (result) { window.location.reload(); },
+					function (xhr) { Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response); }
+				);
+			}
+		}
+	});
+});
