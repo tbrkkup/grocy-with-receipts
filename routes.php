@@ -18,6 +18,7 @@ use Grocy\Controllers\ChoresController;
 use Grocy\Controllers\EquipmentController;
 use Grocy\Controllers\GenericEntityController;
 use Grocy\Controllers\LoginController;
+use Grocy\Controllers\ReceiptsController;
 use Grocy\Controllers\RecipesController;
 use Grocy\Controllers\StockController;
 use Grocy\Controllers\StockReportsController;
@@ -87,6 +88,10 @@ $app->group('', function (RouteCollectorProxy $group)
 	$group->get('/stockentry/{entryId}/label', [StockController::class, 'StockEntryGrocycodeLabel']);
 	$group->get('/quantityunitconversionsresolved', [StockController::class, 'QuantityUnitConversionsResolved']);
 	$group->get('/stockreports/spendings', [StockReportsController::class, 'Spendings']);
+
+	// Receipts routes
+	$group->get('/receipts', [ReceiptsController::class, 'Overview']);
+	$group->get('/receipt/{receiptId}', [ReceiptsController::class, 'ReceiptEditForm']);
 
 	// Stock price tracking
 	$group->get('/shoppinglocations', [StockController::class, 'ShoppingLocationsList']);
