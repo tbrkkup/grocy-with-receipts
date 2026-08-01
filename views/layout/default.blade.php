@@ -364,8 +364,8 @@
 				@php
 				$masterDataViews = [
 				'products', 'locations', 'shoppinglocations', 'quantityunits',
-				'productgroups', 'chores', 'batteries', 'taskcategories',
-				'userfields', 'userentities'
+				'productgroups', 'countries', 'qualities', 'chores', 'batteries',
+				'taskcategories', 'userfields', 'userentities'
 				]
 				@endphp
 				<div class="nav-item-divider"></div>
@@ -417,6 +417,20 @@
 								<span class="nav-link-text">{{ $__t('Product groups') }}</span>
 							</a>
 						</li>
+						@if(GROCY_FEATURE_FLAG_STOCK)
+						<li class="@if($viewName == 'countries') active-page @endif">
+							<a class="nav-link discrete-link"
+								href="{{ $U('/countries') }}">
+								<span class="nav-link-text">{{ $__t('Countries') }}</span>
+							</a>
+						</li>
+						<li class="@if($viewName == 'qualities') active-page @endif">
+							<a class="nav-link discrete-link"
+								href="{{ $U('/qualities') }}">
+								<span class="nav-link-text">{{ $__t('Qualities') }}</span>
+							</a>
+						</li>
+						@endif
 						@if(GROCY_FEATURE_FLAG_CHORES)
 						<li class="@if($viewName == 'chores') active-page @endif">
 							<a class="nav-link discrete-link"

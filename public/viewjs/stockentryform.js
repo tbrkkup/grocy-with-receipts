@@ -42,6 +42,9 @@
 		jsonData.location_id = 1;
 	}
 
+	jsonData.origin_country_id = Grocy.Components.CountryPicker.GetValue();
+	jsonData.quality_id = Grocy.Components.QualityPicker.GetValue();
+
 	Grocy.Api.Put("stock/entry/" + Grocy.EditObjectRowId, jsonData,
 		function(result)
 		{

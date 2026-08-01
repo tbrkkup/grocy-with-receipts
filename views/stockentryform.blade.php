@@ -121,6 +121,16 @@
 				value="1">
 			@endif
 
+			@include('components.countrypicker', array(
+			'countries' => $countries,
+			'prefillById' => $stockEntry->origin_country_id
+			))
+
+			@include('components.qualitypicker', array(
+			'qualities' => $qualities,
+			'prefillById' => $stockEntry->quality_id
+			))
+
 			<div class="form-group">
 				<label for="note">{{ $__t('Note') }}</label>
 				<div class="input-group">

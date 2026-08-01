@@ -150,6 +150,8 @@
 					<th class="@if(!GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING) d-none @endif allow-grouping">{{ $__t('Location') }}</th>
 					<th class="allow-grouping">{{ $__t('Done by') }}</th>
 					<th>{{ $__t('Note') }}</th>
+					<th class="allow-grouping">{{ $__t('Origin country') }}</th>
+					<th class="allow-grouping">{{ $__t('Quality') }}</th>
 
 					@include('components.userfields_thead', array(
 					'userfields' => $userfieldsStock
@@ -289,6 +291,12 @@
 					</td>
 					<td>
 						{{ $stockLogEntry->note }}
+					</td>
+					<td>
+						{{ $stockLogEntry->origin_country_name }}
+					</td>
+					<td>
+						{{ $stockLogEntry->quality_name }}
 					</td>
 
 					@include('components.userfields_tbody', array(

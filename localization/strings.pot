@@ -2471,6 +2471,48 @@ msgstr ""
 msgid "After this product was once in stock and when the desired quantity unit cannot be selected here, first create a corresponding unit conversion"
 msgstr ""
 
+msgid "Countries"
+msgstr ""
+
+msgid "Qualities"
+msgstr ""
+
+msgid "Create country"
+msgstr ""
+
+msgid "Edit country"
+msgstr ""
+
+msgid "Create quality"
+msgstr ""
+
+msgid "Edit quality"
+msgstr ""
+
+msgid "ISO code"
+msgstr ""
+
+msgid "ISO 3166-1 alpha-2 country code, e.g. DE"
+msgstr ""
+
+msgid "Are you sure you want to delete country \"%s\"?"
+msgstr ""
+
+msgid "Are you sure you want to delete quality \"%s\"?"
+msgstr ""
+
+msgid "Origin country"
+msgstr ""
+
+msgid "Quality"
+msgstr ""
+
+msgid "You have to select a country"
+msgstr ""
+
+msgid "You have to select a quality"
+msgstr ""
+
 # Default / initially created location
 msgid "Fridge"
 msgstr ""
