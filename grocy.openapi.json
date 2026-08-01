@@ -5112,6 +5112,12 @@
 					},
 					"shopping_location": {
 						"$ref": "#/components/schemas/ShoppingLocation"
+					},
+					"origin_country": {
+						"$ref": "#/components/schemas/Country"
+					},
+					"quality": {
+						"$ref": "#/components/schemas/Quality"
 					}
 				}
 			},
