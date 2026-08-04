@@ -76,7 +76,16 @@
 			<div class="row mb-2">
 				<div class="col-md-4 col-12 mb-2">
 					<label for="bp-shop">{{ $__t('Store') }}</label>
-					<select class="custom-control custom-select" id="bp-shop"></select>
+					<div class="input-group">
+						<select class="custom-control custom-select" id="bp-shop" data-createnew-entity="shopping_locations"></select>
+						<div class="input-group-append">
+							<button class="btn btn-outline-secondary create-new-picker-button"
+								type="button"
+								data-newform-url="/shoppinglocation/new"
+								data-target-select="bp-shop"
+								title="{{ $__t('Create new') }}"><i class="fa-solid fa-plus"></i></button>
+						</div>
+					</div>
 				</div>
 				<div class="col-md-4 col-12 mb-2">
 					<label for="bp-date">{{ $__t('Purchased date') }}</label>
