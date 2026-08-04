@@ -9,6 +9,36 @@
 @endpush
 
 @section('content')
+<script>
+	Grocy.Locations = {!! json_encode($locations) !!};
+	Grocy.Receipts = {!! json_encode($receipts) !!};
+</script>
+
+<div class="row d-none"
+	id="bulk-edit-toolbar">
+	<div class="col">
+		<div class="alert alert-secondary d-flex align-items-center flex-wrap">
+			<span class="mr-3"><strong id="bulk-edit-selected-count">0</strong> {{ $__t('selected') }}</span>
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-link-receipt-button">{{ $__t('Link receipt') }}</button>
+			@if(GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING)
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-change-location-button">{{ $__t('Location') }}</button>
+			@endif
+			@if(GROCY_FEATURE_FLAG_STOCK_PRODUCT_OPENED_TRACKING)
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-open-button">{{ $__t('Mark as opened') }}</button>
+			@endif
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-consume-spoiled-button">{{ $__t('Consume this stock entry as spoiled') }}</button>
+			@if(GROCY_FEATURE_FLAG_LABEL_PRINTER)
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-print-label-button">{{ $__t('Print on label printer') }}</button>
+			@endif
+		</div>
+	</div>
+</div>
+
 <div class="row">
 	<div class="col">
 		<h2 class="title">@yield('title')</h2>
@@ -69,6 +99,10 @@
 			class="table table-sm table-striped nowrap w-100">
 			<thead>
 				<tr>
+					<th class="fit-content">
+						<input type="checkbox"
+							class="bulk-select-all">
+					</th>
 					<th class="border-right"><a class="text-muted change-table-columns-visibility-button"
 							data-toggle="tooltip"
 							title="{{ $__t('Table options') }}"
@@ -104,6 +138,11 @@
 					class="@if(GROCY_FEATURE_FLAG_STOCK_BEST_BEFORE_DATE_TRACKING && $stockEntry->best_before_date < date('Y-m-d 23:59:59', strtotime('-1 days')) && $stockEntry->amount > 0) @if(FindObjectInArrayByPropertyValue($products, 'id', $stockEntry->product_id)->due_type == 1) table-secondary @else table-danger @endif @elseif(GROCY_FEATURE_FLAG_STOCK_BEST_BEFORE_DATE_TRACKING && $stockEntry->best_before_date < date('Y-m-d 23:59:59', strtotime('+' . $nextXDays . ' days'))
 					&&
 					$stockEntry->amount > 0) table-warning @endif">
+					<td class="fit-content">
+						<input type="checkbox"
+							class="bulk-row-checkbox"
+							data-object-id="{{ $stockEntry->id }}">
+					</td>
 					<td class="fit-content border-right">
 						<a class="btn btn-danger btn-sm stock-consume-button"
 							href="#"
@@ -324,4 +363,5 @@
 @include('components.productcard', [
 'asModal' => true
 ])
+@include('components.bulkselect')
 @stop

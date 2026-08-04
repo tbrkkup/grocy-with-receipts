@@ -5,6 +5,17 @@
 @section('title', $__t('Equipment'))
 
 @section('content')
+<div class="row d-none"
+	id="bulk-edit-toolbar">
+	<div class="col">
+		<div class="alert alert-secondary d-flex align-items-center flex-wrap">
+			<span class="mr-3"><strong id="bulk-edit-selected-count">0</strong> {{ $__t('selected') }}</span>
+			<button class="btn btn-sm btn-outline-danger mt-1 mb-1"
+				id="bulk-edit-delete-button">{{ $__t('Delete') }}</button>
+		</div>
+	</div>
+</div>
+
 <div class="row">
 	<div class="col-12 col-md-4 pb-3">
 		<div class="title-related-links border-bottom mb-2 py-1">
@@ -61,6 +72,10 @@
 			class="table table-sm table-striped nowrap w-100">
 			<thead>
 				<tr>
+					<th class="fit-content">
+						<input type="checkbox"
+							class="bulk-select-all">
+					</th>
 					<th class="border-right"><a class="text-muted change-table-columns-visibility-button"
 							data-toggle="tooltip"
 							title="{{ $__t('Table options') }}"
@@ -79,6 +94,11 @@
 			<tbody class="d-none">
 				@foreach($equipment as $equipmentItem)
 				<tr data-equipment-id="{{ $equipmentItem->id }}">
+					<td class="fit-content">
+						<input type="checkbox"
+							class="bulk-row-checkbox"
+							data-object-id="{{ $equipmentItem->id }}">
+					</td>
 					<td class="fit-content border-right">
 						<a class="btn btn-info btn-sm hide-when-embedded hide-on-fullscreen-card"
 							href="{{ $U('/equipment/') }}{{ $equipmentItem->id }}"
@@ -229,4 +249,5 @@
 		</div>
 	</div>
 </div>
+@include('components.bulkselect')
 @stop

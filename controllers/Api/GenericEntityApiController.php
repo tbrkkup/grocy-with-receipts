@@ -75,6 +75,187 @@ class GenericEntityApiController extends BaseApiController
 		}
 	}
 
+	public function BulkEditObjects(Request $request, Response $response, array $args)
+	{
+		if ($args['entity'] == 'shopping_list' || $args['entity'] == 'shopping_lists')
+		{
+			User::CheckPermission($request, User::PERMISSION_SHOPPINGLIST_ITEMS_ADD);
+		}
+		elseif ($args['entity'] == 'recipes' || $args['entity'] == 'recipes_pos' || $args['entity'] == 'recipes_nestings')
+		{
+			User::CheckPermission($request, User::PERMISSION_RECIPES);
+		}
+		elseif ($args['entity'] == 'meal_plan')
+		{
+			User::CheckPermission($request, User::PERMISSION_RECIPES_MEALPLAN);
+		}
+		elseif ($args['entity'] == 'equipment')
+		{
+			User::CheckPermission($request, User::PERMISSION_EQUIPMENT);
+		}
+		else
+		{
+			User::CheckPermission($request, User::PERMISSION_MASTER_DATA_EDIT);
+		}
+
+		if ($this->IsValidExposedEntity($args['entity']) && !$this->IsEntityWithNoEdit($args['entity']))
+		{
+			if ($this->IsEntityWithEditRequiresAdmin($args['entity']))
+			{
+				User::CheckPermission($request, User::PERMISSION_ADMIN);
+			}
+
+			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+			try
+			{
+				if ($requestBody === null || !array_key_exists('object_ids', $requestBody) || !is_array($requestBody['object_ids']) || count($requestBody['object_ids']) === 0)
+				{
+					throw new \Exception('object_ids is required and must be a non-empty array');
+				}
+
+				if (!array_key_exists('data', $requestBody) || !is_array($requestBody['data']))
+				{
+					throw new \Exception('data is required and must be an object');
+				}
+
+				$results = [];
+				$this->DB->begin();
+				try
+				{
+					foreach ($requestBody['object_ids'] as $objectId)
+					{
+						try
+						{
+							$row = $this->DB->{$args['entity']}($objectId);
+							if ($row == null)
+							{
+								throw new \Exception('Object not found');
+							}
+
+							$row->update($requestBody['data']);
+							$results[] = ['object_id' => $objectId, 'success' => true];
+						}
+						catch (\Exception $ex)
+						{
+							throw new \Exception($objectId . ': ' . $ex->getMessage());
+						}
+					}
+
+					$this->DB->commit();
+				}
+				catch (\Exception $ex)
+				{
+					$this->DB->rollback();
+					throw $ex;
+				}
+
+				// TODO: This should be better done somehow in StockService
+				if ($args['entity'] == 'products' && boolval(UsersService::GetInstance()->GetUserSetting(GROCY_USER_ID, 'shopping_list_auto_add_below_min_stock_amount')))
+				{
+					StockService::GetInstance()->AddMissingProductsToShoppingList(UsersService::GetInstance()->GetUserSetting(GROCY_USER_ID, 'shopping_list_auto_add_below_min_stock_amount_list_id'));
+				}
+
+				return $this->ApiResponse($response, $results);
+			}
+			catch (\Exception $ex)
+			{
+				return $this->GenericErrorResponse($response, $ex->getMessage());
+			}
+		}
+		else
+		{
+			return $this->GenericErrorResponse($response, 'Entity does not exist or is not exposed');
+		}
+	}
+
+	public function BulkDeleteObjects(Request $request, Response $response, array $args)
+	{
+		if ($args['entity'] == 'shopping_list' || $args['entity'] == 'shopping_lists')
+		{
+			User::CheckPermission($request, User::PERMISSION_SHOPPINGLIST_ITEMS_DELETE);
+		}
+		elseif ($args['entity'] == 'recipes' || $args['entity'] == 'recipes_pos' || $args['entity'] == 'recipes_nestings')
+		{
+			User::CheckPermission($request, User::PERMISSION_RECIPES);
+		}
+		elseif ($args['entity'] == 'meal_plan')
+		{
+			User::CheckPermission($request, User::PERMISSION_RECIPES_MEALPLAN);
+		}
+		elseif ($args['entity'] == 'equipment')
+		{
+			User::CheckPermission($request, User::PERMISSION_EQUIPMENT);
+		}
+		elseif ($args['entity'] == 'api_keys')
+		{
+			// Always allowed
+		}
+		else
+		{
+			User::CheckPermission($request, User::PERMISSION_MASTER_DATA_EDIT);
+		}
+
+		if ($this->IsValidExposedEntity($args['entity']) && !$this->IsEntityWithNoDelete($args['entity']))
+		{
+			if ($this->IsEntityWithEditRequiresAdmin($args['entity']))
+			{
+				User::CheckPermission($request, User::PERMISSION_ADMIN);
+			}
+
+			$requestBody = $this->GetParsedAndFilteredRequestBody($request);
+
+			try
+			{
+				if ($requestBody === null || !array_key_exists('object_ids', $requestBody) || !is_array($requestBody['object_ids']) || count($requestBody['object_ids']) === 0)
+				{
+					throw new \Exception('object_ids is required and must be a non-empty array');
+				}
+
+				$results = [];
+				$this->DB->begin();
+				try
+				{
+					foreach ($requestBody['object_ids'] as $objectId)
+					{
+						try
+						{
+							$row = $this->DB->{$args['entity']}($objectId);
+							if ($row == null)
+							{
+								throw new \Exception('Object not found');
+							}
+
+							$row->delete();
+							$results[] = ['object_id' => $objectId, 'success' => true];
+						}
+						catch (\Exception $ex)
+						{
+							throw new \Exception($objectId . ': ' . $ex->getMessage());
+						}
+					}
+
+					$this->DB->commit();
+				}
+				catch (\Exception $ex)
+				{
+					$this->DB->rollback();
+					throw $ex;
+				}
+
+				return $this->ApiResponse($response, $results);
+			}
+			catch (\Exception $ex)
+			{
+				return $this->GenericErrorResponse($response, $ex->getMessage());
+			}
+		}
+		else
+		{
+			return $this->GenericErrorResponse($response, 'Invalid entity');
+		}
+	}
+
 	public function DeleteObject(Request $request, Response $response, array $args)
 	{
 		if ($args['entity'] == 'shopping_list' || $args['entity'] == 'shopping_lists')

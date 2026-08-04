@@ -9,6 +9,29 @@
 @endpush
 
 @section('content')
+<script>
+	Grocy.Locations = {!! json_encode($locations) !!};
+</script>
+
+<div class="row d-none"
+	id="bulk-edit-toolbar">
+	<div class="col">
+		<div class="alert alert-secondary d-flex align-items-center flex-wrap">
+			<span class="mr-3"><strong id="bulk-edit-selected-count">0</strong> {{ $__t('selected') }}</span>
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-consume-button">{{ $__t('Consume') }}</button>
+			@if(GROCY_FEATURE_FLAG_STOCK_LOCATION_TRACKING)
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-transfer-button">{{ $__t('Transfer') }}</button>
+			@endif
+			@if(GROCY_FEATURE_FLAG_SHOPPINGLIST)
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-add-to-shoppinglist-button">{{ $__t('Add to shopping list') }}</button>
+			@endif
+		</div>
+	</div>
+</div>
+
 <div class="row">
 	<div class="col">
 		<div class="title-related-links">
@@ -159,6 +182,10 @@
 			class="table table-sm table-striped nowrap w-100">
 			<thead>
 				<tr>
+					<th class="fit-content">
+						<input type="checkbox"
+							class="bulk-select-all">
+					</th>
 					<th class="border-right"><a class="text-muted change-table-columns-visibility-button"
 							data-toggle="tooltip"
 							title="{{ $__t('Table options') }}"
@@ -195,6 +222,11 @@
 				@foreach($currentStock as $currentStockEntry)
 				<tr id="product-{{ $currentStockEntry->product_id }}-row"
 					class="@if(GROCY_FEATURE_FLAG_STOCK_BEST_BEFORE_DATE_TRACKING && $currentStockEntry->best_before_date < date('Y-m-d 23:59:59', strtotime('-1 days')) && $currentStockEntry->amount > 0) @if($currentStockEntry->due_type == 1) table-secondary @else table-danger @endif @elseif(GROCY_FEATURE_FLAG_STOCK_BEST_BEFORE_DATE_TRACKING && $currentStockEntry->best_before_date < date('Y-m-d 23:59:59', strtotime('+' . $nextXDays . ' days')) && $currentStockEntry->amount > 0) table-warning @elseif ($currentStockEntry->product_missing) table-info @endif">
+					<td class="fit-content">
+						<input type="checkbox"
+							class="bulk-row-checkbox"
+							data-object-id="{{ $currentStockEntry->product_id }}">
+					</td>
 					<td class="fit-content border-right">
 						<a class="permission-STOCK_CONSUME btn btn-success btn-sm product-consume-button @if($currentStockEntry->amount_aggregated < $currentStockEntry->quick_consume_amount || $currentStockEntry->enable_tare_weight_handling == 1) disabled @endif"
 							href="#"
@@ -474,4 +506,5 @@
 @include('components.productcard', [
 'asModal' => true
 ])
+@include('components.bulkselect')
 @stop

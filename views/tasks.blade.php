@@ -5,6 +5,28 @@
 @section('title', $__t('Tasks'))
 
 @section('content')
+<script>
+	Grocy.TaskCategories = {!! json_encode($taskCategories) !!};
+	Grocy.Users = {!! json_encode($users) !!};
+</script>
+
+<div class="row d-none"
+	id="bulk-edit-toolbar">
+	<div class="col">
+		<div class="alert alert-secondary d-flex align-items-center flex-wrap">
+			<span class="mr-3"><strong id="bulk-edit-selected-count">0</strong> {{ $__t('selected') }}</span>
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-edit-category-button">{{ $__t('Category') }}</button>
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-edit-assigned-to-button">{{ $__t('Assigned to') }}</button>
+			<button class="btn btn-sm btn-outline-secondary mr-2 mt-1 mb-1"
+				id="bulk-mark-as-done-button">{{ $__t('Mark task as completed') }}</button>
+			<button class="btn btn-sm btn-outline-danger mt-1 mb-1"
+				id="bulk-edit-delete-button">{{ $__t('Delete') }}</button>
+		</div>
+	</div>
+</div>
+
 <div class="row">
 	<div class="col">
 		<div class="title-related-links">
@@ -130,6 +152,10 @@
 			class="table table-sm table-striped nowrap w-100">
 			<thead>
 				<tr>
+					<th class="fit-content">
+						<input type="checkbox"
+							class="bulk-select-all">
+					</th>
 					<th class="border-right"><a class="text-muted change-table-columns-visibility-button"
 							data-toggle="tooltip"
 							title="{{ $__t('Table options') }}"
@@ -154,6 +180,11 @@
 				@foreach($tasks as $task)
 				<tr id="task-{{ $task->id }}-row"
 					class="@if($task->due_type == 'overdue') table-danger @elseif($task->due_type == 'duetoday') table-info @elseif($task->due_type == 'duesoon') table-warning @endif">
+					<td class="fit-content">
+						<input type="checkbox"
+							class="bulk-row-checkbox"
+							data-object-id="{{ $task->id }}">
+					</td>
 					<td class="fit-content border-right">
 						@if($task->done == 0)
 						<a class="btn btn-success btn-sm do-task-button"
@@ -226,4 +257,5 @@
 		</table>
 	</div>
 </div>
+@include('components.bulkselect')
 @stop

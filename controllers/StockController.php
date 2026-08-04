@@ -323,7 +323,8 @@ class StockController extends BaseController
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'quantityUnits' => $this->DB->quantity_units()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'quantityUnitConversionsResolved' => $this->DB->cache__quantity_unit_conversions_resolved(),
-			'userfields' => UserfieldsService::GetInstance()->GetFields('stock')
+			'userfields' => UserfieldsService::GetInstance()->GetFields('stock'),
+			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 		]);
 	}
 
@@ -580,6 +581,7 @@ class StockController extends BaseController
 			'quantityunits' => $this->DB->quantity_units()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'shoppinglocations' => $this->DB->shopping_locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
+			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 			'stockEntries' => $this->DB->uihelper_stock_entries()->orderBy('product_id'),
 			'currentStockLocations' => StockService::GetInstance()->GetCurrentStockLocations(),
 			'nextXDays' => $nextXDays,

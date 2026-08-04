@@ -109,7 +109,7 @@ class StockService extends BaseService
 		}
 	}
 
-	public function AddProduct(int $productId, float $amount, $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId = null, $shoppingLocationId = null, &$transactionId = null, $stockLabelType = 0, $addExactAmount = false, $note = null)
+	public function AddProduct(int $productId, float $amount, $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId = null, $shoppingLocationId = null, &$transactionId = null, $stockLabelType = 0, $addExactAmount = false, $note = null, $receiptId = null)
 	{
 		if (!$this->ProductExists($productId))
 		{
@@ -205,7 +205,8 @@ class StockService extends BaseService
 						'transaction_id' => $transactionId,
 						'shopping_location_id' => $shoppingLocationId,
 						'user_id' => GROCY_USER_ID,
-						'note' => $note
+						'note' => $note,
+						'receipt_id' => $receiptId
 					]);
 					$logRow->save();
 
@@ -218,7 +219,8 @@ class StockService extends BaseService
 						'price' => $price,
 						'location_id' => $locationId,
 						'shopping_location_id' => $shoppingLocationId,
-						'note' => $note
+						'note' => $note,
+						'receipt_id' => $receiptId
 					]);
 					$stockRow->save();
 
@@ -258,7 +260,8 @@ class StockService extends BaseService
 					'transaction_id' => $transactionId,
 					'shopping_location_id' => $shoppingLocationId,
 					'user_id' => GROCY_USER_ID,
-					'note' => $note
+					'note' => $note,
+					'receipt_id' => $receiptId
 				]);
 				$logRow->save();
 
@@ -271,7 +274,8 @@ class StockService extends BaseService
 					'price' => $price,
 					'location_id' => $locationId,
 					'shopping_location_id' => $shoppingLocationId,
-					'note' => $note
+					'note' => $note,
+					'receipt_id' => $receiptId
 				]);
 				$stockRow->save();
 

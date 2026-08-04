@@ -1,15 +1,17 @@
 ﻿var recipesTables = $('#recipes-table').DataTable({
-	'order': [[1, 'asc']],
+	'order': [[2, 'asc']],
 	'columnDefs': [
 		{ 'orderable': false, 'targets': 0 },
+		{ 'orderable': false, 'targets': 1 },
 		{ 'searchable': false, "targets": 0 },
-		{ 'visible': false, 'targets': 2 },
-		{ "type": "html-num-fmt", "targets": 2 },
-		{ "type": "html-num-fmt", "targets": 3 }
+		{ 'searchable': false, "targets": 1 },
+		{ 'visible': false, 'targets': 3 },
+		{ "type": "html-num-fmt", "targets": 3 },
+		{ "type": "html-num-fmt", "targets": 4 }
 	].concat($.fn.dataTable.defaults.columnDefs),
 	select: {
 		style: 'single',
-		selector: 'tr td:not(:first-child)'
+		selector: 'tr td:not(:first-child):not(:nth-child(2))'
 	},
 	'initComplete': function()
 	{
@@ -100,7 +102,7 @@ $("#status-filter").on("change", function()
 		value = "";
 	}
 
-	recipesTables.column(recipesTables.colReorder.transpose(6)).search(value).draw();
+	recipesTables.column(recipesTables.colReorder.transpose(7)).search(value).draw();
 
 	$('.recipe-gallery-item').removeClass('d-none');
 	if (value !== "")
@@ -501,4 +503,40 @@ $('#add-to-mealplan-form input').keydown(function(event)
 			$("#save-add-to-mealplan-button").click();
 		}
 	}
+});
+
+var recipesBulkSelect = new Grocy.Components.BulkSelect({
+	tableSelector: "#recipes-table",
+	toolbarSelector: "#bulk-edit-toolbar",
+	countSelector: "#bulk-edit-selected-count"
+});
+
+$("#bulk-edit-delete-button").on("click", function(e)
+{
+	var objectIds = recipesBulkSelect.GetSelectedIds();
+
+	bootbox.confirm({
+		message: __t("Are you sure you want to delete this %s recipe(s)?", objectIds.length),
+		closeButton: false,
+		buttons: {
+			confirm: { label: __t("Yes"), className: "btn-success" },
+			cancel: { label: __t("No"), className: "btn-danger" }
+		},
+		callback: function(result)
+		{
+			if (result === true)
+			{
+				Grocy.Api.Delete("objects/recipes/bulk", { object_ids: objectIds },
+					function(result)
+					{
+						window.location.href = U("/recipes");
+					},
+					function(xhr)
+					{
+						Grocy.FrontendHelpers.ShowGenericError("Error while bulk deleting", xhr.response);
+					}
+				);
+			}
+		}
+	});
 });
