@@ -5,10 +5,10 @@ dieselben „Roma-Tomaten" mal aus Deutschland in Bio und mal aus Ungarn in konv
 Qualität gekauft werden können, ohne dafür getrennte Produkte anzulegen.
 
 Warum das nötig ist und was bewusst außen vor bleibt, steht in
-[`docs/issue-herkunftsland-und-guete.md`](https://github.com/tbrkkup/grocy-with-receipts/blob/feature/product-origin-and-quality/docs/issue-herkunftsland-und-guete.md). Dieser Text
+[`docs/issue-herkunftsland-und-guete.md`](https://github.com/tbrkkup/grocy-with-receipts/blob/feature/product-origin-and-quality-test-deploy/docs/issue-herkunftsland-und-guete.md). Dieser Text
 beschreibt nur, was tatsächlich geändert wurde.
 
-Branch `feature/product-origin-and-quality`, vier Commits: Datenmodell + API,
+Branch `feature/product-origin-and-quality-test-deploy` (auf `test-deploy-01-branch`), vier Commits: Datenmodell + API,
 Oberfläche, Dokumentation, Preisverlauf.
 
 ---
@@ -23,11 +23,11 @@ Anlegen/Bearbeiten/Löschen. Die Länder werden mit den ISO-3166-1-Einträgen au
 (deutsche Namen, Alpha-2-Code); die Güten kommen leer, weil deren Bedeutung vom Haushalt
 abhängt.
 
-![Stammdaten: Länder](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality/docs/images/product-origin-and-quality/01-countries.png)
+![Stammdaten: Länder](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality-test-deploy/docs/images/product-origin-and-quality/01-countries.png)
 
-![Stammdaten: Güten](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality/docs/images/product-origin-and-quality/02-qualities.png)
+![Stammdaten: Güten](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality-test-deploy/docs/images/product-origin-and-quality/02-qualities.png)
 
-![Land bearbeiten](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality/docs/images/product-origin-and-quality/03-country-form.png)
+![Land bearbeiten](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality-test-deploy/docs/images/product-origin-and-quality/03-country-form.png)
 
 Das `active`-Flag filtert nur die Auswahlfelder, nicht die Anzeige: ein ausgeblendetes
 Land taucht beim nächsten Einkauf nicht mehr auf, an einem drei Monate alten Eintrag
@@ -39,11 +39,11 @@ Zwei zusätzliche optionale Felder, als durchsuchbare Comboboxen wie „Geschäf
 „Standort". Dieselben Felder gibt es unter „Bestandseintrag bearbeiten"; Leeren setzt sie
 dort wieder auf „nicht angegeben" zurück.
 
-![Einkaufsmaske mit Herkunftsland und Güte](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality/docs/images/product-origin-and-quality/04-purchase.png)
+![Einkaufsmaske mit Herkunftsland und Güte](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality-test-deploy/docs/images/product-origin-and-quality/04-purchase.png)
 
 Tippen filtert, damit die Länderliste nicht im Weg steht:
 
-![Länderauswahl beim Einkauf](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality/docs/images/product-origin-and-quality/05-purchase-country-dropdown.png)
+![Länderauswahl beim Einkauf](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality-test-deploy/docs/images/product-origin-and-quality/05-purchase-country-dropdown.png)
 
 ### Bestandseinträge und Journal
 
@@ -52,9 +52,9 @@ ein-/ausblendbar. Die Bestandseinträge zeigen den Kern der Änderung: Käufe, d
 in Herkunft oder Güte unterscheiden, bleiben getrennt statt zu einem Eintrag verschmolzen
 zu werden.
 
-![Bestandseinträge mit Herkunftsland und Güte](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality/docs/images/product-origin-and-quality/06-stockentries.png)
+![Bestandseinträge mit Herkunftsland und Güte](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality-test-deploy/docs/images/product-origin-and-quality/06-stockentries.png)
 
-![Bestandsjournal mit Herkunftsland und Güte](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality/docs/images/product-origin-and-quality/07-stockjournal.png)
+![Bestandsjournal mit Herkunftsland und Güte](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality-test-deploy/docs/images/product-origin-and-quality/07-stockjournal.png)
 
 ### Preisverlauf
 
@@ -63,7 +63,7 @@ Reihenschlüssel bilden jetzt Geschäft, Güte und Herkunft gemeinsam. Aus einer
 verrauschten „Aldi"-Linie, die zwischen 1,19 € und 2,69 € hin- und herspringt, werden
 dadurch zwei aussagekräftige Linien:
 
-![Preisverlauf getrennt nach Geschäft, Güte und Herkunft](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality/docs/images/product-origin-and-quality/08-price-history.png)
+![Preisverlauf getrennt nach Geschäft, Güte und Herkunft](https://raw.githubusercontent.com/tbrkkup/grocy-with-receipts/refs/heads/feature/product-origin-and-quality-test-deploy/docs/images/product-origin-and-quality/08-price-history.png)
 
 Käufe ohne Angabe bleiben eine eigene Reihe (nur Geschäftsname) – „unbekannt" wird nicht
 stillschweigend mit „Bio, Deutschland" in einen Topf geworfen.
@@ -76,10 +76,10 @@ stillschweigend mit „Bio, Deutschland" in einen Topf geworfen.
 
 | Datei | Inhalt |
 | --- | --- |
-| `0256.sql` | Tabellen `countries` / `qualities`, Spalten `origin_country_id` / `quality_id` auf `stock` und `stock_log`, View `stock_splits` erweitert |
-| `0257.sql` | Seed der ISO-3166-1-Länder |
-| `0258.sql` | `active`-Flag auf `countries` / `qualities`, View `uihelper_stock_journal` erweitert |
-| `0259.sql` | View `products_price_history` erweitert |
+| `0270.sql` | Tabellen `countries` / `qualities`, Spalten `origin_country_id` / `quality_id` auf `stock` und `stock_log`, View `stock_splits` erweitert |
+| `0271.sql` | Seed der ISO-3166-1-Länder |
+| `0272.sql` | `active`-Flag auf `countries` / `qualities`, View `uihelper_stock_journal` erweitert |
+| `0273.sql` | View `products_price_history` erweitert |
 
 Der Eingriff in **`stock_splits`** ist der inhaltlich heikelste Teil: diese View
 entscheidet, welche Bestandseinträge automatisch zusammengefasst werden dürfen. Ohne die
@@ -138,7 +138,7 @@ Güte bleibt es bei einer Reihe je Geschäft wie bisher.
 
 ## Test
 
-Gegen eine lokal laufende Instanz mit frischer Datenbank geprüft (alle 252 Migrationsdateien
+Gegen eine lokal laufende Instanz mit frischer Datenbank geprüft (alle Migrationen
 angewandt, Demo-Daten):
 
 - Migrationen laufen auf einer leeren SQLite-Datenbank vollständig durch, 194 Länder
