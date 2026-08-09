@@ -109,7 +109,184 @@ class StockService extends BaseService
 		}
 	}
 
-	public function AddProduct(int $productId, float $amount, $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId = null, $shoppingLocationId = null, &$transactionId = null, $stockLabelType = 0, $addExactAmount = false, $note = null, $receiptId = null, $originCountryId = null, $qualityId = null)
+	/**
+	 * Normalises whatever a caller passed as qualities into a list of ids:
+	 * accepts an array, a single id or null, drops empty and unknown entries.
+	 * Only what was actually picked is kept here - ancestors are added by
+	 * ResolveQualityIds() when the set has to be interpreted.
+	 */
+	private function NormalizeQualityIds($qualityIds)
+	{
+		if ($qualityIds === null || $qualityIds === '')
+		{
+			return [];
+		}
+
+		if (!is_array($qualityIds))
+		{
+			$qualityIds = [$qualityIds];
+		}
+
+		$normalized = [];
+		foreach ($qualityIds as $qualityId)
+		{
+			if (is_numeric($qualityId) && !in_array(intval($qualityId), $normalized))
+			{
+				$normalized[] = intval($qualityId);
+			}
+		}
+
+		sort($normalized);
+		return $normalized;
+	}
+
+	/**
+	 * Expands a set of qualities by their ancestors: picking "Demeter" means the
+	 * entry is also "Bio". Used for the compaction signature and everywhere the
+	 * meaning of a set matters - never for storing.
+	 */
+	private function ResolveQualityIds(array $qualityIds)
+	{
+		if (empty($qualityIds))
+		{
+			return [];
+		}
+
+		$parentById = [];
+		foreach ($this->DB->qualities() as $quality)
+		{
+			$parentById[$quality->id] = $quality->parent_quality_id;
+		}
+
+		$resolved = [];
+		foreach ($qualityIds as $qualityId)
+		{
+			$current = $qualityId;
+			// The depth guard mirrors qualities_resolved and keeps a broken
+			// parent chain from looping forever
+			$depth = 0;
+			while ($current !== null && $current !== '' && $depth < 50)
+			{
+				if (!in_array($current, $resolved))
+				{
+					$resolved[] = intval($current);
+				}
+
+				$current = $parentById[$current] ?? null;
+				$depth++;
+			}
+		}
+
+		sort($resolved);
+		return $resolved;
+	}
+
+	/**
+	 * The signature stock_splits groups by. Built from the resolved set so that
+	 * {Demeter} and {Bio, Demeter} count as equal - they mean the same thing.
+	 */
+	private function BuildQualitiesKey(array $qualityIds)
+	{
+		$resolved = $this->ResolveQualityIds($qualityIds);
+		return empty($resolved) ? null : implode(',', $resolved);
+	}
+
+	public function GetStockQualityIds($stockId)
+	{
+		$qualityIds = [];
+		foreach ($this->DB->stock_qualities()->where('stock_id', $stockId) as $row)
+		{
+			$qualityIds[] = intval($row->quality_id);
+		}
+
+		sort($qualityIds);
+		return $qualityIds;
+	}
+
+	/**
+	 * Single entry point for assigning qualities to a stock entry: replaces the
+	 * links and keeps qualities_key in sync. Every place that creates or changes
+	 * a stock row has to go through here, otherwise the signature drifts and
+	 * entries start compacting wrongly.
+	 */
+	public function SetStockQualities($stockId, $qualityIds)
+	{
+		$qualityIds = $this->NormalizeQualityIds($qualityIds);
+
+		$this->DB->stock_qualities()->where('stock_id', $stockId)->delete();
+		foreach ($qualityIds as $qualityId)
+		{
+			$row = $this->DB->stock_qualities()->createRow([
+				'stock_id' => $stockId,
+				'quality_id' => $qualityId
+			]);
+			$row->save();
+		}
+
+		$this->DB->stock()->where('stock_id', $stockId)->update([
+			'qualities_key' => $this->BuildQualitiesKey($qualityIds)
+		]);
+	}
+
+	/**
+	 * Recomputes qualities_key from the links that already exist for that
+	 * stock_id. Needed whenever a new stock row joins an existing stock_id
+	 * (transfer, undo) - the links are shared, but the new row starts without
+	 * the signature.
+	 */
+	public function SyncStockQualitiesKey($stockId)
+	{
+		$this->DB->stock()->where('stock_id', $stockId)->update([
+			'qualities_key' => $this->BuildQualitiesKey($this->GetStockQualityIds($stockId))
+		]);
+	}
+
+	/**
+	 * Carries the assigned qualities over to a stock entry that got a fresh
+	 * stock_id, e.g. the remainder when opening splits an entry.
+	 */
+	public function CopyStockQualities($fromStockId, $toStockId)
+	{
+		$this->SetStockQualities($toStockId, $this->GetStockQualityIds($fromStockId));
+	}
+
+	public function SetStockLogQualities($stockLogId, $qualityIds)
+	{
+		$qualityIds = $this->NormalizeQualityIds($qualityIds);
+
+		$this->DB->stock_log_qualities()->where('stock_log_id', $stockLogId)->delete();
+		foreach ($qualityIds as $qualityId)
+		{
+			$row = $this->DB->stock_log_qualities()->createRow([
+				'stock_log_id' => $stockLogId,
+				'quality_id' => $qualityId
+			]);
+			$row->save();
+		}
+	}
+
+	/**
+	 * Re-derives every qualities_key. Needed after a quality was re-parented or
+	 * deleted, because that changes what a stored set resolves to.
+	 */
+	public function RecalculateQualitiesKeys()
+	{
+		$qualityIdsByStockId = [];
+		foreach ($this->DB->stock_qualities() as $row)
+		{
+			$qualityIdsByStockId[$row->stock_id][] = intval($row->quality_id);
+		}
+
+		$this->DB->stock()->where('qualities_key IS NOT NULL')->update(['qualities_key' => null]);
+		foreach ($qualityIdsByStockId as $stockId => $qualityIds)
+		{
+			$this->DB->stock()->where('stock_id', $stockId)->update([
+				'qualities_key' => $this->BuildQualitiesKey($qualityIds)
+			]);
+		}
+	}
+
+	public function AddProduct(int $productId, float $amount, $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId = null, $shoppingLocationId = null, &$transactionId = null, $stockLabelType = 0, $addExactAmount = false, $note = null, $receiptId = null, $originCountryId = null, $qualityIds = null)
 	{
 		if (!$this->ProductExists($productId))
 		{
@@ -207,10 +384,10 @@ class StockService extends BaseService
 						'user_id' => GROCY_USER_ID,
 						'note' => $note,
 						'receipt_id' => $receiptId,
-						'origin_country_id' => $originCountryId,
-						'quality_id' => $qualityId
+						'origin_country_id' => $originCountryId
 					]);
 					$logRow->save();
+					$this->SetStockLogQualities($logRow->id, $qualityIds);
 
 					$stockRow = $this->DB->stock()->createRow([
 						'product_id' => $productId,
@@ -223,10 +400,10 @@ class StockService extends BaseService
 						'shopping_location_id' => $shoppingLocationId,
 						'note' => $note,
 						'receipt_id' => $receiptId,
-						'origin_country_id' => $originCountryId,
-						'quality_id' => $qualityId
+						'origin_country_id' => $originCountryId
 					]);
 					$stockRow->save();
+					$this->SetStockQualities($stockId, $qualityIds);
 
 					if (GROCY_FEATURE_FLAG_LABEL_PRINTER && GROCY_LABEL_PRINTER_RUN_SERVER)
 					{
@@ -266,10 +443,10 @@ class StockService extends BaseService
 					'user_id' => GROCY_USER_ID,
 					'note' => $note,
 					'receipt_id' => $receiptId,
-					'origin_country_id' => $originCountryId,
-					'quality_id' => $qualityId
+					'origin_country_id' => $originCountryId
 				]);
 				$logRow->save();
+				$this->SetStockLogQualities($logRow->id, $qualityIds);
 
 				$stockRow = $this->DB->stock()->createRow([
 					'product_id' => $productId,
@@ -282,10 +459,10 @@ class StockService extends BaseService
 					'shopping_location_id' => $shoppingLocationId,
 					'note' => $note,
 					'receipt_id' => $receiptId,
-					'origin_country_id' => $originCountryId,
-					'quality_id' => $qualityId
+					'origin_country_id' => $originCountryId
 				]);
 				$stockRow->save();
+				$this->SetStockQualities($stockId, $qualityIds);
 
 				if ($stockLabelType == 1 && GROCY_FEATURE_FLAG_LABEL_PRINTER && GROCY_LABEL_PRINTER_RUN_SERVER)
 				{
@@ -479,6 +656,7 @@ class StockService extends BaseService
 						'shopping_location_id' => $stockEntry->shopping_location_id
 					]);
 					$logRow->save();
+					$this->SetStockLogQualities($logRow->id, $this->GetStockQualityIds($stockEntry->stock_id));
 
 					$stockEntry->delete();
 
@@ -515,6 +693,7 @@ class StockService extends BaseService
 						'shopping_location_id' => $stockEntry->shopping_location_id
 					]);
 					$logRow->save();
+					$this->SetStockLogQualities($logRow->id, $this->GetStockQualityIds($stockEntry->stock_id));
 
 					$stockEntry->update([
 						'amount' => $restStockAmount
@@ -537,7 +716,7 @@ class StockService extends BaseService
 		}
 	}
 
-	public function EditStockEntry(int $stockRowId, float $amount, $bestBeforeDate, $locationId, $shoppingLocationId, $price, $open, $purchasedDate, $note = null, $receiptId = false, $originCountryId = null, $qualityId = null)
+	public function EditStockEntry(int $stockRowId, float $amount, $bestBeforeDate, $locationId, $shoppingLocationId, $price, $open, $purchasedDate, $note = null, $receiptId = false, $originCountryId = null, $qualityIds = null)
 	{
 		$stockRow = $this->DB->stock()->where('id = :1', $stockRowId)->fetch();
 		if ($stockRow === null)
@@ -563,10 +742,10 @@ class StockService extends BaseService
 			'stock_row_id' => $stockRow->id,
 			'user_id' => GROCY_USER_ID,
 			'note' => $stockRow->note,
-			'origin_country_id' => $stockRow->origin_country_id,
-			'quality_id' => $stockRow->quality_id
+			'origin_country_id' => $stockRow->origin_country_id
 		]);
 		$logOldRowForStockUpdate->save();
+		$this->SetStockLogQualities($logOldRowForStockUpdate->id, $this->GetStockQualityIds($stockRow->stock_id));
 
 		$openedDate = $stockRow->opened_date;
 		if (boolval($open) && $openedDate == null)
@@ -588,8 +767,7 @@ class StockService extends BaseService
 			'open' => BoolToInt($open),
 			'purchased_date' => $purchasedDate,
 			'note' => $note,
-			'origin_country_id' => $originCountryId,
-			'quality_id' => $qualityId
+			'origin_country_id' => $originCountryId
 		];
 
 		// $receiptId === false means "leave the existing link untouched" (so
@@ -601,6 +779,7 @@ class StockService extends BaseService
 		}
 
 		$stockRow->update($updateData);
+		$this->SetStockQualities($stockRow->stock_id, $qualityIds);
 
 		$logNewRowForStockUpdate = $this->DB->stock_log()->createRow([
 			'product_id' => $stockRow->product_id,
@@ -618,10 +797,10 @@ class StockService extends BaseService
 			'stock_row_id' => $stockRow->id,
 			'user_id' => GROCY_USER_ID,
 			'note' => $stockRow->note,
-			'origin_country_id' => $originCountryId,
-			'quality_id' => $qualityId
+			'origin_country_id' => $originCountryId
 		]);
 		$logNewRowForStockUpdate->save();
+		$this->SetStockLogQualities($logNewRowForStockUpdate->id, $qualityIds);
 
 		$this->CompactStockEntries($stockRow->product_id);
 
@@ -889,20 +1068,69 @@ class StockService extends BaseService
 		}
 
 		$qualitiesById = [];
+		$rootIdById = [];
+		foreach ($this->DB->qualities_resolved() as $quality)
+		{
+			$rootIdById[$quality->id] = $quality->root_id;
+		}
 		foreach ($this->DB->qualities() as $quality)
 		{
 			$qualitiesById[$quality->id] = $quality;
 		}
 
 		$rows = $this->DB->products_price_history()->where('product_id = :1', $productId)->orderBy('purchased_date', 'DESC');
+
+		// Assigned qualities for all bookings of this product in one go instead
+		// of one query per data point
+		$qualityIdsByLogId = [];
+		foreach ($this->DB->stock_log_qualities() as $link)
+		{
+			$qualityIdsByLogId[$link->stock_log_id][] = intval($link->quality_id);
+		}
+
 		foreach ($rows as $row)
 		{
+			$qualityIds = $qualityIdsByLogId[$row->stock_log_id] ?? [];
+
+			$qualities = [];
+			foreach ($qualityIds as $qualityId)
+			{
+				if (isset($qualitiesById[$qualityId]))
+				{
+					$qualities[] = $qualitiesById[$qualityId];
+				}
+			}
+
+			// The chart draws one line per store/quality/origin combination and
+			// rolls children up into their top level quality, so that a "Bio"
+			// line contains the Demeter and Bioland purchases as well
+			$rootIds = [];
+			foreach ($qualityIds as $qualityId)
+			{
+				$rootId = $rootIdById[$qualityId] ?? $qualityId;
+				if (!in_array($rootId, $rootIds))
+				{
+					$rootIds[] = $rootId;
+				}
+			}
+			sort($rootIds);
+
+			$qualityRoots = [];
+			foreach ($rootIds as $rootId)
+			{
+				if (isset($qualitiesById[$rootId]))
+				{
+					$qualityRoots[] = $qualitiesById[$rootId];
+				}
+			}
+
 			$returnData[] = [
 				'date' => $row->purchased_date,
 				'price' => $row->price,
 				'shopping_location' => FindObjectInArrayByPropertyValue($shoppingLocations, 'id', $row->shopping_location_id),
 				'origin_country' => $countriesById[$row->origin_country_id] ?? null,
-				'quality' => $qualitiesById[$row->quality_id] ?? null
+				'qualities' => $qualities,
+				'quality_roots' => $qualityRoots
 			];
 		}
 
@@ -1127,6 +1355,7 @@ class StockService extends BaseService
 					'note' => $stockEntry->note
 				]);
 				$logRow->save();
+				$this->SetStockLogQualities($logRow->id, $this->GetStockQualityIds($stockEntry->stock_id));
 
 				$stockEntry->update([
 					'open' => 1,
@@ -1141,6 +1370,7 @@ class StockService extends BaseService
 				// Stock entry amount is > than needed amount -> split the stock entry
 				$restStockAmount = $stockEntry->amount - $amount;
 
+				$newStockId = uniqid();
 				$newStockRow = $this->DB->stock()->createRow([
 					'product_id' => $stockEntry->product_id,
 					'amount' => $restStockAmount,
@@ -1148,11 +1378,14 @@ class StockService extends BaseService
 					'purchased_date' => $stockEntry->purchased_date,
 					'location_id' => $stockEntry->location_id,
 					'shopping_location_id' => $stockEntry->shopping_location_id,
-					'stock_id' => uniqid(),
+					'stock_id' => $newStockId,
 					'price' => $stockEntry->price,
-					'note' => $stockEntry->note
+					'note' => $stockEntry->note,
+					'receipt_id' => $stockEntry->receipt_id,
+					'origin_country_id' => $stockEntry->origin_country_id
 				]);
 				$newStockRow->save();
+				$this->CopyStockQualities($stockEntry->stock_id, $newStockId);
 
 				$logRow = $this->DB->stock_log()->createRow([
 					'product_id' => $stockEntry->product_id,
@@ -1170,6 +1403,7 @@ class StockService extends BaseService
 					'note' => $stockEntry->note
 				]);
 				$logRow->save();
+				$this->SetStockLogQualities($logRow->id, $this->GetStockQualityIds($stockEntry->stock_id));
 
 				$stockEntry->update([
 					'amount' => $amount,
@@ -1432,6 +1666,7 @@ class StockService extends BaseService
 					'note' => $stockEntry->note
 				]);
 				$logRowForLocationFrom->save();
+				$this->SetStockLogQualities($logRowForLocationFrom->id, $this->GetStockQualityIds($stockEntry->stock_id));
 
 				$logRowForLocationTo = $this->DB->stock_log()->createRow([
 					'product_id' => $stockEntry->product_id,
@@ -1450,6 +1685,7 @@ class StockService extends BaseService
 					'note' => $stockEntry->note
 				]);
 				$logRowForLocationTo->save();
+				$this->SetStockLogQualities($logRowForLocationTo->id, $this->GetStockQualityIds($stockEntry->stock_id));
 
 				$stockEntry->update([
 					'location_id' => $locationIdTo,
@@ -1480,6 +1716,7 @@ class StockService extends BaseService
 					'note' => $stockEntry->note
 				]);
 				$logRowForLocationFrom->save();
+				$this->SetStockLogQualities($logRowForLocationFrom->id, $this->GetStockQualityIds($stockEntry->stock_id));
 
 				$logRowForLocationTo = $this->DB->stock_log()->createRow([
 					'product_id' => $stockEntry->product_id,
@@ -1498,6 +1735,7 @@ class StockService extends BaseService
 					'note' => $stockEntry->note
 				]);
 				$logRowForLocationTo->save();
+				$this->SetStockLogQualities($logRowForLocationTo->id, $this->GetStockQualityIds($stockEntry->stock_id));
 
 				// This is the existing stock entry -> remains at the source location with the rest amount
 				$stockEntry->update([
@@ -1516,9 +1754,12 @@ class StockService extends BaseService
 					'shopping_location_id' => $stockEntry->shopping_location_id,
 					'open' => $stockEntry->open,
 					'opened_date' => $stockEntry->opened_date,
-					'note' => $stockEntry->note
+					'note' => $stockEntry->note,
+					'receipt_id' => $stockEntry->receipt_id,
+					'origin_country_id' => $stockEntry->origin_country_id
 				]);
 				$stockEntryNew->save();
+				$this->SyncStockQualitiesKey($stockEntry->stock_id);
 
 				$amount = 0;
 			}
@@ -1579,9 +1820,12 @@ class StockService extends BaseService
 				'open' => $logRow->opened_date !== null,
 				'location_id' => $logRow->location_id,
 				'note' => $logRow->note,
-				'shopping_location_id' => $logRow->shopping_location_id
+				'shopping_location_id' => $logRow->shopping_location_id,
+				'receipt_id' => $logRow->receipt_id,
+				'origin_country_id' => $logRow->origin_country_id
 			]);
 			$stockRow->save();
+			$this->SyncStockQualitiesKey($logRow->stock_id);
 
 			// Update log entry
 			$logRow->update([
@@ -1631,9 +1875,12 @@ class StockService extends BaseService
 					'price' => $logRow->price,
 					'opened_date' => $logRow->opened_date,
 					'note' => $logRow->note,
-					'shopping_location_id' => $logRow->shopping_location_id
+					'shopping_location_id' => $logRow->shopping_location_id,
+					'receipt_id' => $logRow->receipt_id,
+					'origin_country_id' => $logRow->origin_country_id
 				]);
 				$stockRow->save();
+				$this->SyncStockQualitiesKey($logRow->stock_id);
 			}
 			else
 			{
@@ -1812,6 +2059,13 @@ class StockService extends BaseService
 						DatabaseService::GetInstance()->ExecuteDbStatement('UPDATE stock SET amount = ' . $splittedStockEntry->total_amount . ' WHERE id = ' . $splittedStockEntry->id_to_keep);
 					}
 				}
+
+				// The merged away stock_ids no longer exist in stock, so their
+				// quality links would linger. The surviving entry keeps its own -
+				// entries only get merged when their resolved quality sets match.
+				DatabaseService::GetInstance()->ExecuteDbStatement(
+					'DELETE FROM stock_qualities WHERE stock_id NOT IN (SELECT stock_id FROM stock)'
+				);
 			}
 			catch (\Exception $ex)
 			{

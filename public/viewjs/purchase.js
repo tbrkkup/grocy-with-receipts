@@ -77,7 +77,7 @@ $('#save-purchase-button').on('click', function (e)
 			}
 
 			jsonData.origin_country_id = Grocy.Components.CountryPicker.GetValue();
-			jsonData.quality_id = Grocy.Components.QualityPicker.GetValue();
+			jsonData.quality_ids = Grocy.Components.QualityPicker.GetValue();
 
 			Grocy.Api.Post('stock/products/' + jsonForm.product_id + '/add', jsonData,
 				function (result)

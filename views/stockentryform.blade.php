@@ -130,7 +130,7 @@
 
 			@include('components.qualitypicker', array(
 			'qualities' => $qualities,
-			'prefillById' => $stockEntry->quality_id
+			'prefillByIds' => $stockEntryQualityIds
 			))
 
 			<div class="form-group">

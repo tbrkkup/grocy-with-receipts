@@ -1514,9 +1514,12 @@
 										"type": "integer",
 										"description": "Optional: The country this stock entry was purchased from"
 									},
-									"quality_id": {
-										"type": "integer",
-										"description": "Optional: The quality/grade of this stock entry (e.g. organic)"
+									"quality_ids": {
+										"type": "array",
+										"items": {
+											"type": "integer"
+										},
+										"description": "Optional: The qualities/grades of this stock entry (e.g. organic). Assigning a quality implies its parents. The former single \"quality_id\" is still accepted."
 									}
 								},
 								"example": {
@@ -1928,9 +1931,12 @@
 										"type": "integer",
 										"description": "Optional: The country this product was purchased from"
 									},
-									"quality_id": {
-										"type": "integer",
-										"description": "Optional: The quality/grade of this purchase (e.g. organic)"
+									"quality_ids": {
+										"type": "array",
+										"items": {
+											"type": "integer"
+										},
+										"description": "Optional: The qualities/grades of this purchase (e.g. organic). Assigning a quality implies its parents. The former single \"quality_id\" is still accepted."
 									}
 								},
 								"example": {
@@ -4782,6 +4788,9 @@
 					"name": {
 						"type": "string"
 					},
+					"parent_quality_id": {
+						"type": "integer"
+					},
 					"description": {
 						"type": "string"
 					},
@@ -4887,9 +4896,9 @@
 						"type": "integer",
 						"description": "Optional: The country this stock entry was purchased from"
 					},
-					"quality_id": {
-						"type": "integer",
-						"description": "Optional: The quality/grade of this stock entry (e.g. organic)"
+					"qualities_key": {
+						"type": "string",
+						"description": "Internal signature of the resolved quality set, maintained by grocy - the assignments themselves live in \"stock_qualities\""
 					},
 					"row_created_timestamp": {
 						"type": "string",
@@ -4910,7 +4919,7 @@
 					"location_id": "4",
 					"shopping_location_id": null,
 					"origin_country_id": null,
-					"quality_id": null
+					"quality_ids": []
 				}
 			},
 			"RecipeFulfillmentResponse": {
@@ -5116,8 +5125,19 @@
 					"origin_country": {
 						"$ref": "#/components/schemas/Country"
 					},
-					"quality": {
-						"$ref": "#/components/schemas/Quality"
+					"qualities": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Quality"
+						},
+						"description": "The qualities picked for this booking"
+					},
+					"quality_roots": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Quality"
+						},
+						"description": "Their top level qualities - the price history draws one line per store/quality root/origin combination"
 					}
 				}
 			},
@@ -5575,9 +5595,9 @@
 						"type": "integer",
 						"description": "Optional: The country this stock entry was purchased from"
 					},
-					"quality_id": {
-						"type": "integer",
-						"description": "Optional: The quality/grade of this stock entry (e.g. organic)"
+					"qualities_key": {
+						"type": "string",
+						"description": "Internal signature of the resolved quality set, maintained by grocy - the assignments themselves live in \"stock_qualities\""
 					},
 					"row_created_timestamp": {
 						"type": "string",

@@ -160,13 +160,19 @@ class StockApiController extends BaseApiController
 				$originCountryId = $requestBody['origin_country_id'];
 			}
 
-			$qualityId = null;
-			if (array_key_exists('quality_id', $requestBody) && is_numeric($requestBody['quality_id']))
+			// quality_ids is the current form; quality_id stays accepted as a
+			// single value alias so existing clients keep working
+			$qualityIds = null;
+			if (array_key_exists('quality_ids', $requestBody))
 			{
-				$qualityId = $requestBody['quality_id'];
+				$qualityIds = $requestBody['quality_ids'];
+			}
+			elseif (array_key_exists('quality_id', $requestBody))
+			{
+				$qualityIds = $requestBody['quality_id'];
 			}
 
-			$transactionId = StockService::GetInstance()->AddProduct($args['productId'], $requestBody['amount'], $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId, $shoppingLocationId, $unusedTransactionId, $stockLabelType, false, $note, $receiptId, $originCountryId, $qualityId);
+			$transactionId = StockService::GetInstance()->AddProduct($args['productId'], $requestBody['amount'], $bestBeforeDate, $transactionType, $purchasedDate, $price, $locationId, $shoppingLocationId, $unusedTransactionId, $stockLabelType, false, $note, $receiptId, $originCountryId, $qualityIds);
 
 			$args['transactionId'] = $transactionId;
 			return $this->StockTransactions($request, $response, $args);
@@ -456,13 +462,19 @@ class StockApiController extends BaseApiController
 				$originCountryId = $requestBody['origin_country_id'];
 			}
 
-			$qualityId = null;
-			if (array_key_exists('quality_id', $requestBody) && is_numeric($requestBody['quality_id']))
+			// quality_ids is the current form; quality_id stays accepted as a
+			// single value alias so existing clients keep working
+			$qualityIds = null;
+			if (array_key_exists('quality_ids', $requestBody))
 			{
-				$qualityId = $requestBody['quality_id'];
+				$qualityIds = $requestBody['quality_ids'];
+			}
+			elseif (array_key_exists('quality_id', $requestBody))
+			{
+				$qualityIds = $requestBody['quality_id'];
 			}
 
-			$transactionId = StockService::GetInstance()->EditStockEntry($args['entryId'], $requestBody['amount'], $bestBeforeDate, $locationId, $shoppingLocationId, $price, $requestBody['open'], $requestBody['purchased_date'], $note, $receiptId, $originCountryId, $qualityId);
+			$transactionId = StockService::GetInstance()->EditStockEntry($args['entryId'], $requestBody['amount'], $bestBeforeDate, $locationId, $shoppingLocationId, $price, $requestBody['open'], $requestBody['purchased_date'], $note, $receiptId, $originCountryId, $qualityIds);
 			$args['transactionId'] = $transactionId;
 			return $this->StockTransactions($request, $response, $args);
 		}

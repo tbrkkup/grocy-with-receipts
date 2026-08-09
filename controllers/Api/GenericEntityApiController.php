@@ -3,6 +3,7 @@
 namespace Grocy\Controllers\Api;
 
 use Grocy\Controllers\Users\User;
+use Grocy\Services\DatabaseService;
 use Grocy\Services\StockService;
 use Grocy\Services\UserfieldsService;
 use Grocy\Services\UsersService;
@@ -227,6 +228,10 @@ class GenericEntityApiController extends BaseApiController
 							}
 
 							$row->delete();
+							if ($args['entity'] == 'qualities')
+							{
+								$this->CleanupAfterQualityDelete($objectId);
+							}
 							$results[] = ['object_id' => $objectId, 'success' => true];
 						}
 						catch (\Exception $ex)
@@ -297,6 +302,10 @@ class GenericEntityApiController extends BaseApiController
 			}
 
 			$row->delete();
+			if ($args['entity'] == 'qualities')
+			{
+				$this->CleanupAfterQualityDelete($args['objectId']);
+			}
 
 			return $this->EmptyApiResponse($response);
 		}
@@ -352,6 +361,13 @@ class GenericEntityApiController extends BaseApiController
 				}
 
 				$row->update($requestBody);
+
+				// Re-parenting a quality changes what an assigned set resolves to,
+				// so the compaction signatures have to be derived again
+				if ($args['entity'] == 'qualities')
+				{
+					StockService::GetInstance()->RecalculateQualitiesKeys();
+				}
 
 				// TODO: This should be better done somehow in StockService
 				if ($args['entity'] == 'products' && boolval(UsersService::GetInstance()->GetUserSetting(GROCY_USER_ID, 'shopping_list_auto_add_below_min_stock_amount')))
@@ -503,4 +519,18 @@ class GenericEntityApiController extends BaseApiController
 	{
 		return in_array($entity, $this->GetOpenApispec()->components->schemas->ExposedEntity->enum);
 	}
+
+	/**
+	 * A deleted quality disappears from every booking that referenced it, so its
+	 * links have to go, children move up to the root and the compaction
+	 * signatures have to be derived again.
+	 */
+	private function CleanupAfterQualityDelete($qualityId)
+	{
+		DatabaseService::GetInstance()->ExecuteDbStatement('DELETE FROM stock_qualities WHERE quality_id = ' . intval($qualityId));
+		DatabaseService::GetInstance()->ExecuteDbStatement('DELETE FROM stock_log_qualities WHERE quality_id = ' . intval($qualityId));
+		DatabaseService::GetInstance()->ExecuteDbStatement('UPDATE qualities SET parent_quality_id = NULL WHERE parent_quality_id = ' . intval($qualityId));
+		StockService::GetInstance()->RecalculateQualitiesKeys();
+	}
+
 }

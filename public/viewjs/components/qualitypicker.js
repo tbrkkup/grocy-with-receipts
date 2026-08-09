@@ -2,45 +2,23 @@ Grocy.Components.QualityPicker = {};
 
 Grocy.Components.QualityPicker.GetPicker = function ()
 {
-	return $('#quality_id');
+	return $('#quality_ids');
 }
 
-Grocy.Components.QualityPicker.GetInputElement = function ()
-{
-	return $('#quality_id_text_input');
-}
-
+// Always an array, also when nothing is picked
 Grocy.Components.QualityPicker.GetValue = function ()
 {
-	return $('#quality_id').val();
+	return Grocy.Components.QualityPicker.GetPicker().val() || [];
 }
 
-Grocy.Components.QualityPicker.SetValue = function (value)
+Grocy.Components.QualityPicker.SetValue = function (qualityIds)
 {
-	Grocy.Components.QualityPicker.GetInputElement().val(value);
-	Grocy.Components.QualityPicker.GetInputElement().trigger('change');
-}
-
-Grocy.Components.QualityPicker.SetId = function (value)
-{
-	Grocy.Components.QualityPicker.GetPicker().val(value);
-	Grocy.Components.QualityPicker.GetPicker().data('combobox').refresh();
-	Grocy.Components.QualityPicker.GetInputElement().trigger('change');
+	Grocy.Components.QualityPicker.GetPicker().selectpicker('val', qualityIds || []);
 }
 
 Grocy.Components.QualityPicker.Clear = function ()
 {
-	Grocy.Components.QualityPicker.SetValue('');
-	Grocy.Components.QualityPicker.SetId(null);
+	Grocy.Components.QualityPicker.SetValue([]);
 }
 
-$(".quality-combobox").combobox(BootstrapComboboxDefaults);
-
-var qualityPickerPrefillById = Grocy.Components.QualityPicker.GetPicker().parent().data('prefill-by-id').toString();
-if (qualityPickerPrefillById)
-{
-	Grocy.Components.QualityPicker.SetId(qualityPickerPrefillById);
-
-	var nextInputElement = $(Grocy.Components.QualityPicker.GetPicker().parent().data('next-input-selector').toString());
-	nextInputElement.focus();
-}
+$(".quality-picker").selectpicker();

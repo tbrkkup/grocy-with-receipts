@@ -296,7 +296,7 @@
 						{{ $stockLogEntry->origin_country_name }}
 					</td>
 					<td>
-						{{ $stockLogEntry->quality_name }}
+						{{ $qualityLabelsByLogId[$stockLogEntry->id] ?? '' }}
 					</td>
 
 					@include('components.userfields_tbody', array(

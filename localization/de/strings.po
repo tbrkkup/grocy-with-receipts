@@ -2919,6 +2919,15 @@ msgstr "Es muss ein Land ausgewählt werden"
 msgid "You have to select a quality"
 msgstr "Es muss eine Güte ausgewählt werden"
 
+msgid "Parent quality"
+msgstr "Übergeordnete Güte"
+
+msgid "Picking a quality also implies its parents"
+msgstr "Eine gewählte Güte schließt ihre übergeordneten Güten mit ein"
+
+msgid "Assigning this quality to a stock entry also implies its parents"
+msgstr "Wird diese Güte einem Bestandseintrag zugewiesen, gelten die übergeordneten Güten automatisch mit"
+
 # Default / initially created location
 msgid "Fridge"
 msgstr "Kühlschrank"

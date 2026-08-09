@@ -42,6 +42,26 @@
 			</div>
 
 			<div class="form-group">
+				<label for="parent_quality_id">{{ $__t('Parent quality') }}
+					<i class="fa-solid fa-question-circle text-muted"
+						data-toggle="tooltip"
+						data-trigger="hover click"
+						title="{{ $__t('Assigning this quality to a stock entry also implies its parents') }}"></i>
+				</label>
+				<select class="custom-control custom-select"
+					id="parent_quality_id"
+					name="parent_quality_id">
+					<option value="">{{ $__t('None') }}</option>
+					@foreach($parentOptions as $parentOption)
+					@if(!in_array($parentOption->id, $excludedParentIds))
+					<option value="{{ $parentOption->id }}"
+						@if($mode == 'edit' && $quality->parent_quality_id == $parentOption->id) selected="selected" @endif>{!! str_repeat('&nbsp;&nbsp;&nbsp;', $parentOption->level) !!}{{ $parentOption->name }}</option>
+					@endif
+					@endforeach
+				</select>
+			</div>
+
+			<div class="form-group">
 				<div class="custom-control custom-checkbox">
 					<input @if($mode=='create'
 						)

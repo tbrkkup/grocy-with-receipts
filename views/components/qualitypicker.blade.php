@@ -1,4 +1,4 @@
-@php require_frontend_packages(['bootstrap-combobox']); @endphp
+@php require_frontend_packages(['bootstrap-select']); @endphp
 
 @once
 @push('componentScripts')
@@ -6,16 +6,12 @@
 @endpush
 @endonce
 
-@php if(empty($label)) { $label = 'Quality'; } @endphp
-@php if(empty($prefillById)) { $prefillById = ''; } @endphp
-@php if(!isset($isRequired)) { $isRequired = false; } @endphp
+@php if(empty($label)) { $label = 'Qualities'; } @endphp
+@php if(!isset($prefillByIds) || !is_array($prefillByIds)) { $prefillByIds = []; } @endphp
 @php if(empty($hint)) { $hint = ''; } @endphp
-@php if(empty($nextInputSelector)) { $nextInputSelector = ''; } @endphp
 
-<div class="form-group"
-	data-next-input-selector="{{ $nextInputSelector }}"
-	data-prefill-by-id="{{ $prefillById }}">
-	<label for="quality_id">{{ $__t($label) }}
+<div class="form-group">
+	<label for="quality_ids">{{ $__t($label) }}
 		@if(!empty($hint))
 		<i class="fa-solid fa-question-circle text-muted"
 			data-toggle="tooltip"
@@ -23,16 +19,18 @@
 			title="{{ $hint }}"></i>
 		@endif
 	</label>
-	<select class="form-control quality-combobox"
-		id="quality_id"
-		name="quality_id"
-		@if($isRequired)
-		required
-		@endif>
-		<option value=""></option>
+	<select class="form-control selectpicker quality-picker"
+		id="quality_ids"
+		name="quality_ids[]"
+		multiple
+		data-actions-box="true"
+		data-live-search="true"
+		data-selected-text-format="count > 2"
+		title="{{ $__t('None') }}">
 		@foreach($qualities as $quality)
-		<option value="{{ $quality->id }}">{{ $quality->name }}</option>
+		<option value="{{ $quality->id }}"
+			@if(in_array($quality->id, $prefillByIds)) selected="selected" @endif>{!! str_repeat('&nbsp;&nbsp;&nbsp;', $quality->level ?? 0) !!}{{ $quality->name }}</option>
 		@endforeach
 	</select>
-	<div class="invalid-feedback">{{ $__t('You have to select a quality') }}</div>
+	<div class="form-text text-muted small">{{ $__t('Picking a quality also implies its parents') }}</div>
 </div>

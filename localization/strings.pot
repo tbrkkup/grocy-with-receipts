@@ -2528,6 +2528,15 @@ msgstr ""
 msgid "You have to select a quality"
 msgstr ""
 
+msgid "Parent quality"
+msgstr ""
+
+msgid "Picking a quality also implies its parents"
+msgstr ""
+
+msgid "Assigning this quality to a stock entry also implies its parents"
+msgstr ""
+
 # Default / initially created location
 msgid "Fridge"
 msgstr ""

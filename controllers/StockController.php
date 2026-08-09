@@ -82,6 +82,7 @@ class StockController extends BaseController
 
 		return $this->RenderPage($response, 'stockjournal', [
 			'stockLog' => $this->DB->uihelper_stock_journal()->where($where)->orderBy('row_created_timestamp', 'DESC'),
+			'qualityLabelsByLogId' => $this->GetQualityLabelsByKey('stock_log_qualities', 'stock_log_id'),
 			'products' => $this->DB->products()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'locations' => $this->DB->locations()->orderBy('name', 'COLLATE NOCASE'),
 			'users' => $usersService->GetUsersAsDto(),
@@ -489,7 +490,7 @@ class StockController extends BaseController
 			'quantityUnits' => $this->DB->quantity_units()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'quantityUnitConversionsResolved' => $this->DB->cache__quantity_unit_conversions_resolved(),
 			'countries' => $this->DB->countries()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
-			'qualities' => $this->DB->qualities()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
+			'qualities' => $this->GetQualitiesAsTree(),
 			'userfields' => UserfieldsService::GetInstance()->GetFields('stock'),
 			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 		]);
@@ -815,18 +816,47 @@ class StockController extends BaseController
 
 	public function QualityEditForm(Request $request, Response $response, array $args)
 	{
+		$parentOptions = $this->DB->qualities_resolved()->orderBy('path');
+
 		if ($args['qualityId'] == 'new')
 		{
 			return $this->RenderPage($response, 'qualityform', [
 				'mode' => 'create',
+				'parentOptions' => $parentOptions,
+				'excludedParentIds' => [],
 				'userfields' => UserfieldsService::GetInstance()->GetFields('qualities')
 			]);
 		}
 		else
 		{
+			// Zyklen verhindern: die Güte selbst und alle ihre Nachfahren
+			// dürfen nicht als Elternteil gewählt werden.
+			$childrenByParent = [];
+			foreach ($this->DB->qualities() as $quality)
+			{
+				$childrenByParent[$quality->parent_quality_id][] = $quality->id;
+			}
+
+			$excludedParentIds = [];
+			$stack = [intval($args['qualityId'])];
+			while (!empty($stack))
+			{
+				$current = array_pop($stack);
+				$excludedParentIds[] = $current;
+				if (isset($childrenByParent[$current]))
+				{
+					foreach ($childrenByParent[$current] as $childId)
+					{
+						$stack[] = $childId;
+					}
+				}
+			}
+
 			return $this->RenderPage($response, 'qualityform', [
 				'quality' => $this->DB->qualities($args['qualityId']),
 				'mode' => 'edit',
+				'parentOptions' => $parentOptions,
+				'excludedParentIds' => $excludedParentIds,
 				'userfields' => UserfieldsService::GetInstance()->GetFields('qualities')
 			]);
 		}
@@ -834,17 +864,37 @@ class StockController extends BaseController
 
 	public function QualitiesList(Request $request, Response $response, array $args)
 	{
-		if (isset($request->getQueryParams()['include_disabled']))
+		$showDisabled = isset($request->getQueryParams()['include_disabled']);
+
+		$qualitiesById = [];
+		foreach ($this->DB->qualities() as $quality)
 		{
-			$qualities = $this->DB->qualities()->orderBy('name', 'COLLATE NOCASE');
+			$qualitiesById[$quality->id] = $quality;
 		}
-		else
+
+		// Baumreihenfolge (nach Pfad) mit Ebene für die Einrückung
+		$qualities = [];
+		$qualityLevels = [];
+		foreach ($this->DB->qualities_resolved()->orderBy('path') as $resolved)
 		{
-			$qualities = $this->DB->qualities()->where('active = 1')->orderBy('name', 'COLLATE NOCASE');
+			if (!isset($qualitiesById[$resolved->id]))
+			{
+				continue;
+			}
+
+			$quality = $qualitiesById[$resolved->id];
+			if (!$showDisabled && $quality->active == 0)
+			{
+				continue;
+			}
+
+			$qualities[] = $quality;
+			$qualityLevels[$quality->id] = $resolved->level;
 		}
 
 		return $this->RenderPage($response, 'qualities', [
 			'qualities' => $qualities,
+			'qualityLevels' => $qualityLevels,
 			'userfields' => UserfieldsService::GetInstance()->GetFields('qualities'),
 			'userfieldValues' => UserfieldsService::GetInstance()->GetAllValues('qualities')
 		]);
@@ -852,14 +902,17 @@ class StockController extends BaseController
 
 	public function StockEntryEditForm(Request $request, Response $response, array $args)
 	{
+		$stockEntry = $this->DB->stock()->where('id', $args['entryId'])->fetch();
+
 		return $this->RenderPage($response, 'stockentryform', [
-			'stockEntry' => $this->DB->stock()->where('id', $args['entryId'])->fetch(),
+			'stockEntry' => $stockEntry,
 			'products' => $this->DB->products()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'shoppinglocations' => $this->DB->shopping_locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'receipts' => $this->DB->receipts()->orderBy('date', 'DESC'),
 			'countries' => $this->DB->countries()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
-			'qualities' => $this->DB->qualities()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
+			'qualities' => $this->GetQualitiesAsTree(),
+			'stockEntryQualityIds' => StockService::GetInstance()->GetStockQualityIds($stockEntry->stock_id),
 			'userfields' => UserfieldsService::GetInstance()->GetFields('stock')
 		]);
 	}
@@ -909,16 +962,12 @@ class StockController extends BaseController
 			$countryNamesById[$country->id] = $country->name;
 		}
 
-		$qualityNamesById = [];
-		foreach ($this->DB->qualities() as $quality)
-		{
-			$qualityNamesById[$quality->id] = $quality->name;
-		}
+		$qualityLabelsByStockId = $this->GetQualityLabelsByKey('stock_qualities', 'stock_id');
 
 		return $this->RenderPage($response, 'stockentries', [
 			'locationFullPathById' => $locationFullPathById,
 			'countryNamesById' => $countryNamesById,
-			'qualityNamesById' => $qualityNamesById,
+			'qualityLabelsByStockId' => $qualityLabelsByStockId,
 			'products' => $this->DB->products()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'quantityunits' => $this->DB->quantity_units()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
@@ -991,4 +1040,66 @@ class StockController extends BaseController
 			'quantityUnitConversionsResolved' => $quantityUnitConversionsResolved
 		]);
 	}
+
+	/**
+	 * Qualities in tree order (path) with their level, so pickers and lists can
+	 * indent them. Optionally only the active ones - inactive qualities stay
+	 * readable on existing entries but shouldn't be offered for new ones.
+	 */
+	private function GetQualitiesAsTree($onlyActive = true)
+	{
+		$activeIds = [];
+		foreach ($this->DB->qualities() as $quality)
+		{
+			if (!$onlyActive || $quality->active == 1)
+			{
+				$activeIds[] = $quality->id;
+			}
+		}
+
+		$result = [];
+		foreach ($this->DB->qualities_resolved()->orderBy('path') as $quality)
+		{
+			if (in_array($quality->id, $activeIds))
+			{
+				$result[] = $quality;
+			}
+		}
+
+		return $result;
+	}
+
+
+	/**
+	 * "Bio, Rohkost" per stock_id resp. per journal row, built from one query
+	 * each instead of one per displayed row. Shows what was actually picked -
+	 * the implied parents stay out of the table to keep it readable.
+	 */
+	private function GetQualityLabelsByKey($linkTable, $keyColumn)
+	{
+		$namesById = [];
+		foreach ($this->DB->qualities() as $quality)
+		{
+			$namesById[$quality->id] = $quality->name;
+		}
+
+		$namesByKey = [];
+		foreach ($this->DB->{$linkTable}() as $link)
+		{
+			if (isset($namesById[$link->quality_id]))
+			{
+				$namesByKey[$link->{$keyColumn}][] = $namesById[$link->quality_id];
+			}
+		}
+
+		$labelsByKey = [];
+		foreach ($namesByKey as $key => $names)
+		{
+			sort($names);
+			$labelsByKey[$key] = implode(', ', $names);
+		}
+
+		return $labelsByKey;
+	}
+
 }

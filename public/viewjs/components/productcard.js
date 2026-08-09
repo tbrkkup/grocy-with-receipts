@@ -148,9 +148,11 @@ Grocy.Components.ProductCard.Refresh = function(productId)
 								// One line per store/quality/origin country combination, so that only
 								// comparable purchases end up being compared with each other
 								var keyParts = [dataPoint.shopping_location ? dataPoint.shopping_location.name : __t("Unknown store")];
-								if (dataPoint.quality)
+								// quality_roots are the top level qualities of this booking, so a
+								// "Bio" line also contains the Demeter and Bioland purchases
+								if (dataPoint.quality_roots && dataPoint.quality_roots.length > 0)
 								{
-									keyParts.push(dataPoint.quality.name);
+									keyParts.push(dataPoint.quality_roots.map(q => q.name).join(", "));
 								}
 								if (dataPoint.origin_country)
 								{

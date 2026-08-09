@@ -117,7 +117,7 @@
 						</a>
 					</td>
 					<td>
-						{{ $quality->name }}
+						{!! str_repeat('&nbsp;&nbsp;&nbsp;', $qualityLevels[$quality->id] ?? 0) !!}{{ $quality->name }}
 					</td>
 					<td>
 						{{ $quality->description }}

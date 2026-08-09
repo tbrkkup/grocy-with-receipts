@@ -368,9 +368,8 @@
 						data-origin-country-id="{{ $stockEntry->origin_country_id }}">
 						{{ $countryNamesById[$stockEntry->origin_country_id] ?? '' }}
 					</td>
-					<td id="stock-{{ $stockEntry->id }}-quality"
-						data-quality-id="{{ $stockEntry->quality_id }}">
-						{{ $qualityNamesById[$stockEntry->quality_id] ?? '' }}
+					<td id="stock-{{ $stockEntry->id }}-quality">
+						{{ $qualityLabelsByStockId[$stockEntry->stock_id] ?? '' }}
 					</td>
 
 					@include('components.userfields_tbody', array(
