@@ -901,8 +901,24 @@ class StockController extends BaseController
 			$locationFullPathById[$locationTreeItem['id']] = $locationTreeItem['path'];
 		}
 
+		// Name je Land/Güte vorab als Map: die Tabelle hat ~200 Länder, eine lineare
+		// Suche je Bestandszeile würde bei vielen Einträgen spürbar Zeit kosten
+		$countryNamesById = [];
+		foreach ($this->DB->countries() as $country)
+		{
+			$countryNamesById[$country->id] = $country->name;
+		}
+
+		$qualityNamesById = [];
+		foreach ($this->DB->qualities() as $quality)
+		{
+			$qualityNamesById[$quality->id] = $quality->name;
+		}
+
 		return $this->RenderPage($response, 'stockentries', [
 			'locationFullPathById' => $locationFullPathById,
+			'countryNamesById' => $countryNamesById,
+			'qualityNamesById' => $qualityNamesById,
 			'products' => $this->DB->products()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'quantityunits' => $this->DB->quantity_units()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),
 			'locations' => $this->DB->locations()->where('active = 1')->orderBy('name', 'COLLATE NOCASE'),

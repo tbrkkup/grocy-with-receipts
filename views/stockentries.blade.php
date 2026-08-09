@@ -366,15 +366,11 @@
 					</td>
 					<td id="stock-{{ $stockEntry->id }}-origin-country"
 						data-origin-country-id="{{ $stockEntry->origin_country_id }}">
-						@if (FindObjectInArrayByPropertyValue($countries, 'id', $stockEntry->origin_country_id) !== null)
-						{{ FindObjectInArrayByPropertyValue($countries, 'id', $stockEntry->origin_country_id)->name }}
-						@endif
+						{{ $countryNamesById[$stockEntry->origin_country_id] ?? '' }}
 					</td>
 					<td id="stock-{{ $stockEntry->id }}-quality"
 						data-quality-id="{{ $stockEntry->quality_id }}">
-						@if (FindObjectInArrayByPropertyValue($qualities, 'id', $stockEntry->quality_id) !== null)
-						{{ FindObjectInArrayByPropertyValue($qualities, 'id', $stockEntry->quality_id)->name }}
-						@endif
+						{{ $qualityNamesById[$stockEntry->quality_id] ?? '' }}
 					</td>
 
 					@include('components.userfields_tbody', array(
