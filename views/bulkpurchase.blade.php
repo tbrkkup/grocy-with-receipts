@@ -105,6 +105,8 @@
 							<th>{{ $__t('Amount') }}</th>
 							<th>{{ $__t('Unit') }}</th>
 							<th>{{ $__t('Price') }}</th>
+							<th>{{ $__t('Origin country') }}</th>
+							<th>{{ $__t('Qualities') }}</th>
 							<th>{{ $__t('Skip') }}</th>
 						</tr>
 					</thead>

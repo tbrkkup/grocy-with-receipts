@@ -60,6 +60,8 @@
 					<th>{{ $__t('Product') }}</th>
 					<th>{{ $__t('Store') }}</th>
 					<th>{{ $__t('Receipt text') }}</th>
+					<th>{{ $__t('Origin country') }}</th>
+					<th>{{ $__t('Qualities') }}</th>
 					<th>{{ $__t('Times confirmed') }}</th>
 					<th>{{ $__t('Last used') }}</th>
 				</tr>
@@ -84,6 +86,8 @@
 					<td>@if($aliasProduct !== null){{ $aliasProduct->name }}@else<span class="text-muted">#{{ $alias->product_id }}</span>@endif</td>
 					<td>@if($aliasShop !== null){{ $aliasShop->name }}@else<span class="text-muted font-italic">{{ $__t('Any store') }}</span>@endif</td>
 					<td>{{ $alias->alias }}</td>
+					<td>{{ $countryNamesById[$alias->origin_country_id] ?? '' }}</td>
+					<td>{{ $qualityLabelsByAliasId[$alias->id] ?? '' }}</td>
 					<td>{{ $alias->times_confirmed }}</td>
 					<td>@if(!empty($alias->last_used_timestamp)){{ $alias->last_used_timestamp }}@else<span class="text-muted">–</span>@endif</td>
 				</tr>

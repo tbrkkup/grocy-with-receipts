@@ -529,6 +529,7 @@ class GenericEntityApiController extends BaseApiController
 	{
 		DatabaseService::GetInstance()->ExecuteDbStatement('DELETE FROM stock_qualities WHERE quality_id = ' . intval($qualityId));
 		DatabaseService::GetInstance()->ExecuteDbStatement('DELETE FROM stock_log_qualities WHERE quality_id = ' . intval($qualityId));
+		DatabaseService::GetInstance()->ExecuteDbStatement('DELETE FROM product_receipt_alias_qualities WHERE quality_id = ' . intval($qualityId));
 		DatabaseService::GetInstance()->ExecuteDbStatement('UPDATE qualities SET parent_quality_id = NULL WHERE parent_quality_id = ' . intval($qualityId));
 		StockService::GetInstance()->RecalculateQualitiesKeys();
 	}

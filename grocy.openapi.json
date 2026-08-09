@@ -6062,6 +6062,7 @@
 					"receipts",
 					"receipt_files",
 					"product_receipt_aliases",
+					"product_receipt_alias_qualities",
 					"locations_resolved"
 				]
 			},

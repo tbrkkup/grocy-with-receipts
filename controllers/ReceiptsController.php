@@ -48,8 +48,39 @@ class ReceiptsController extends BaseController
 
 	public function ReceiptAliasesList(Request $request, Response $response, array $args)
 	{
+		$countryNamesById = [];
+		foreach ($this->DB->countries() as $country)
+		{
+			$countryNamesById[$country->id] = $country->name;
+		}
+
+		$qualityNamesById = [];
+		foreach ($this->DB->qualities() as $quality)
+		{
+			$qualityNamesById[$quality->id] = $quality->name;
+		}
+
+		// "Bio, Rohkost" je Alias, aus einer Abfrage statt einer je Zeile
+		$qualityNamesByAliasId = [];
+		foreach ($this->DB->product_receipt_alias_qualities() as $link)
+		{
+			if (isset($qualityNamesById[$link->quality_id]))
+			{
+				$qualityNamesByAliasId[$link->alias_id][] = $qualityNamesById[$link->quality_id];
+			}
+		}
+
+		$qualityLabelsByAliasId = [];
+		foreach ($qualityNamesByAliasId as $aliasId => $names)
+		{
+			sort($names);
+			$qualityLabelsByAliasId[$aliasId] = implode(', ', $names);
+		}
+
 		return $this->RenderPage($response, 'receiptaliases', [
 			'aliases' => $this->DB->product_receipt_aliases()->orderBy('times_confirmed', 'DESC')->fetchAll(),
+			'countryNamesById' => $countryNamesById,
+			'qualityLabelsByAliasId' => $qualityLabelsByAliasId,
 			'products' => $this->DB->products()->orderBy('name', 'COLLATE NOCASE')->fetchAll(),
 			'shoppingLocations' => $this->DB->shopping_locations()->orderBy('name', 'COLLATE NOCASE')->fetchAll(),
 		]);

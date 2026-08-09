@@ -145,17 +145,53 @@ function bpApiPost(path, data)
 }
 
 // ---- Master data (products/shops/units/locations) ----
-var bpMaster = { products: [], shops: [], units: [], kgUnitId: null, defaultQuId: null, defaultLocationId: null };
+var bpMaster = { products: [], shops: [], units: [], countries: [], qualities: [], kgUnitId: null, defaultQuId: null, defaultLocationId: null };
+
+// Güten in Baumreihenfolge mit Ebene, damit die Auswahl eingerückt werden kann.
+// Der Server liefert sie flach mit parent_quality_id, das reicht dafür aus.
+function bpQualitiesAsTree(qualities)
+{
+	var childrenByParent = {};
+	qualities.forEach(function(q)
+	{
+		var key = (q.parent_quality_id == null || q.parent_quality_id === '') ? '' : String(q.parent_quality_id);
+		(childrenByParent[key] = childrenByParent[key] || []).push(q);
+	});
+	Object.keys(childrenByParent).forEach(function(k)
+	{
+		childrenByParent[k].sort(function(a, b) { return String(a.name).localeCompare(String(b.name)); });
+	});
+
+	var out = [];
+	(function walk(parentKey, level)
+	{
+		if (level > 50) { return; } // gleiche Bremse wie qualities_resolved
+		(childrenByParent[parentKey] || []).forEach(function(q)
+		{
+			q.level = level;
+			out.push(q);
+			walk(String(q.id), level + 1);
+		});
+	})('', 0);
+
+	// Sicherheitsnetz: Güten mit verwaistem Elternverweis wären sonst unsichtbar
+	qualities.forEach(function(q) { if (out.indexOf(q) === -1) { q.level = 0; out.push(q); } });
+	return out;
+}
 function bpApiGet(path)
 {
 	return new Promise(function(resolve, reject) { Grocy.Api.Get(path, function(r) { resolve(r); }, function(x) { reject(x); }); });
 }
 var bpMasterReady = Promise.all([
 	bpApiGet('objects/products'), bpApiGet('objects/shopping_locations'),
-	bpApiGet('objects/quantity_units'), bpApiGet('objects/locations')
+	bpApiGet('objects/quantity_units'), bpApiGet('objects/locations'),
+	bpApiGet('objects/countries').catch(function() { return []; }),
+	bpApiGet('objects/qualities').catch(function() { return []; })
 ]).then(function(res)
 {
 	bpMaster.products = res[0] || []; bpMaster.shops = res[1] || []; bpMaster.units = res[2] || [];
+	bpMaster.countries = (res[4] || []).filter(function(c) { return c.active != 0; });
+	bpMaster.qualities = bpQualitiesAsTree((res[5] || []).filter(function(q) { return q.active != 0; }));
 	var locs = res[3] || [];
 	bpMaster.units.forEach(function(u) { if (u.name && u.name.toLowerCase() === 'kg') { bpMaster.kgUnitId = u.id; } });
 	bpMaster.defaultQuId = bpMaster.kgUnitId || (bpMaster.units[0] && bpMaster.units[0].id) || null;
@@ -174,19 +210,34 @@ function bpBuildReview(result)
 {
 	var products = result.products || [];
 	bpFillReviewMeta(result);
-	return bpApiGet('objects/product_receipt_aliases').catch(function() { return []; }).then(function(aliases)
+	return Promise.all([
+		bpApiGet('objects/product_receipt_aliases').catch(function() { return []; }),
+		bpApiGet('objects/product_receipt_alias_qualities').catch(function() { return []; })
+	]).then(function(res)
 	{
-		aliases = Array.isArray(aliases) ? aliases : [];
+		var aliases = Array.isArray(res[0]) ? res[0] : [];
+		var aliasQualityIds = {};
+		(Array.isArray(res[1]) ? res[1] : []).forEach(function(l)
+		{
+			(aliasQualityIds[l.alias_id] = aliasQualityIds[l.alias_id] || []).push(parseInt(l.quality_id, 10));
+		});
 		var shopId = $('#bp-shop').val();
 		bpData = products.map(function(p)
 		{
 			var key = bpNormAlias(p.receipt_text || p.name);
 			var hit = bpFindAlias(aliases, key, shopId);
+			// Only offer qualities that still exist - a deleted one would be a dead id
+			var learnedQualityIds = (hit ? (aliasQualityIds[hit.id] || []) : []).filter(function(qid)
+			{
+				return bpMaster.qualities.some(function(q) { return String(q.id) === String(qid); });
+			});
 			return {
 				receipt_text: p.receipt_text || '', name: p.name || '',
 				quantity: (p.quantity != null ? p.quantity : 1), unit: p.unit || 'Stueck',
 				price_total: (p.price_total != null ? p.price_total : null),
-				matchId: hit ? hit.product_id : null, fromAlias: !!hit, skip: false
+				matchId: hit ? hit.product_id : null, fromAlias: !!hit, skip: false,
+				originCountryId: (hit && hit.origin_country_id) ? parseInt(hit.origin_country_id, 10) : null,
+				qualityIds: learnedQualityIds
 			};
 		});
 		var toMatch = [], idx = [];
@@ -233,6 +284,27 @@ function bpProductOptions(matchId, suggestedName)
 }
 function bpUnitOptions(cur) { return BP_UNITS.map(function(u) { return '<option value="' + u + '"' + (u === cur ? ' selected' : '') + '>' + u + '</option>'; }).join(''); }
 
+function bpCountryOptions(cur)
+{
+	var o = '<option value="">' + __t('None') + '</option>';
+	bpMaster.countries.forEach(function(c)
+	{
+		o += '<option value="' + c.id + '"' + (String(cur) === String(c.id) ? ' selected' : '') + '>' + bpEsc(c.name) + '</option>';
+	});
+	return o;
+}
+
+function bpQualityOptions(cur)
+{
+	cur = cur || [];
+	return bpMaster.qualities.map(function(q)
+	{
+		var sel = cur.some(function(id) { return String(id) === String(q.id); }) ? ' selected' : '';
+		var indent = new Array((q.level || 0) + 1).join('\u00a0\u00a0\u00a0');
+		return '<option value="' + q.id + '"' + sel + '>' + indent + bpEsc(q.name) + '</option>';
+	}).join('');
+}
+
 function bpRenderReview()
 {
 	$('#bp-review-head').text(__t('%s products recognized', bpData.length));
@@ -244,6 +316,8 @@ function bpRenderReview()
 			'<td><input type="number" step="any" min="0" class="form-control bp-qty" data-i="' + i + '" value="' + r.quantity + '" style="min-width:80px"></td>' +
 			'<td><select class="custom-control custom-select bp-unit" data-i="' + i + '">' + bpUnitOptions(r.unit) + '</select></td>' +
 			'<td><input type="number" step="any" min="0" class="form-control bp-price" data-i="' + i + '" value="' + (r.price_total != null ? r.price_total : '') + '" style="min-width:90px"></td>' +
+			'<td><select class="custom-control custom-select bp-country" data-i="' + i + '" style="min-width:130px">' + bpCountryOptions(r.originCountryId) + '</select></td>' +
+			'<td><select class="form-control bp-quality" data-i="' + i + '" multiple size="3" style="min-width:130px">' + bpQualityOptions(r.qualityIds) + '</select></td>' +
 			'<td class="text-center align-middle"><input type="checkbox" class="bp-skip" data-i="' + i + '"></td>' +
 			'</tr>';
 	}).join('');
@@ -258,6 +332,8 @@ function bpCollectReview()
 	$('.bp-qty').each(function() { var i = $(this).data('i'); var v = parseFloat($(this).val()); if (!isNaN(v) && v > 0) { bpData[i].quantity = v; } });
 	$('.bp-unit').each(function() { var i = $(this).data('i'); bpData[i].unit = $(this).val(); });
 	$('.bp-price').each(function() { var i = $(this).data('i'); var v = parseFloat($(this).val()); bpData[i].price_total = isNaN(v) ? null : v; });
+	$('.bp-country').each(function() { var i = $(this).data('i'); var v = $(this).val(); bpData[i].originCountryId = v ? parseInt(v, 10) : null; });
+	$('.bp-quality').each(function() { var i = $(this).data('i'); bpData[i].qualityIds = ($(this).val() || []).map(function(v) { return parseInt(v, 10); }); });
 	$('.bp-skip').each(function() { var i = $(this).data('i'); bpData[i].skip = $(this).prop('checked'); });
 }
 function bpToBase(qty, unit) { if (unit === 'g') { return { amount: qty / 1000, unit: 'kg' }; } if (unit === 'ml') { return { amount: qty / 1000, unit: 'l' }; } return { amount: qty, unit: unit }; }
@@ -274,7 +350,34 @@ function bpResolveProduct(item)
 	return bpApiPost('objects/products', body).then(function(r) { var pid = r.created_object_id; bpMaster.products.push({ id: pid, name: body.name }); return pid; });
 }
 
-function bpLearnAlias(item, productId, shopId, cache)
+// Replaces the learned qualities of an alias. Fire and forget like the rest of
+// the learning - a failure here must never break an import.
+function bpLearnAliasQualities(aliasId, qualityIds, existingLinks)
+{
+	if (!aliasId) { return; }
+	qualityIds = qualityIds || [];
+	var current = (existingLinks || []).filter(function(l) { return String(l.alias_id) === String(aliasId); });
+
+	current.forEach(function(l)
+	{
+		if (!qualityIds.some(function(qid) { return String(qid) === String(l.quality_id); }))
+		{
+			Grocy.Api.Delete('objects/product_receipt_alias_qualities/' + l.id, {}, function() { }, function() { });
+		}
+	});
+
+	qualityIds.forEach(function(qid)
+	{
+		if (!current.some(function(l) { return String(l.quality_id) === String(qid); }))
+		{
+			var row = { alias_id: aliasId, quality_id: qid };
+			existingLinks.push(row);
+			Grocy.Api.Post('objects/product_receipt_alias_qualities', row, function(r) { row.id = r && r.created_object_id; }, function() { });
+		}
+	});
+}
+
+function bpLearnAlias(item, productId, shopId, cache, qualityLinks)
 {
 	try
 	{
@@ -282,21 +385,32 @@ function bpLearnAlias(item, productId, shopId, cache)
 		if (!key || !productId) { return; }
 		var sid = shopId ? parseInt(shopId, 10) : null;
 		var ts = bpNowTs();
+		var origin = item.originCountryId || null;
 		var existing = cache.find(function(a) { return bpNormAlias(a.alias) === key && String(a.shopping_location_id == null ? '' : a.shopping_location_id) === String(sid == null ? '' : sid); });
 		if (existing)
 		{
 			var changed = String(existing.product_id) !== String(productId);
 			var b = changed ? { product_id: productId, times_confirmed: 1, last_used_timestamp: ts } : { times_confirmed: (parseInt(existing.times_confirmed, 10) || 1) + 1, last_used_timestamp: ts };
-			existing.product_id = productId; existing.times_confirmed = b.times_confirmed;
+			// The last import wins for origin and qualities: they are prefilled from
+			// the alias and confirmed or corrected in the review table anyway
+			b.origin_country_id = origin;
+			existing.product_id = productId; existing.times_confirmed = b.times_confirmed; existing.origin_country_id = origin;
 			Grocy.Api.Put('objects/product_receipt_aliases/' + existing.id, b, function() { }, function() { });
+			bpLearnAliasQualities(existing.id, item.qualityIds, qualityLinks);
 		}
 		else
 		{
 			var post = { product_id: productId, alias: key, times_confirmed: 1, last_used_timestamp: ts };
 			if (sid != null) { post.shopping_location_id = sid; }
-			var row = { product_id: productId, alias: key, shopping_location_id: sid, times_confirmed: 1 };
+			if (origin) { post.origin_country_id = origin; }
+			var row = { product_id: productId, alias: key, shopping_location_id: sid, times_confirmed: 1, origin_country_id: origin };
 			cache.push(row);
-			Grocy.Api.Post('objects/product_receipt_aliases', post, function(r) { row.id = r && r.created_object_id; }, function() { });
+			var qualityIds = item.qualityIds;
+			Grocy.Api.Post('objects/product_receipt_aliases', post, function(r)
+			{
+				row.id = r && r.created_object_id;
+				bpLearnAliasQualities(row.id, qualityIds, qualityLinks);
+			}, function() { });
 		}
 	}
 	catch (e) { /* learning is non-fatal */ }
@@ -322,13 +436,14 @@ function bpImport()
 	$('#bp-import').prop('disabled', true);
 	$('#bp-import-status').html('<div class="text-muted">' + __t('Importing…') + '</div>');
 
-	var receiptId = null, aliasesCache = [];
+	var receiptId = null, aliasesCache = [], aliasQualityLinks = [];
 	var body = { date: date, status: 'paid' };
 	if (shopId) { body.shopping_location_id = parseInt(shopId, 10); }
 	if (invoice) { body.invoice_number = invoice; }
 	bpApiPost('objects/receipts', body).then(function(r) { receiptId = r.created_object_id; })
 		.then(function() { return bpUploadFileToReceipt(receiptId).catch(function() { }); })
 		.then(function() { return bpApiGet('objects/product_receipt_aliases').then(function(a) { aliasesCache = Array.isArray(a) ? a : []; }).catch(function() { aliasesCache = []; }); })
+		.then(function() { return bpApiGet('objects/product_receipt_alias_qualities').then(function(a) { aliasQualityLinks = Array.isArray(a) ? a : []; }).catch(function() { aliasQualityLinks = []; }); })
 		.then(function()
 		{
 			return toImport.reduce(function(chain, item)
@@ -343,9 +458,11 @@ function bpImport()
 						var addBody = { amount: conv.amount, price: parseFloat(convPpu.toFixed(4)), best_before_date: '2999-12-31', purchased_date: date };
 						if (shopId) { addBody.shopping_location_id = parseInt(shopId, 10); }
 						if (receiptId) { addBody.receipt_id = receiptId; }
+						if (item.originCountryId) { addBody.origin_country_id = item.originCountryId; }
+						if (item.qualityIds && item.qualityIds.length) { addBody.quality_ids = item.qualityIds; }
 						return bpApiPost('stock/products/' + pid + '/add', addBody).then(function()
 						{
-							bpLearnAlias(item, pid, shopId, aliasesCache);
+							bpLearnAlias(item, pid, shopId, aliasesCache, aliasQualityLinks);
 							results.push({ ok: true }); return results;
 						});
 					}).catch(function(e) { results.push({ ok: false }); return results; });
